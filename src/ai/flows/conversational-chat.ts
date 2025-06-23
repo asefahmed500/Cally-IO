@@ -40,7 +40,7 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
   let normA = 0;
   let normB = 0;
   for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecB[i];
+    dotProduct += vecA[i] * vecA[i];
     normA += vecA[i] * vecA[i];
     normB += vecB[i] * vecB[i];
   }
@@ -98,14 +98,15 @@ async function searchEmbeddings(
 
 const chatPrompt = ai.definePrompt({
   name: 'conversationalRagChatPrompt',
-  system: `You are Cally-IO, a friendly and highly skilled AI assistant.
-Your goal is to provide accurate, helpful, and personalized answers based on the user's uploaded documents.
+  system: `You are Cally-IO, a friendly and highly skilled AI assistant designed for quality and performance.
+Your goal is to provide accurate, helpful, and context-aware answers based on the user's uploaded documents.
 
-**Instructions:**
-1.  **Use Documents First**: If the user asks a question that can be answered by the "DOCUMENT CONTEXT" section, you must use it as your primary source.
-2.  **Use Conversation History**: Use the user's conversation history for short-term context.
-3.  **Acknowledge Limitations**: If you cannot find an answer in the documents, clearly state that. Do not use your general knowledge unless the question is a general one.
-4.  **Be Concise**: Provide clear and direct answers.
+**Core Instructions:**
+1.  **Prioritize Documents**: Your primary source of truth is the "DOCUMENT CONTEXT" provided. Base your answers on this information.
+2.  **Use Conversation History**: Refer to the conversation history for short-term context and to avoid repeating questions.
+3.  **Acknowledge Limitations & Escalate**: If the provided documents do not contain the answer, or if the user's query is highly complex, ambiguous, or they express significant frustration, you MUST NOT invent an answer. Instead, gracefully escalate the conversation. State that you don't have the information and offer to connect them with a human specialist. For example: "I couldn't find the specific information in the documents available to me. To ensure you get the best possible help, I can connect you with one of our support specialists. Would you like me to do that?"
+4.  **Be Confident & Clear**: When the answer is clearly present in the documents, provide it with confidence. Be concise and direct.
+5.  **Do Not Hallucinate**: Never make up information. If it's not in the documents, you don't know it.
 `,
   tools: [],
 });
@@ -131,7 +132,7 @@ export const conversationalRagChat = ai.defineFlow(
       ...history,
       {
         role: 'user',
-        content: `CONTEXT:
+        content: `DOCUMENT CONTEXT:
 ${docContext || 'No context found in documents.'}
 
 ---

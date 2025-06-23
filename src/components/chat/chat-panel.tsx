@@ -4,7 +4,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, User, Bot, Loader2, Paperclip } from 'lucide-react';
+import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
@@ -28,10 +28,6 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
-  };
 
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
@@ -86,6 +82,14 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
       }
     }
   };
+
+  const handleFeedback = (feedback: 'good' | 'bad') => {
+    toast({
+        title: 'Feedback Received',
+        description: "Thank you! We'll use your feedback to improve."
+    })
+    // In a real app, you would send this feedback to a logging service.
+  }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -180,15 +184,30 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
                   </AvatarFallback>
                 </Avatar>
               )}
-              <div
-                className={cn(
-                  'max-w-prose rounded-lg p-3 text-sm',
-                  message.role === 'user'
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted'
+              <div className="flex flex-col gap-2">
+                <div
+                    className={cn(
+                    'max-w-prose rounded-lg p-3 text-sm',
+                    message.role === 'user'
+                        ? 'bg-primary text-primary-foreground'
+                        : 'bg-muted'
+                    )}
+                >
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                </div>
+                {message.role === 'model' && message.content && (
+                    <div className="flex items-center gap-2">
+                        <p className="text-xs text-muted-foreground">Generated with high confidence.</p>
+                        <div className="flex items-center gap-1">
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback('good')}>
+                                <ThumbsUp className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback('bad')}>
+                                <ThumbsDown className="h-4 w-4" />
+                            </Button>
+                        </div>
+                    </div>
                 )}
-              >
-                <p className="whitespace-pre-wrap">{message.content}</p>
               </div>
               {message.role === 'user' && (
                 <Avatar className="h-8 w-8">
