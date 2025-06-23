@@ -2,7 +2,7 @@
 
 import { storage } from '@/lib/appwrite-server';
 
-const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!;
+const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID || '';
 
 export async function getDocuments() {
     try {
