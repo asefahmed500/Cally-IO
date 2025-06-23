@@ -1,6 +1,9 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { LeadList } from "@/components/dashboard/lead-list";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { BookOpenCheck, BrainCircuit } from "lucide-react";
+import Link from "next/link";
 
 export default async function DashboardPage() {
   const user = await getLoggedInUser();
@@ -8,56 +11,55 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
-  // In a real application, you would fetch these leads from your database.
-  const mockLeads = [
-    {
-      id: "1",
-      name: "Alice Johnson",
-      title: "CTO",
-      company: "Innovate Inc.",
-      companyDescription: "A leading provider of cloud-based enterprise solutions.",
-      score: 92,
-      status: "Hot",
-    },
-    {
-      id: "2",
-      name: "Bob Williams",
-      title: "Marketing Director",
-      company: "Growth Co.",
-      companyDescription: "A fast-growing startup in the digital marketing space.",
-      score: 85,
-      status: "Warm",
-    },
-    {
-        id: "3",
-        name: "Charlie Brown",
-        title: "Product Manager",
-        company: "Synergy Corp.",
-        companyDescription: "Develops productivity software for remote teams.",
-        score: 78,
-        status: "Warm",
-    },
-    {
-        id: "4",
-        name: "Diana Miller",
-        title: "VP of Sales",
-        company: "Solutions LLC",
-        companyDescription: "Offers bespoke software development services for the finance industry.",
-        score: 65,
-        status: "Cold",
-    }
-  ];
-
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Lead Dashboard</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Welcome to Intellecta, {user.name}!</h1>
         <p className="text-muted-foreground">
-          Manage and engage with your qualified leads.
+          Your intelligent knowledge base assistant.
         </p>
       </header>
-      
-      <LeadList leads={mockLeads} />
+
+      <div className="grid gap-6 md:grid-cols-2">
+        <Card>
+            <CardHeader>
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                        <BookOpenCheck className="h-6 w-6 text-primary" />
+                    </div>
+                    <CardTitle>Build Your Knowledge Base</CardTitle>
+                </div>
+                <CardDescription>
+                    Start by uploading your company documents. Intellecta will process them to create a searchable knowledge base, ready to answer questions.
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                <Link href="/knowledge" passHref>
+                    <Button>
+                        Go to Knowledge Base
+                    </Button>
+                </Link>
+            </CardContent>
+        </Card>
+         <Card>
+            <CardHeader>
+                <div className="flex items-center gap-3 mb-2">
+                    <div className="p-2 bg-primary/10 rounded-md">
+                        <BrainCircuit className="h-6 w-6 text-primary" />
+                    </div>
+                    <CardTitle>AI Assistant</CardTitle>
+                </div>
+                <CardDescription>
+                    Once your documents are processed, you can interact with your AI assistant to get instant, accurate answers based on your knowledge base. (Coming Soon)
+                </CardDescription>
+            </CardHeader>
+            <CardContent>
+                 <Button disabled>
+                    Chat with AI Assistant
+                </Button>
+            </CardContent>
+        </Card>
+      </div>
     </div>
   )
 }

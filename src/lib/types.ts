@@ -1,9 +1,7 @@
-export interface Lead {
-    id: string;
-    name: string;
-    title: string;
-    company: string;
-    companyDescription: string;
-    score: number;
-    status: 'Hot' | 'Warm' | 'Cold';
+import type { Models } from "node-appwrite";
+
+export interface DocumentMetadata extends Models.Document {
+    documentId: string;
+    fileName: string;
+    userId: string;
 }

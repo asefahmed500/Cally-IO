@@ -5,9 +5,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Plug } from "lucide-react";
+import { KeyRound } from "lucide-react";
 
 export default async function SettingsPage() {
   const user = await getLoggedInUser();
@@ -26,7 +25,7 @@ export default async function SettingsPage() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="api-keys">API Keys</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account" className="mt-6">
@@ -77,32 +76,25 @@ export default async function SettingsPage() {
           </Card>
         </TabsContent>
 
-         <TabsContent value="integrations" className="mt-6">
+         <TabsContent value="api-keys" className="mt-6">
            <Card>
             <CardHeader>
-              <CardTitle>Integrations</CardTitle>
-              <CardDescription>Connect your data sources to LeadKit. (Feature coming soon)</CardDescription>
+              <CardTitle>API Keys</CardTitle>
+              <CardDescription>Manage your API keys for third-party integrations.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                <Alert>
-                  <Plug className="h-4 w-4" />
-                  <AlertTitle>Developer Note</AlertTitle>
+                  <KeyRound className="h-4 w-4" />
+                  <AlertTitle>Google AI API Key</AlertTitle>
                   <AlertDescription>
-                    Direct API integrations are not yet supported. You can build your own connections to services like Google Sheets or your CRM here.
+                    Your Google AI API key is configured on the server. You can manage it in your project's environment variables.
                   </AlertDescription>
                 </Alert>
               <div className="space-y-2">
-                <Label htmlFor="google-sheets-key">Google Sheets API Key</Label>
-                <Input id="google-sheets-key" placeholder="Enter your Google Sheets API key" disabled />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="crm-key">CRM API Key</Label>
-                <Input id="crm-key" placeholder="Enter your CRM API key" disabled />
+                <Label htmlFor="google-api-key">Google AI API Key</Label>
+                <Input id="google-api-key" placeholder="**************" disabled />
               </div>
             </CardContent>
-            <CardFooter>
-                <Button disabled>Save Integrations</Button>
-            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>

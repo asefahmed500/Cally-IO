@@ -10,8 +10,8 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'LeadKit - Your Intelligent Sales Assistant',
-  description: 'An intelligent sales platform for lead management and outreach.',
+  title: 'Intellecta - Your Intelligent Knowledge Brain',
+  description: 'An intelligent platform for managing and querying your knowledge base.',
 };
 
 export default async function RootLayout({
