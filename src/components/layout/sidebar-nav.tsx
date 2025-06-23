@@ -12,7 +12,7 @@ import {
   SidebarTrigger,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, MessageSquare, Settings, Bot, BookOpen, LogOut } from 'lucide-react';
+import { LayoutDashboard, PenSquare, Settings, Bot, BookOpen, LogOut } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
@@ -66,8 +66,8 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="/chat" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/chat'} tooltip={{children: 'Chat Interface'}}>
-                <a><MessageSquare /><span>Chat Interface</span></a>
+              <SidebarMenuButton asChild isActive={pathname === '/chat'} tooltip={{children: 'Content Studio'}}>
+                <a><PenSquare /><span>Content Studio</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Users, Phone, Cog, PlusCircle } from "lucide-react"
+import { BookOpen, Users, Phone, Cog, PlusCircle, PenSquare } from "lucide-react"
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart"
 import Link from "next/link"
 
@@ -47,15 +47,15 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Leads Generated</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Content Studio</CardTitle>
+            <PenSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">45</div>
-            <p className="text-xs text-muted-foreground">+8 this week</p>
+            <div className="text-2xl font-bold">15 Articles</div>
+            <p className="text-xs text-muted-foreground">+3 this week</p>
             <Link href="/chat" passHref>
               <Button size="sm" variant="outline" className="mt-4 w-full">
-                View Leads
+                Generate Content
               </Button>
             </Link>
           </CardContent>

@@ -1,12 +1,15 @@
 'use client';
 
 import { useState } from 'react';
-import { UploadCloud, File as FileIcon, X } from 'lucide-react';
+import { UploadCloud, File as FileIcon, X, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { storage } from '@/lib/appwrite-client';
+import { ID } from 'appwrite';
 
-export function FileUploader() {
+export function FileUploader({ onUploadComplete }: { onUploadComplete: () => void }) {
   const [files, setFiles] = useState<File[]>([]);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -35,13 +38,44 @@ export function FileUploader() {
     setFiles(files.filter((_, i) => i !== index));
   };
 
-  const handleUpload = () => {
-    // Mock upload functionality
-    toast({
-      title: 'Upload Successful',
-      description: `${files.length} document(s) have been processed and added to the knowledge base.`,
-    });
-    setFiles([]);
+  const handleUpload = async () => {
+    if (files.length === 0) return;
+    setIsUploading(true);
+
+    const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID;
+    if (!bucketId) {
+        toast({
+            variant: 'destructive',
+            title: 'Upload Failed',
+            description: 'Appwrite storage bucket is not configured.',
+        });
+        setIsUploading(false);
+        return;
+    }
+
+    try {
+        const uploadPromises = files.map(file => 
+            storage.createFile(bucketId, ID.unique(), file)
+        );
+        
+        await Promise.all(uploadPromises);
+
+        toast({
+            title: 'Upload Successful',
+            description: `${files.length} document(s) have been added to the knowledge base.`,
+        });
+        setFiles([]);
+        onUploadComplete();
+    } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Upload Failed',
+            description: 'Could not upload files. Please check console for details.',
+        });
+    } finally {
+        setIsUploading(false);
+    }
   };
 
   return (
@@ -57,27 +91,28 @@ export function FileUploader() {
           <span className="font-semibold">Click to upload</span> or drag and drop
         </p>
         <p className="text-xs text-muted-foreground">PDF, DOCX, or TXT (MAX. 10MB each)</p>
-        <input id="file-upload-input" type="file" className="hidden" multiple onChange={handleFileChange} />
+        <input id="file-upload-input" type="file" className="hidden" multiple onChange={handleFileChange} disabled={isUploading} />
       </div>
 
       {files.length > 0 && (
         <div className="space-y-2">
             <h4 className="font-medium">Files to upload:</h4>
-            <ul className="space-y-2">
+            <ul className="space-y-2 max-h-48 overflow-y-auto">
                 {files.map((file, index) => (
                     <li key={index} className="flex items-center justify-between p-2 text-sm rounded-md bg-muted">
                         <div className="flex items-center gap-2 truncate">
                             <FileIcon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
                             <span className="font-medium truncate">{file.name}</span>
                         </div>
-                        <Button variant="ghost" size="icon" className="w-6 h-6 flex-shrink-0" onClick={() => removeFile(index)}>
+                        <Button variant="ghost" size="icon" className="w-6 h-6 flex-shrink-0" onClick={() => removeFile(index)} disabled={isUploading}>
                             <X className="w-4 h-4" />
                         </Button>
                     </li>
                 ))}
             </ul>
-            <Button onClick={handleUpload} className="w-full mt-2">
-              Upload {files.length} file(s)
+            <Button onClick={handleUpload} className="w-full mt-2" disabled={isUploading}>
+              {isUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <UploadCloud className="mr-2 h-4 w-4" />}
+              {isUploading ? 'Uploading...' : `Upload ${files.length} file(s)`}
             </Button>
         </div>
       )}

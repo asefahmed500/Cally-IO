@@ -73,15 +73,6 @@ export default async function SettingsPage() {
               </div>
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                    <Label>Enable Web Search</Label>
-                    <p className="text-sm text-muted-foreground">
-                        Allow the AI to search the web for up-to-date information.
-                    </p>
-                </div>
-                <Switch defaultChecked />
-              </div>
-              <div className="flex items-center justify-between rounded-lg border p-4">
-                <div className="space-y-0.5">
                     <Label>Context Awareness</Label>
                     <p className="text-sm text-muted-foreground">
                         Enable conversation memory for personalized interactions.

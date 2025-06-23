@@ -1,8 +1,8 @@
 'use server';
 /**
- * @fileOverview A helpful AI assistant.
+ * @fileOverview An AI content writing assistant.
  *
- * - researchAssistant - A function that handles user queries.
+ * - researchAssistant - A function that handles user queries for content generation.
  * - ResearchAssistantInput - The input type for the researchAssistant function.
  * - ResearchAssistantOutput - The return type for the researchAssistant function.
  */
@@ -10,9 +10,21 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-// The sessionId is kept for client-side state management (localStorage)
+// Placeholder for a real Keywords AI logging service
+async function logToKeywordsAI(data: any) {
+    console.log("Logging to Keywords AI:", data.input.query);
+    // In a real implementation, you would use the API key to send data
+    // to your Keywords AI endpoint.
+    // const apiKey = process.env.KEYWORDS_AI_API_KEY;
+    // await fetch('https://api.keywordsai.co/v1/log', {
+    //     method: 'POST',
+    //     headers: { 'Authorization': `Bearer ${apiKey}` },
+    //     body: JSON.stringify(data)
+    // });
+}
+
 const ResearchAssistantInputSchema = z.object({
-  query: z.string().describe('The research query from the user.'),
+  query: z.string().describe('The research query or content topic from the user.'),
   sessionId: z.string().describe('A unique identifier for the user session.'),
 });
 export type ResearchAssistantInput = z.infer<
@@ -22,11 +34,7 @@ export type ResearchAssistantInput = z.infer<
 const ResearchAssistantOutputSchema = z.object({
   answer: z
     .string()
-    .describe('The comprehensive answer to the research query.'),
-  sources: z
-    .array(z.string())
-    .describe('A list of web sources used to generate the answer.')
-    .optional(),
+    .describe('The generated content or answer to the research query.'),
 });
 export type ResearchAssistantOutput = z.infer<
   typeof ResearchAssistantOutputSchema
@@ -35,38 +43,40 @@ export type ResearchAssistantOutput = z.infer<
 export async function researchAssistant(
   input: ResearchAssistantInput
 ): Promise<ResearchAssistantOutput> {
-  return researchAssistantFlow(input);
+  return contentGeneratorFlow(input);
 }
 
-const PromptInputSchema = z.object({
-    query: z.string(),
-});
-
 const prompt = ai.definePrompt({
-  name: 'researchAssistantPrompt',
+  name: 'contentGeneratorPrompt',
   input: {
-    schema: PromptInputSchema,
+    schema: z.object({ query: z.string() })
   },
-  output: {schema: ResearchAssistantOutputSchema},
-  prompt: `You are a world-class AI assistant. Your purpose is to provide accurate, and helpful answers to user queries.
+  output: {
+    schema: ResearchAssistantOutputSchema,
+  },
+  prompt: `You are an expert content writer and research assistant. Your goal is to generate high-quality, well-researched content based on the user's request.
 
-User's Query: {{{query}}}`,
+Synthesize the information from your knowledge to create a comprehensive and engaging article or response.
+
+User's Request: {{{query}}}`,
 });
 
-const researchAssistantFlow = ai.defineFlow(
+const contentGeneratorFlow = ai.defineFlow(
   {
-    name: 'researchAssistantFlow',
+    name: 'contentGeneratorFlow',
     inputSchema: ResearchAssistantInputSchema,
     outputSchema: ResearchAssistantOutputSchema,
   },
   async (input) => {
-    // Mem0 functionality has been removed due to installation issues.
-    // The assistant will not have long-term memory for now.
-    
-    const {output} = await prompt({ 
-        query: input.query,
+    const { output } = await prompt({ query: input.query });
+
+    // Log the interaction to Keywords AI
+    await logToKeywordsAI({
+        input,
+        output,
+        timestamp: new Date().toISOString()
     });
-    
+
     return output!;
   }
 );

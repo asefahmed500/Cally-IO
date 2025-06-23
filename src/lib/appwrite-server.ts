@@ -1,4 +1,4 @@
-import { Client, Account, Users } from 'node-appwrite';
+import { Client, Account, Users, Storage } from 'node-appwrite';
 
 const client = new Client()
     .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || '')
@@ -7,3 +7,4 @@ const client = new Client()
 
 export const account = new Account(client);
 export const users = new Users(client);
+export const storage = new Storage(client);

@@ -71,7 +71,7 @@ export default function LandingPage() {
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Leverage our LLM-powered agent that uses your knowledge base and real-time web search to provide accurate answers.
+                    Leverage our LLM-powered agent that uses your knowledge base to provide accurate answers to user questions.
                   </CardDescription>
                 </CardContent>
               </Card>
