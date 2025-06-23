@@ -4,16 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Users, Phone, Cog, PlusCircle, PenSquare } from "lucide-react"
+import { BookOpen, Users, TrendingUp, Cog, PlusCircle, PenSquare } from "lucide-react"
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart"
 import Link from "next/link"
 
 const leads = [
-  { name: "John Doe", status: "Qualified", confidence: "92%", stage: "Demo Scheduled" },
-  { name: "Jane Smith", status: "Contacted", confidence: "78%", stage: "Follow-up" },
-  { name: "Sam Wilson", status: "New", confidence: "65%", stage: "Discovery" },
-  { name: "Alice Johnson", status: "Qualified", confidence: "95%", stage: "Negotiation" },
-  { name: "Bob Brown", status: "Lost", confidence: "34%", stage: "Closed-Lost" },
+  { name: "Project Alpha", status: "On Track", confidence: "92%", stage: "Q2 Analysis" },
+  { name: "Market Research", status: "Completed", confidence: "100%", stage: "Q1 Report" },
+  { name: "New Feature Launch", status: "At Risk", confidence: "65%", stage: "User Feedback" },
+  { name: "Competitor Analysis", status: "On Track", confidence: "95%", stage: "Data Gathering" },
+  { name: "Sales Funnel", status: "Completed", confidence: "88%", stage: "Q1 Optimization" },
 ];
 
 export default async function DashboardPage() {
@@ -32,7 +32,7 @@ export default async function DashboardPage() {
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Knowledge Base</CardTitle>
+            <CardTitle className="text-sm font-medium">Data Sources</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
@@ -47,29 +47,29 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Content Studio</CardTitle>
-            <PenSquare className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Analysis Studio</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">15 Articles</div>
+            <div className="text-2xl font-bold">15 Analyses</div>
             <p className="text-xs text-muted-foreground">+3 this week</p>
             <Link href="/chat" passHref>
               <Button size="sm" variant="outline" className="mt-4 w-full">
-                Generate Content
+                Start Analyzing
               </Button>
             </Link>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Calls Made</CardTitle>
-            <Phone className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">213</div>
-            <p className="text-xs text-muted-foreground">72% connection rate</p>
+            <div className="text-2xl font-bold">4</div>
+            <p className="text-xs text-muted-foreground">in your team</p>
             <Button size="sm" variant="outline" className="mt-4 w-full">
-              View Analytics
+              Manage Team
             </Button>
           </CardContent>
         </Card>
@@ -79,7 +79,7 @@ export default async function DashboardPage() {
             <Cog className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4 Active</div>
+            <div className="text-2xl font-bold">2 Active</div>
             <p className="text-xs text-muted-foreground">Integrations</p>
             <Link href="/settings" passHref>
               <Button size="sm" variant="outline" className="mt-4 w-full">
@@ -96,8 +96,8 @@ export default async function DashboardPage() {
         </div>
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Recent Leads</CardTitle>
-            <CardDescription>A list of recently identified leads.</CardDescription>
+            <CardTitle>Recent Analyses</CardTitle>
+            <CardDescription>A list of recently performed analyses.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
@@ -113,7 +113,7 @@ export default async function DashboardPage() {
                   <TableRow key={lead.name}>
                     <TableCell className="font-medium">{lead.name}</TableCell>
                     <TableCell>
-                      <Badge variant={lead.status === "Qualified" ? "default" : lead.status === "Lost" ? "destructive" : "secondary"}>
+                       <Badge variant={lead.status === "Completed" ? "default" : lead.status === "At Risk" ? "destructive" : "secondary"}>
                         {lead.status}
                       </Badge>
                     </TableCell>

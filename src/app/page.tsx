@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bot, Search, PenSquare, PhoneCall } from "lucide-react"
+import { Bot, Search, DatabaseZap, Sparkles } from "lucide-react"
 import Link from "next/link"
 
 export default function LandingPage() {
@@ -27,10 +27,10 @@ export default function LandingPage() {
                <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Transform Customer Support with AI
+                    Unlock Business Insights with Your Personal AI Analyst
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Cally-IO provides an intelligent, automated platform to manage your knowledge base, generate leads, and analyze customer interactions.
+                    Cally-IO analyzes your data, researches market trends, and delivers actionable insights to drive growth.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
@@ -44,7 +44,7 @@ export default function LandingPage() {
                 width="600"
                 height="400"
                 alt="Hero"
-                data-ai-hint="abstract technology"
+                data-ai-hint="business intelligence dashboard"
                 className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
               />
             </div>
@@ -55,9 +55,9 @@ export default function LandingPage() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Core Features</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need for Smarter Support</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Everything You Need for Smarter Analysis</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  From a powerful AI agent to dynamic script generation, our platform is designed to boost efficiency and customer satisfaction.
+                  From intelligent data analysis to strategic recommendations, our platform is designed to boost your business intelligence.
                 </p>
               </div>
             </div>
@@ -65,39 +65,39 @@ export default function LandingPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
                   <div className="rounded-full bg-primary/10 p-3">
-                    <Bot className="h-6 w-6 text-primary" />
+                    <DatabaseZap className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle>AI-Powered Conversations</CardTitle>
+                  <CardTitle>Intelligent Data Analysis</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Leverage our LLM-powered agent that uses your knowledge base to provide accurate answers to user questions.
+                    Connect your data sources or paste data directly to uncover hidden patterns and opportunities with our AI.
                   </CardDescription>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
                   <div className="rounded-full bg-primary/10 p-3">
-                    <PenSquare className="h-6 w-6 text-primary" />
+                    <Search className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle>Dynamic Script Generation</CardTitle>
+                  <CardTitle>Real-time Market Insights</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Automatically create personalized call scripts for leads based on their profiles and conversation history to improve conversion rates.
+                    Stay ahead of the curve. Our AI provides the latest market trends, competitor analysis, and industry news.
                   </CardDescription>
                 </CardContent>
               </Card>
                <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
                    <div className="rounded-full bg-primary/10 p-3">
-                    <PhoneCall className="h-6 w-6 text-primary" />
+                    <Sparkles className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle>Lead Management</CardTitle>
+                  <CardTitle>Personalized Recommendations</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Identify, qualify, and manage leads generated from customer interactions, seamlessly integrated with your CRM.
+                    Receive tailored advice and strategic recommendations based on your unique business context and goals.
                   </CardDescription>
                 </CardContent>
               </Card>

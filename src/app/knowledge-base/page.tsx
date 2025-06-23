@@ -15,9 +15,9 @@ export default function KnowledgeBasePage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Knowledge Base</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Data Sources</h1>
         <p className="text-muted-foreground">
-          Manage your company's documents to train the AI agent.
+          Manage your documents to provide context to the AI analyst.
         </p>
       </header>
       
@@ -27,7 +27,7 @@ export default function KnowledgeBasePage() {
                 <CardHeader>
                     <CardTitle>Upload Documents</CardTitle>
                     <CardDescription>
-                        Upload PDFs, Word documents, or text files to Appwrite.
+                        Upload CSVs, PDFs, or text files to Appwrite.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>

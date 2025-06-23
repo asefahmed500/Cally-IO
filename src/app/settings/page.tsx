@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
+import { Sheet, Waypoints } from "lucide-react";
 
 export default async function SettingsPage() {
   const user = await getLoggedInUser();
@@ -19,14 +20,14 @@ export default async function SettingsPage() {
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your Cally-IO configuration and integrations.</p>
+        <p className="text-muted-foreground">Manage your Cally-IO configuration, data integrations, and analyst preferences.</p>
       </header>
 
       <Tabs defaultValue="general" className="w-full">
         <TabsList>
           <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="ai">AI Agent</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
+          <TabsTrigger value="ai">AI Analyst</TabsTrigger>
+          <TabsTrigger value="integrations">Data Sources</TabsTrigger>
         </TabsList>
 
         <TabsContent value="general" className="mt-6">
@@ -54,8 +55,8 @@ export default async function SettingsPage() {
         <TabsContent value="ai" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>AI Agent Configuration</CardTitle>
-              <CardDescription>Customize the behavior of your AI assistant and script generator.</CardDescription>
+              <CardTitle>AI Analyst Configuration</CardTitle>
+              <CardDescription>Customize the behavior of your AI business analyst.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
@@ -65,7 +66,7 @@ export default async function SettingsPage() {
                     <SelectValue placeholder="Select a model" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="gemini-pro">Gemini Pro</SelectItem>
+                    <SelectItem value="gemini-pro">Gemini 2.0 Flash</SelectItem>
                     <SelectItem value="gpt-4">GPT-4 Turbo</SelectItem>
                     <SelectItem value="claude-3">Claude 3 Opus</SelectItem>
                   </SelectContent>
@@ -90,31 +91,36 @@ export default async function SettingsPage() {
         <TabsContent value="integrations" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Integrations</CardTitle>
-              <CardDescription>Connect Cally-IO to your favorite tools.</CardDescription>
+              <CardTitle>Data Source Integrations</CardTitle>
+              <CardDescription>Connect Cally-IO to your business data platforms.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-4">
-                    <h3 className="font-medium">Calling</h3>
+                    <div className="flex items-center gap-2">
+                      <Waypoints className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="font-medium">Airtable</h3>
+                    </div>
                     <div className="space-y-2">
-                        <Label htmlFor="twilio-sid">Twilio Account SID</Label>
-                        <Input id="twilio-sid" placeholder="ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+                        <Label htmlFor="airtable-key">API Key</Label>
+                        <Input id="airtable-key" type="password" placeholder="••••••••••••••••••••" />
                     </div>
                      <div className="space-y-2">
-                        <Label htmlFor="twilio-token">Twilio Auth Token</Label>
-                        <Input id="twilio-token" type="password" placeholder="••••••••••••••••••••" />
+                        <Label htmlFor="airtable-base-id">Base ID</Label>
+                        <Input id="airtable-base-id" placeholder="appxxxxxxxxxxxxxx" />
                     </div>
                 </div>
                 <Separator />
                  <div className="space-y-4">
-                    <h3 className="font-medium">CRM</h3>
-                    <div className="space-y-2">
-                        <Label htmlFor="hubspot-key">HubSpot API Key</Label>
-                        <Input id="hubspot-key" type="password" placeholder="••••••••••••••••••••" />
+                    <div className="flex items-center gap-2">
+                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M12 18h1"></path><path d="M15 18h1"></path><path d="M9 18h1"></path><path d="M12.5 15h-1v-2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v2.5a.5.5 0 0 1-.5.5z"></path></svg>
+                      <h3 className="font-medium">Google Sheets</h3>
                     </div>
-                     <div className="space-y-2">
-                        <Label htmlFor="salesforce-key">Salesforce API Key</Label>
-                        <Input id="salesforce-key" type="password" placeholder="••••••••••••••••••••" />
+                    <div className="space-y-2">
+                        <Label>Authentication</Label>
+                        <p className="text-sm text-muted-foreground">
+                            Connect your Google Account to authorize access to Sheets.
+                        </p>
+                         <Button variant="outline">Connect Google Account</Button>
                     </div>
                 </div>
             </CardContent>

@@ -62,7 +62,7 @@ export function FileUploader({ onUploadComplete }: { onUploadComplete: () => voi
 
         toast({
             title: 'Upload Successful',
-            description: `${files.length} document(s) have been added to the knowledge base.`,
+            description: `${files.length} document(s) have been added to your data sources.`,
         });
         setFiles([]);
         onUploadComplete();
@@ -90,7 +90,7 @@ export function FileUploader({ onUploadComplete }: { onUploadComplete: () => voi
         <p className="mb-2 text-sm text-muted-foreground">
           <span className="font-semibold">Click to upload</span> or drag and drop
         </p>
-        <p className="text-xs text-muted-foreground">PDF, DOCX, or TXT (MAX. 10MB each)</p>
+        <p className="text-xs text-muted-foreground">CSV, PDF, DOCX, or TXT (MAX. 10MB each)</p>
         <input id="file-upload-input" type="file" className="hidden" multiple onChange={handleFileChange} disabled={isUploading} />
       </div>
 

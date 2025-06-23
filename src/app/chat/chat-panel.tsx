@@ -1,11 +1,12 @@
+
 "use client"
 
 import { useState, useEffect, useRef, useCallback, FormEvent, ChangeEvent } from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Loader2, Sparkles, Send, User, Bot } from 'lucide-react'
-import { researchAssistant } from '@/ai/flows/ai-agent'
+import { Loader2, Sparkles, User, Bot, TrendingUp } from 'lucide-react'
+import { businessAnalyst } from '@/ai/flows/ai-agent'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -19,7 +20,7 @@ interface Message {
 const SESSION_ID_KEY = 'cally-io-session-id';
 const MESSAGES_KEY_PREFIX = 'cally-io-messages-';
 
-export function ContentPanel() {
+export function AnalysisPanel() {
     const { toast } = useToast()
     const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -43,7 +44,7 @@ export function ContentPanel() {
             setMessages([
                 {
                     role: 'assistant',
-                    content: "Welcome to the Content Studio! What topic should I write about for you today?",
+                    content: "Welcome to the Analysis Studio! Please paste your data or ask a business question to get started.",
                 }
             ]);
         }
@@ -78,14 +79,14 @@ export function ContentPanel() {
         setMessages(prev => [...prev, newUserMessage]);
         
         try {
-            const result = await researchAssistant({ query: currentQuery, sessionId })
-            const newAssistantMessage: Message = { role: 'assistant', content: result.answer };
+            const result = await businessAnalyst({ query: currentQuery, sessionId })
+            const newAssistantMessage: Message = { role: 'assistant', content: result.analysis };
             setMessages(prev => [...prev, newAssistantMessage]);
         } catch (error) {
             console.error(error)
             const errorMessage: Message = { role: 'assistant', content: "Sorry, I ran into an error. Please try again." };
             setMessages(prev => [...prev, errorMessage]);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate content.' })
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate analysis.' })
         } finally {
             setLoading(false)
         }
@@ -101,8 +102,8 @@ export function ContentPanel() {
     return (
         <Card className="flex flex-col h-[75vh]">
             <CardHeader>
-                <CardTitle>AI Content Writer</CardTitle>
-                <CardDescription>Generate articles, blog posts, and more with the power of AI.</CardDescription>
+                <CardTitle>AI Business Analyst</CardTitle>
+                <CardDescription>Analyze data, get market insights, and make smarter decisions.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
                 <ScrollArea className="h-full" viewportRef={viewportRef}>
@@ -131,7 +132,7 @@ export function ContentPanel() {
                                 </Avatar>
                                 <div className="max-w-[75%] rounded-lg p-3 bg-muted flex items-center gap-2">
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span className="text-sm text-muted-foreground">Writing...</span>
+                                    <span className="text-sm text-muted-foreground">Analyzing...</span>
                                 </div>
                             </div>
                         )}
@@ -143,7 +144,7 @@ export function ContentPanel() {
                     <Textarea
                         id="query"
                         name="query"
-                        placeholder="e.g., Write a blog post about the benefits of AI in content creation..."
+                        placeholder="e.g., Analyze this sales data and identify the top-performing region..."
                         value={input}
                         onChange={handleInputChange}
                         required
@@ -157,8 +158,8 @@ export function ContentPanel() {
                         }}
                     />
                     <Button type="submit" size="icon" className="shrink-0" disabled={loading || !input.trim()}>
-                        <Sparkles className="h-4 w-4" />
-                        <span className="sr-only">Generate Content</span>
+                        <TrendingUp className="h-4 w-4" />
+                        <span className="sr-only">Generate Analysis</span>
                     </Button>
                 </form>
             </CardFooter>

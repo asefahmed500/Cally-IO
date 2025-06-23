@@ -1,10 +1,10 @@
 'use server';
 /**
- * @fileOverview An AI content writing assistant.
+ * @fileOverview An AI business analyst agent.
  *
- * - researchAssistant - A function that handles user queries for content generation.
- * - ResearchAssistantInput - The input type for the researchAssistant function.
- * - ResearchAssistantOutput - The return type for the researchAssistant function.
+ * - businessAnalyst - A function that handles user queries for business analysis.
+ * - BusinessAnalystInput - The input type for the businessAnalyst function.
+ * - BusinessAnalystOutput - The return type for the businessAnalyst function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -13,59 +13,62 @@ import {z} from 'genkit';
 // Placeholder for a real Keywords AI logging service
 async function logToKeywordsAI(data: any) {
     console.log("Logging to Keywords AI:", data.input.query);
-    // In a real implementation, you would use the API key to send data
-    // to your Keywords AI endpoint.
-    // const apiKey = process.env.KEYWORDS_AI_API_KEY;
-    // await fetch('https://api.keywordsai.co/v1/log', {
-    //     method: 'POST',
-    //     headers: { 'Authorization': `Bearer ${apiKey}` },
-    //     body: JSON.stringify(data)
-    // });
+    const apiKey = process.env.KEYWORDS_AI_API_KEY;
+    if (apiKey) {
+      // In a real implementation, you would send data to your Keywords AI endpoint.
+      // await fetch('https://api.keywordsai.co/v1/log', {
+      //     method: 'POST',
+      //     headers: { 'Authorization': `Bearer ${apiKey}` },
+      //     body: JSON.stringify(data)
+      // });
+    }
 }
 
-const ResearchAssistantInputSchema = z.object({
-  query: z.string().describe('The research query or content topic from the user.'),
+const BusinessAnalystInputSchema = z.object({
+  query: z.string().describe('The business query or data to be analyzed.'),
   sessionId: z.string().describe('A unique identifier for the user session.'),
 });
-export type ResearchAssistantInput = z.infer<
-  typeof ResearchAssistantInputSchema
+export type BusinessAnalystInput = z.infer<
+  typeof BusinessAnalystInputSchema
 >;
 
-const ResearchAssistantOutputSchema = z.object({
-  answer: z
+const BusinessAnalystOutputSchema = z.object({
+  analysis: z
     .string()
-    .describe('The generated content or answer to the research query.'),
+    .describe('The generated analysis and insights for the business query.'),
 });
-export type ResearchAssistantOutput = z.infer<
-  typeof ResearchAssistantOutputSchema
+export type BusinessAnalystOutput = z.infer<
+  typeof BusinessAnalystOutputSchema
 >;
 
-export async function researchAssistant(
-  input: ResearchAssistantInput
-): Promise<ResearchAssistantOutput> {
-  return contentGeneratorFlow(input);
+export async function businessAnalyst(
+  input: BusinessAnalystInput
+): Promise<BusinessAnalystOutput> {
+  return businessAnalystFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'contentGeneratorPrompt',
+  name: 'businessAnalystPrompt',
   input: {
     schema: z.object({ query: z.string() })
   },
   output: {
-    schema: ResearchAssistantOutputSchema,
+    schema: BusinessAnalystOutputSchema,
   },
-  prompt: `You are an expert content writer and research assistant. Your goal is to generate high-quality, well-researched content based on the user's request.
+  prompt: `You are an expert business analyst and market researcher. Your goal is to provide insightful, data-driven analysis based on the user's request.
 
-Synthesize the information from your knowledge to create a comprehensive and engaging article or response.
+Analyze the provided data or query to identify key trends, generate actionable insights, and answer business questions. If the user asks about market trends, use your extensive knowledge base to provide the most relevant and up-to-date information possible.
+
+Structure your response in a clear, professional format. Use markdown for formatting, such as headings, lists, and bold text, to improve readability.
 
 User's Request: {{{query}}}`,
 });
 
-const contentGeneratorFlow = ai.defineFlow(
+const businessAnalystFlow = ai.defineFlow(
   {
-    name: 'contentGeneratorFlow',
-    inputSchema: ResearchAssistantInputSchema,
-    outputSchema: ResearchAssistantOutputSchema,
+    name: 'businessAnalystFlow',
+    inputSchema: BusinessAnalystInputSchema,
+    outputSchema: BusinessAnalystOutputSchema,
   },
   async (input) => {
     const { output } = await prompt({ query: input.query });
@@ -77,6 +80,6 @@ const contentGeneratorFlow = ai.defineFlow(
         timestamp: new Date().toISOString()
     });
 
-    return output!;
+    return { analysis: output!.analysis };
   }
 );

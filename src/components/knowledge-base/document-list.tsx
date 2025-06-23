@@ -51,7 +51,7 @@ export function DocumentList() {
         } else {
             toast({
                 title: 'Document deleted',
-                description: 'The document has been removed from your knowledge base.',
+                description: 'The document has been removed from your data sources.',
             });
         }
     };
@@ -60,7 +60,7 @@ export function DocumentList() {
         <Card>
             <CardHeader>
                 <CardTitle>Uploaded Documents</CardTitle>
-                <CardDescription>These documents form the AI's knowledge base.</CardDescription>
+                <CardDescription>These documents provide context to the AI analyst.</CardDescription>
             </CardHeader>
             <CardContent>
                 {loading ? (
