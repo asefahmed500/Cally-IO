@@ -2,7 +2,7 @@ import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { BookOpenCheck, BrainCircuit } from "lucide-react";
+import { BookOpenCheck, MessageSquare } from "lucide-react";
 import Link from "next/link";
 
 export default async function DashboardPage() {
@@ -45,18 +45,20 @@ export default async function DashboardPage() {
             <CardHeader>
                 <div className="flex items-center gap-3 mb-2">
                     <div className="p-2 bg-primary/10 rounded-md">
-                        <BrainCircuit className="h-6 w-6 text-primary" />
+                        <MessageSquare className="h-6 w-6 text-primary" />
                     </div>
                     <CardTitle>AI Assistant</CardTitle>
                 </div>
                 <CardDescription>
-                    Once your documents are processed, you can interact with your AI assistant to get instant, accurate answers based on your knowledge base. (Coming Soon)
+                    Once your documents are processed, you can interact with your AI assistant to get instant, accurate answers based on your knowledge base.
                 </CardDescription>
             </CardHeader>
             <CardContent>
-                 <Button disabled>
-                    Chat with AI Assistant
-                </Button>
+                 <Link href="/assistant" passHref>
+                    <Button>
+                        Chat with AI Assistant
+                    </Button>
+                </Link>
             </CardContent>
         </Card>
       </div>
