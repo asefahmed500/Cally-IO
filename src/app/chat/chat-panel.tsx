@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import type { ChangeEvent, FormEvent } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -8,8 +8,9 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Loader2, Sparkles, Send, User, Bot } from 'lucide-react'
-import { accurateComprehensiveAnswers } from '@/ai/flows/ai-agent'
-import type { AccurateComprehensiveAnswersOutput } from '@/ai/flows/ai-agent'
+// Renaming imports to match the new flow
+import { researchAssistant } from '@/ai/flows/ai-agent'
+import type { ResearchAssistantOutput } from '@/ai/flows/ai-agent'
 import { generateCallScript } from '@/ai/flows/script-generator'
 import type { GenerateCallScriptOutput } from '@/ai/flows/script-generator'
 import { useToast } from '@/hooks/use-toast'
@@ -23,21 +24,18 @@ interface Message {
     sources?: string[]
 }
 
+const SESSION_ID_KEY = 'cally-io-session-id';
+const MESSAGES_KEY_PREFIX = 'cally-io-messages-';
+
 export function ChatPanel() {
     const { toast } = useToast()
-    const scrollAreaRef = useRef<HTMLDivElement>(null);
     const viewportRef = useRef<HTMLDivElement>(null);
 
     // AI Assistant state
-    const [sessionId, setSessionId] = useState('')
+    const [sessionId, setSessionId] = useState<string | null>(null)
     const [assistantLoading, setAssistantLoading] = useState(false)
-    const [assistantInput, setAssistantInput] = useState({ query: '', companyDocs: '' })
-    const [messages, setMessages] = useState<Message[]>([
-        {
-            role: 'assistant',
-            content: "Hi! I'm your AI assistant. How can I help you today?",
-        }
-    ])
+    const [assistantInput, setAssistantInput] = useState({ query: '' })
+    const [messages, setMessages] = useState<Message[]>([])
 
     // Script Generator state
     const [scriptLoading, setScriptLoading] = useState(false)
@@ -45,9 +43,34 @@ export function ChatPanel() {
     const [scriptResult, setScriptResult] = useState<GenerateCallScriptOutput | null>(null)
 
     useEffect(() => {
-        // Generate a unique session ID for the chat when the component mounts.
-        setSessionId(crypto.randomUUID())
-    }, [])
+        // Retrieve or generate a session ID and store it in localStorage.
+        let storedSessionId = localStorage.getItem(SESSION_ID_KEY);
+        if (!storedSessionId) {
+            storedSessionId = crypto.randomUUID();
+            localStorage.setItem(SESSION_ID_KEY, storedSessionId);
+        }
+        setSessionId(storedSessionId);
+
+        // Load messages from localStorage for the current session
+        const storedMessages = localStorage.getItem(`${MESSAGES_KEY_PREFIX}${storedSessionId}`);
+        if (storedMessages) {
+            setMessages(JSON.parse(storedMessages));
+        } else {
+            setMessages([
+                {
+                    role: 'assistant',
+                    content: "Hi! I'm your AI research assistant. How can I help you today?",
+                }
+            ]);
+        }
+    }, []);
+
+    useEffect(() => {
+        // Save messages to localStorage whenever they change
+        if (sessionId && messages.length > 0) {
+            localStorage.setItem(`${MESSAGES_KEY_PREFIX}${sessionId}`, JSON.stringify(messages));
+        }
+    }, [messages, sessionId]);
 
     useEffect(() => {
         // Scroll to the bottom of the chat on new messages
@@ -58,7 +81,7 @@ export function ChatPanel() {
             });
         }
     }, [messages]);
-
+    
     const handleAssistantInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
         setAssistantInput({ ...assistantInput, [e.target.name]: e.target.value })
     }
@@ -67,21 +90,18 @@ export function ChatPanel() {
         setScriptInput({ ...scriptInput, [e.target.name]: e.target.value })
     }
 
-    const handleAssistantSubmit = async (e: FormEvent) => {
-        e.preventDefault()
-        if (!assistantInput.query.trim() || !sessionId) {
+    const handleAssistantSubmit = useCallback(async (currentQuery: string) => {
+        if (!currentQuery.trim()) {
             return
         }
         setAssistantLoading(true)
         
-        const newUserMessage: Message = { role: 'user', content: assistantInput.query };
+        const newUserMessage: Message = { role: 'user', content: currentQuery };
         setMessages(prev => [...prev, newUserMessage]);
         
-        const currentQuery = assistantInput.query;
-        setAssistantInput(prev => ({ ...prev, query: '' })); // Clear input immediately
-
         try {
-            const result = await accurateComprehensiveAnswers({ ...assistantInput, query: currentQuery, sessionId })
+            // Using the new research assistant flow
+            const result = await researchAssistant({ query: currentQuery })
             const newAssistantMessage: Message = { role: 'assistant', content: result.answer, sources: result.sources };
             setMessages(prev => [...prev, newAssistantMessage]);
         } catch (error) {
@@ -92,6 +112,13 @@ export function ChatPanel() {
         } finally {
             setAssistantLoading(false)
         }
+    }, [toast]);
+
+    const handleFormSubmit = (e: FormEvent) => {
+        e.preventDefault();
+        const query = assistantInput.query;
+        setAssistantInput({ query: '' });
+        handleAssistantSubmit(query);
     }
 
     const handleScriptSubmit = async (e: FormEvent) => {
@@ -116,14 +143,14 @@ export function ChatPanel() {
     return (
         <Tabs defaultValue="assistant" className="w-full">
             <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="assistant">AI Assistant</TabsTrigger>
+                <TabsTrigger value="assistant">Research Assistant</TabsTrigger>
                 <TabsTrigger value="generator">Script Generator</TabsTrigger>
             </TabsList>
             <TabsContent value="assistant">
                 <Card className="flex flex-col h-[75vh]">
                     <CardHeader>
-                        <CardTitle>AI Assistant</CardTitle>
-                        <CardDescription>A conversational agent with web search and memory.</CardDescription>
+                        <CardTitle>AI Research Assistant</CardTitle>
+                        <CardDescription>Your AI-powered research partner with web search and memory.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-hidden p-0">
                         <ScrollArea className="h-full" viewportRef={viewportRef}>
@@ -141,7 +168,7 @@ export function ChatPanel() {
                                                 <div className="mt-2 border-t pt-2">
                                                     <h4 className="font-semibold text-xs mb-1">Sources:</h4>
                                                     <ul className="list-disc pl-4 space-y-1">
-                                                        {message.sources.map((source, i) => <li key={i} className="text-xs opacity-80">{source}</li>)}
+                                                        {message.sources.map((source, i) => <li key={i} className="text-xs opacity-80 break-all"><a href={source} target="_blank" rel="noopener noreferrer" className="hover:underline">{source}</a></li>)}
                                                     </ul>
                                                 </div>
                                             )}
@@ -160,7 +187,7 @@ export function ChatPanel() {
                                         </Avatar>
                                         <div className="max-w-[75%] rounded-lg p-3 bg-muted flex items-center gap-2">
                                             <Loader2 className="h-4 w-4 animate-spin" />
-                                            <span className="text-sm text-muted-foreground">Thinking...</span>
+                                            <span className="text-sm text-muted-foreground">Researching...</span>
                                         </div>
                                     </div>
                                 )}
@@ -168,11 +195,11 @@ export function ChatPanel() {
                         </ScrollArea>
                     </CardContent>
                     <CardFooter className="pt-4 border-t">
-                         <form onSubmit={handleAssistantSubmit} className="flex w-full items-start gap-4">
+                         <form onSubmit={handleFormSubmit} className="flex w-full items-start gap-4">
                             <Textarea
                                 id="query"
                                 name="query"
-                                placeholder="Ask the AI assistant anything..."
+                                placeholder="Ask the AI to research anything..."
                                 value={assistantInput.query}
                                 onChange={handleAssistantInputChange}
                                 required
@@ -181,7 +208,7 @@ export function ChatPanel() {
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter' && !e.shiftKey) {
                                         e.preventDefault();
-                                        handleAssistantSubmit(e);
+                                        handleFormSubmit(e);
                                     }
                                 }}
                             />
