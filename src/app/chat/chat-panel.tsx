@@ -1,21 +1,19 @@
 "use client"
 
-import { useState, useEffect, useRef, useCallback } from 'react'
-import type { ChangeEvent, FormEvent } from 'react'
+import { useState, useEffect, useRef, useCallback, FormEvent, ChangeEvent } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
 import { Loader2, Sparkles, Send, User, Bot } from 'lucide-react'
-// Renaming imports to match the new flow
 import { researchAssistant } from '@/ai/flows/ai-agent'
 import type { ResearchAssistantOutput } from '@/ai/flows/ai-agent'
 import { generateCallScript } from '@/ai/flows/script-generator'
 import type { GenerateCallScriptOutput } from '@/ai/flows/script-generator'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 
 interface Message {
@@ -32,7 +30,7 @@ export function ChatPanel() {
     const viewportRef = useRef<HTMLDivElement>(null);
 
     // AI Assistant state
-    const [sessionId, setSessionId] = useState<string | null>(null)
+    const [sessionId, setSessionId] = useState<string>('')
     const [assistantLoading, setAssistantLoading] = useState(false)
     const [assistantInput, setAssistantInput] = useState({ query: '' })
     const [messages, setMessages] = useState<Message[]>([])
@@ -91,7 +89,7 @@ export function ChatPanel() {
     }
 
     const handleAssistantSubmit = useCallback(async (currentQuery: string) => {
-        if (!currentQuery.trim()) {
+        if (!currentQuery.trim() || !sessionId) {
             return
         }
         setAssistantLoading(true)
@@ -100,8 +98,7 @@ export function ChatPanel() {
         setMessages(prev => [...prev, newUserMessage]);
         
         try {
-            // Using the new research assistant flow
-            const result = await researchAssistant({ query: currentQuery })
+            const result = await researchAssistant({ query: currentQuery, sessionId })
             const newAssistantMessage: Message = { role: 'assistant', content: result.answer, sources: result.sources };
             setMessages(prev => [...prev, newAssistantMessage]);
         } catch (error) {
@@ -112,7 +109,7 @@ export function ChatPanel() {
         } finally {
             setAssistantLoading(false)
         }
-    }, [toast]);
+    }, [toast, sessionId]);
 
     const handleFormSubmit = (e: FormEvent) => {
         e.preventDefault();
@@ -150,7 +147,7 @@ export function ChatPanel() {
                 <Card className="flex flex-col h-[75vh]">
                     <CardHeader>
                         <CardTitle>AI Research Assistant</CardTitle>
-                        <CardDescription>Your AI-powered research partner with web search and memory.</CardDescription>
+                        <CardDescription>Your AI-powered research partner with long-term memory.</CardDescription>
                     </CardHeader>
                     <CardContent className="flex-1 overflow-hidden p-0">
                         <ScrollArea className="h-full" viewportRef={viewportRef}>
@@ -187,7 +184,7 @@ export function ChatPanel() {
                                         </Avatar>
                                         <div className="max-w-[75%] rounded-lg p-3 bg-muted flex items-center gap-2">
                                             <Loader2 className="h-4 w-4 animate-spin" />
-                                            <span className="text-sm text-muted-foreground">Researching...</span>
+                                            <span className="text-sm text-muted-foreground">Thinking...</span>
                                         </div>
                                     </div>
                                 )}
@@ -199,7 +196,7 @@ export function ChatPanel() {
                             <Textarea
                                 id="query"
                                 name="query"
-                                placeholder="Ask the AI to research anything..."
+                                placeholder="Ask the AI anything..."
                                 value={assistantInput.query}
                                 onChange={handleAssistantInputChange}
                                 required

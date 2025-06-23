@@ -10,15 +10,15 @@
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-// Update schema to reflect a more generic assistant
+// The sessionId is kept for client-side state management (localStorage)
 const ResearchAssistantInputSchema = z.object({
   query: z.string().describe('The research query from the user.'),
+  sessionId: z.string().describe('A unique identifier for the user session.'),
 });
 export type ResearchAssistantInput = z.infer<
   typeof ResearchAssistantInputSchema
 >;
 
-// Remove sources from the output, as web search is disabled.
 const ResearchAssistantOutputSchema = z.object({
   answer: z
     .string()
@@ -32,20 +32,23 @@ export type ResearchAssistantOutput = z.infer<
   typeof ResearchAssistantOutputSchema
 >;
 
-// Rename exported function for clarity
 export async function researchAssistant(
   input: ResearchAssistantInput
 ): Promise<ResearchAssistantOutput> {
   return researchAssistantFlow(input);
 }
 
+const PromptInputSchema = z.object({
+    query: z.string(),
+});
+
 const prompt = ai.definePrompt({
   name: 'researchAssistantPrompt',
   input: {
-    schema: ResearchAssistantInputSchema,
+    schema: PromptInputSchema,
   },
   output: {schema: ResearchAssistantOutputSchema},
-  prompt: `You are a world-class AI assistant. Your purpose is to provide accurate, and helpful answers to user queries based on your internal knowledge.
+  prompt: `You are a world-class AI assistant. Your purpose is to provide accurate, and helpful answers to user queries.
 
 User's Query: {{{query}}}`,
 });
@@ -57,7 +60,13 @@ const researchAssistantFlow = ai.defineFlow(
     outputSchema: ResearchAssistantOutputSchema,
   },
   async (input) => {
-    const {output} = await prompt(input);
+    // Mem0 functionality has been removed due to installation issues.
+    // The assistant will not have long-term memory for now.
+    
+    const {output} = await prompt({ 
+        query: input.query,
+    });
+    
     return output!;
   }
 );
