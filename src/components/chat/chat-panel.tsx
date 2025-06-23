@@ -1,23 +1,90 @@
 'use client';
 import * as React from 'react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, User, Bot, Loader2 } from 'lucide-react';
+import { Send, User, Bot, Loader2, Paperclip } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
+import { storage } from '@/lib/appwrite-client';
+import { ID } from 'appwrite';
+import { processDocument } from '@/ai/flows/process-document';
 
-export function ChatPanel() {
+async function fileToDataUri(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+export function ChatPanel({ disabled }: { disabled?: boolean }) {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
+  };
+
+  const handleFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    setIsLoading(true);
+    toast({
+      title: 'Uploading document...',
+      description: `Processing "${file.name}". This may take a moment.`,
+    });
+
+    try {
+      if (!process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID) {
+        throw new Error('Appwrite storage bucket not configured.');
+      }
+      // 1. Upload file to Appwrite Storage
+      const fileUploadResponse = await storage.createFile(
+        process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID,
+        ID.unique(),
+        file
+      );
+      const documentId = fileUploadResponse.$id;
+
+      // 2. Convert file to data URI for processing
+      const fileDataUri = await fileToDataUri(file);
+
+      // 3. Call the Genkit flow to process the document
+      await processDocument({
+        fileDataUri,
+        fileName: file.name,
+        documentId,
+      });
+
+      toast({
+        title: 'Success!',
+        description: `"${file.name}" has been processed and is ready for questions.`,
+      });
+    } catch (error: any) {
+      console.error('Error processing document:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error processing document',
+        description: error.message || 'An unknown error occurred.',
+      });
+    } finally {
+      setIsLoading(false);
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -72,9 +139,7 @@ export function ChatPanel() {
         title: 'Error',
         description: 'Failed to get a response from the AI assistant.',
       });
-      setMessages((prev) =>
-        prev.filter((msg) => msg.content !== '')
-      );
+      setMessages((prev) => prev.filter((msg) => msg.content !== ''));
     } finally {
       setIsLoading(false);
     }
@@ -82,20 +147,20 @@ export function ChatPanel() {
 
   React.useEffect(() => {
     if (scrollAreaRef.current) {
-        scrollAreaRef.current.scrollTo({
-            top: scrollAreaRef.current.scrollHeight,
-            behavior: 'smooth'
-        });
+      scrollAreaRef.current.scrollTo({
+        top: scrollAreaRef.current.scrollHeight,
+        behavior: 'smooth',
+      });
     }
   }, [messages]);
-  
+
   return (
     <div className="flex flex-col h-[calc(100%-4rem)]">
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-6 pr-4">
           {messages.length === 0 && (
-             <div className="text-center text-muted-foreground p-8">
-                Start a conversation with Cally-IO.
+            <div className="text-center text-muted-foreground p-8">
+              {disabled ? 'Please configure the application to enable chat.' : 'Start a conversation with Cally-IO.'}
             </div>
           )}
           {messages.map((message, index) => (
@@ -108,12 +173,14 @@ export function ChatPanel() {
             >
               {message.role === 'model' && (
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback><Bot /></AvatarFallback>
+                  <AvatarFallback>
+                    <Bot />
+                  </AvatarFallback>
                 </Avatar>
               )}
               <div
                 className={cn(
-                  'max-w-md rounded-lg p-3 text-sm',
+                  'max-w-prose rounded-lg p-3 text-sm',
                   message.role === 'user'
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-muted'
@@ -123,34 +190,64 @@ export function ChatPanel() {
               </div>
               {message.role === 'user' && (
                 <Avatar className="h-8 w-8">
-                  <AvatarFallback><User /></AvatarFallback>
+                  <AvatarFallback>
+                    <User />
+                  </AvatarFallback>
                 </Avatar>
               )}
             </div>
           ))}
-          {isLoading && messages[messages.length -1].role === 'user' && (
-             <div className="flex items-start gap-4">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback><Bot /></AvatarFallback>
-                </Avatar>
-                <div className="max-w-md rounded-lg p-3 text-sm bg-muted">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                </div>
+          {isLoading && messages[messages.length - 1]?.role === 'user' && (
+            <div className="flex items-start gap-4">
+              <Avatar className="h-8 w-8">
+                <AvatarFallback>
+                  <Bot />
+                </AvatarFallback>
+              </Avatar>
+              <div className="max-w-md rounded-lg p-3 text-sm bg-muted">
+                <Loader2 className="h-5 w-5 animate-spin" />
+              </div>
             </div>
           )}
         </div>
       </ScrollArea>
       <div className="mt-4">
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileChange}
+            className="hidden"
+            accept=".pdf,.docx,.txt"
+            disabled={isLoading || disabled}
+          />
+          <Button
+            type="button"
+            size="icon"
+            variant="ghost"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={isLoading || disabled}
+          >
+            <Paperclip className="h-4 w-4" />
+            <span className="sr-only">Attach Document</span>
+          </Button>
           <Input
             value={input}
             onChange={handleInputChange}
             placeholder="Ask anything..."
             className="flex-1"
-            disabled={isLoading}
+            disabled={isLoading || disabled}
           />
-          <Button type="submit" size="icon" disabled={isLoading || !input.trim()}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+          <Button
+            type="submit"
+            size="icon"
+            disabled={isLoading || !input.trim() || disabled}
+          >
+            {isLoading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Send className="h-4 w-4" />
+            )}
             <span className="sr-only">Send</span>
           </Button>
         </form>

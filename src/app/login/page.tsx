@@ -44,6 +44,11 @@ export default function LoginPage() {
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" name="password" required />
             </div>
+            <div className="text-right text-sm">
+                <Link href="#" className="underline" prefetch={false}>
+                    Forgot password?
+                </Link>
+            </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <SubmitButton />

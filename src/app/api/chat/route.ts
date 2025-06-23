@@ -1,4 +1,4 @@
-import { conversationalChat } from '@/ai/flows/conversational-chat';
+import { conversationalRagChat } from '@/ai/flows/conversational-chat';
 import { streamFlow } from '@genkit-ai/next/server';
 import { z } from 'zod';
 
@@ -20,5 +20,5 @@ export async function POST(req: Request) {
     return new Response('Invalid request', { status: 400 });
   }
 
-  return streamFlow(conversationalChat, validatedRequest.data);
+  return streamFlow(conversationalRagChat, validatedRequest.data);
 }

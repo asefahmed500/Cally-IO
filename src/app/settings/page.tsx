@@ -6,7 +6,22 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { KeyRound, Share2 } from "lucide-react";
+import { KeyRound, Users, FileText, BotMessageSquare } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+
+function StatCard({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) {
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{value}</div>
+            </CardContent>
+        </Card>
+    )
+}
 
 export default async function SettingsPage() {
   const user = await getLoggedInUser();
@@ -20,12 +35,28 @@ export default async function SettingsPage() {
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">Manage your account and application settings.</p>
       </header>
+        
+      <Card>
+        <CardHeader>
+          <CardTitle>Usage Dashboard</CardTitle>
+          <CardDescription>Overview of your current usage and statistics.</CardDescription>
+        </CardHeader>
+        <CardContent>
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <StatCard title="Active Users" value="1" icon={Users} />
+                <StatCard title="Documents" value="0" icon={FileText} />
+                <StatCard title="Conversations" value="0" icon={BotMessageSquare} />
+                <StatCard title="Storage Used" value="0 GB / 20 GB" icon={KeyRound} />
+            </div>
+        </CardContent>
+      </Card>
+
+      <Separator />
 
       <Tabs defaultValue="account" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account" className="mt-6">
@@ -72,34 +103,6 @@ export default async function SettingsPage() {
             </CardContent>
             <CardFooter>
                 <Button>Update Password</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-
-         <TabsContent value="integrations" className="mt-6">
-           <Card>
-            <CardHeader>
-              <CardTitle>CRM & API Integrations</CardTitle>
-              <CardDescription>Connect LeadKit to your favorite tools.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-               <Alert>
-                  <KeyRound className="h-4 w-4" />
-                  <AlertTitle>Google AI API Key</AlertTitle>
-                  <AlertDescription>
-                    Your Google AI API key is configured on the server. You can manage it in your project's environment variables.
-                  </AlertDescription>
-                </Alert>
-                <Alert>
-                  <Share2 className="h-4 w-4" />
-                  <AlertTitle>Connect your CRM</AlertTitle>
-                  <AlertDescription>
-                    Integrate with platforms like Salesforce or HubSpot to automatically sync leads and activities. (Integration point)
-                  </AlertDescription>
-                </Alert>
-            </CardContent>
-             <CardFooter>
-                <Button disabled>Manage Integrations</Button>
             </CardFooter>
           </Card>
         </TabsContent>
