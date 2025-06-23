@@ -29,7 +29,14 @@ export async function processDocument(input: ProcessDocumentInput): Promise<{ su
   } catch (error: any) {
     console.error("Error processing document:", error);
     // Clean up the file from storage if processing fails
-    await storage.deleteFile(process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!, input.fileId);
+    const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID;
+    if (bucketId) {
+        try {
+            await storage.deleteFile(bucketId, input.fileId);
+        } catch (cleanupError) {
+            console.error("Failed to clean up file from storage:", cleanupError);
+        }
+    }
     return { success: false, message: error.message || "An unknown error occurred." };
   }
 }
@@ -48,12 +55,12 @@ const processDocumentFlow = ai.defineFlow(
     outputSchema: z.string(),
   },
   async ({ fileId, fileName, userId }) => {
-    const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!;
-    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID!;
+    const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID;
+    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
 
     if (!bucketId || !databaseId || !collectionId) {
-      throw new Error("Appwrite environment variables are not configured correctly.");
+      throw new Error("Appwrite environment variables are not configured correctly. Please check your .env file.");
     }
     
     let loader;

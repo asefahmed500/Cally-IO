@@ -10,8 +10,8 @@ interface DocumentListProps {
 }
 
 export async function DocumentList({ userId }: DocumentListProps) {
-  const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-  const collectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID!;
+  const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+  const collectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
 
   if (!databaseId || !collectionId) {
     return (
