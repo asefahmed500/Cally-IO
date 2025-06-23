@@ -8,7 +8,7 @@ import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown } from 'lucid
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
-import { storage } from '@/lib/appwrite-client';
+import { storage, appwriteStorageBucketId } from '@/lib/appwrite-client';
 import { ID } from 'appwrite';
 import { processDocument } from '@/ai/flows/process-document';
 
@@ -29,6 +29,10 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  };
+
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -42,12 +46,13 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
     });
 
     try {
-      if (!process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID) {
+      const bucketId = await appwriteStorageBucketId();
+      if (!bucketId) {
         throw new Error('Appwrite storage bucket not configured.');
       }
       // 1. Upload file to Appwrite Storage
       const fileUploadResponse = await storage.createFile(
-        process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID,
+        bucketId,
         ID.unique(),
         file
       );
@@ -101,6 +106,7 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
     setIsLoading(true);
 
     let modelResponse = '';
+    const fullHistory = [...messages, userMessage];
 
     try {
       const response = await fetch('/api/chat', {
@@ -109,7 +115,7 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          history: messages,
+          history: messages, // Send history *before* the new user message
           prompt: input,
         }),
       });
@@ -121,10 +127,10 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       
-
+      // Add a placeholder for the model's response
       setMessages((prev) => [
         ...prev,
-        { role: 'model', content: modelResponse },
+        { role: 'model', content: '' },
       ]);
 
       while (true) {
@@ -145,7 +151,9 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
         title: 'Error',
         description: 'Failed to get a response from the AI assistant.',
       });
-      setMessages((prev) => prev.filter((msg) => msg.content !== ''));
+      // Remove the user message and the empty model message on error
+      setMessages((prev) => prev.slice(0, prev.length - 2));
+
     } finally {
       setIsLoading(false);
     }
@@ -153,8 +161,9 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
 
   React.useEffect(() => {
     if (scrollAreaRef.current) {
+      const { scrollHeight, clientHeight } = scrollAreaRef.current;
       scrollAreaRef.current.scrollTo({
-        top: scrollAreaRef.current.scrollHeight,
+        top: scrollHeight - clientHeight,
         behavior: 'smooth',
       });
     }
@@ -195,7 +204,7 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
                 >
                     <p className="whitespace-pre-wrap">{message.content}</p>
                 </div>
-                {message.role === 'model' && message.content && (
+                {message.role === 'model' && message.content && !isLoading && (
                     <div className="flex items-center gap-2">
                         <p className="text-xs text-muted-foreground">Generated with high confidence.</p>
                         <div className="flex items-center gap-1">
@@ -218,7 +227,7 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
               )}
             </div>
           ))}
-          {isLoading && messages[messages.length - 1]?.role === 'user' && (
+          {isLoading && messages[messages.length-1]?.role === 'user' && (
             <div className="flex items-start gap-4">
               <Avatar className="h-8 w-8">
                 <AvatarFallback>

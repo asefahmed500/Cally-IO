@@ -33,14 +33,14 @@ export type Message = z.infer<typeof MessageSchema>;
 
 // Helper function to calculate cosine similarity
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
-  if (vecA.length !== vecB.length) {
+  if (!vecA || !vecB || vecA.length !== vecB.length) {
     return 0;
   }
   let dotProduct = 0;
   let normA = 0;
   let normB = 0;
   for (let i = 0; i < vecA.length; i++) {
-    dotProduct += vecA[i] * vecA[i];
+    dotProduct += vecA[i] * vecB[i];
     normA += vecA[i] * vecA[i];
     normB += vecB[i] * vecB[i];
   }
@@ -54,7 +54,10 @@ async function searchEmbeddings(
   query: string,
   userId: string
 ): Promise<string> {
-  if (!appwriteDatabaseId || !appwriteEmbeddingsCollectionId) {
+  const dbId = await appwriteDatabaseId();
+  const collectionId = await appwriteEmbeddingsCollectionId();
+
+  if (!dbId || !collectionId) {
     console.warn(
       'Appwrite database/collection not configured. Skipping search.'
     );
@@ -68,8 +71,8 @@ async function searchEmbeddings(
 
   try {
     const response = await appwriteDatabases.listDocuments(
-      appwriteDatabaseId,
-      appwriteEmbeddingsCollectionId,
+      dbId,
+      collectionId,
       [Query.equal('userId', userId), Query.limit(100)] // Fetch more to sort in-memory
     );
 
@@ -84,7 +87,13 @@ async function searchEmbeddings(
 
     documentsWithSimilarity.sort((a, b) => b.similarity - a.similarity);
 
-    const topResults = documentsWithSimilarity.slice(0, 5);
+    // Filter out results with low similarity
+    const topResults = documentsWithSimilarity.filter(d => d.similarity > 0.7).slice(0, 5);
+
+    if (topResults.length === 0) {
+        return '';
+    }
+
     const context = topResults
       .map((doc) => `File: ${doc.fileName}\nContent: ${doc.chunkText}`)
       .join('\n\n---\n\n');
