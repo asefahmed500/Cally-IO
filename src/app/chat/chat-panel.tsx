@@ -5,8 +5,8 @@ import { useState, useEffect, useRef, useCallback, FormEvent, ChangeEvent } from
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Loader2, Sparkles, User, Bot, TrendingUp } from 'lucide-react'
-import { businessAnalyst } from '@/ai/flows/ai-agent'
+import { Loader2, User, Bot, GraduationCap } from 'lucide-react'
+import { learningCompanion } from '@/ai/flows/ai-agent'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -20,7 +20,7 @@ interface Message {
 const SESSION_ID_KEY = 'cally-io-session-id';
 const MESSAGES_KEY_PREFIX = 'cally-io-messages-';
 
-export function AnalysisPanel() {
+export function LearningPanel() {
     const { toast } = useToast()
     const viewportRef = useRef<HTMLDivElement>(null);
 
@@ -44,7 +44,7 @@ export function AnalysisPanel() {
             setMessages([
                 {
                     role: 'assistant',
-                    content: "Welcome to the Analysis Studio! Please paste your data or ask a business question to get started.",
+                    content: "Hello! I'm your AI Learning Companion. What topic would you like to explore today?",
                 }
             ]);
         }
@@ -79,14 +79,14 @@ export function AnalysisPanel() {
         setMessages(prev => [...prev, newUserMessage]);
         
         try {
-            const result = await businessAnalyst({ query: currentQuery, sessionId })
-            const newAssistantMessage: Message = { role: 'assistant', content: result.analysis };
+            const result = await learningCompanion({ query: currentQuery, sessionId })
+            const newAssistantMessage: Message = { role: 'assistant', content: result.explanation };
             setMessages(prev => [...prev, newAssistantMessage]);
         } catch (error) {
             console.error(error)
             const errorMessage: Message = { role: 'assistant', content: "Sorry, I ran into an error. Please try again." };
             setMessages(prev => [...prev, errorMessage]);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate analysis.' })
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to get explanation.' })
         } finally {
             setLoading(false)
         }
@@ -102,8 +102,8 @@ export function AnalysisPanel() {
     return (
         <Card className="flex flex-col h-[75vh]">
             <CardHeader>
-                <CardTitle>AI Business Analyst</CardTitle>
-                <CardDescription>Analyze data, get market insights, and make smarter decisions.</CardDescription>
+                <CardTitle>AI Learning Companion</CardTitle>
+                <CardDescription>Ask me anything! I'm here to help you learn and understand new topics.</CardDescription>
             </CardHeader>
             <CardContent className="flex-1 overflow-hidden p-0">
                 <ScrollArea className="h-full" viewportRef={viewportRef}>
@@ -132,7 +132,7 @@ export function AnalysisPanel() {
                                 </Avatar>
                                 <div className="max-w-[75%] rounded-lg p-3 bg-muted flex items-center gap-2">
                                     <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span className="text-sm text-muted-foreground">Analyzing...</span>
+                                    <span className="text-sm text-muted-foreground">Thinking...</span>
                                 </div>
                             </div>
                         )}
@@ -144,7 +144,7 @@ export function AnalysisPanel() {
                     <Textarea
                         id="query"
                         name="query"
-                        placeholder="e.g., Analyze this sales data and identify the top-performing region..."
+                        placeholder="e.g., Explain the theory of relativity in simple terms..."
                         value={input}
                         onChange={handleInputChange}
                         required
@@ -158,8 +158,8 @@ export function AnalysisPanel() {
                         }}
                     />
                     <Button type="submit" size="icon" className="shrink-0" disabled={loading || !input.trim()}>
-                        <TrendingUp className="h-4 w-4" />
-                        <span className="sr-only">Generate Analysis</span>
+                        <GraduationCap className="h-4 w-4" />
+                        <span className="sr-only">Ask</span>
                     </Button>
                 </form>
             </CardFooter>

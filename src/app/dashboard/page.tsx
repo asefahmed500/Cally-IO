@@ -4,16 +4,16 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Button } from "@/components/ui/button"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Badge } from "@/components/ui/badge"
-import { BookOpen, Users, TrendingUp, Cog, PlusCircle, PenSquare } from "lucide-react"
+import { BookOpen, Users, GraduationCap, Cog, PlusCircle } from "lucide-react"
 import { AnalyticsChart } from "@/components/dashboard/analytics-chart"
 import Link from "next/link"
 
-const leads = [
-  { name: "Project Alpha", status: "On Track", confidence: "92%", stage: "Q2 Analysis" },
-  { name: "Market Research", status: "Completed", confidence: "100%", stage: "Q1 Report" },
-  { name: "New Feature Launch", status: "At Risk", confidence: "65%", stage: "User Feedback" },
-  { name: "Competitor Analysis", status: "On Track", confidence: "95%", stage: "Data Gathering" },
-  { name: "Sales Funnel", status: "Completed", confidence: "88%", stage: "Q1 Optimization" },
+const recentTopics = [
+  { name: "Quantum Physics", status: "In Progress", progress: "75%", category: "Science" },
+  { name: "Roman History", status: "Completed", progress: "100%", category: "History" },
+  { name: "Neural Networks", status: "Struggling", progress: "25%", category: "Tech" },
+  { name: "Spanish Verbs", status: "In Progress", progress: "90%", category: "Language" },
+  { name: "Music Theory", status: "Completed", progress: "100%", category: "Arts" },
 ];
 
 export default async function DashboardPage() {
@@ -32,12 +32,12 @@ export default async function DashboardPage() {
       <section className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Data Sources</CardTitle>
+            <CardTitle className="text-sm font-medium">Subjects</CardTitle>
             <BookOpen className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">128 Docs</div>
-            <p className="text-xs text-muted-foreground">+12 since last month</p>
+            <div className="text-2xl font-bold">12 Subjects</div>
+            <p className="text-xs text-muted-foreground">+2 since last month</p>
             <Link href="/knowledge-base" passHref>
               <Button size="sm" className="mt-4 w-full">
                 <PlusCircle className="mr-2 h-4 w-4" /> Manage
@@ -47,40 +47,40 @@ export default async function DashboardPage() {
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Analysis Studio</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Learning Studio</CardTitle>
+            <GraduationCap className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">15 Analyses</div>
-            <p className="text-xs text-muted-foreground">+3 this week</p>
+            <div className="text-2xl font-bold">5 Active</div>
+            <p className="text-xs text-muted-foreground">Learning sessions</p>
             <Link href="/chat" passHref>
               <Button size="sm" variant="outline" className="mt-4 w-full">
-                Start Analyzing
+                Start Learning
               </Button>
             </Link>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">Active Users</CardTitle>
+            <CardTitle className="text-sm font-medium">Study Streak</CardTitle>
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4</div>
-            <p className="text-xs text-muted-foreground">in your team</p>
-            <Button size="sm" variant="outline" className="mt-4 w-full">
-              Manage Team
+            <div className="text-2xl font-bold">14 Days</div>
+            <p className="text-xs text-muted-foreground">Keep up the great work!</p>
+            <Button size="sm" variant="outline" className="mt-4 w-full" disabled>
+              View Progress
             </Button>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
-            <CardTitle className="text-sm font-medium">System Settings</CardTitle>
+            <CardTitle className="text-sm font-medium">Learning Preferences</CardTitle>
             <Cog className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">2 Active</div>
-            <p className="text-xs text-muted-foreground">Integrations</p>
+            <div className="text-2xl font-bold">Default</div>
+            <p className="text-xs text-muted-foreground">Learning style</p>
             <Link href="/settings" passHref>
               <Button size="sm" variant="outline" className="mt-4 w-full">
                 Configure
@@ -96,28 +96,28 @@ export default async function DashboardPage() {
         </div>
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Recent Analyses</CardTitle>
-            <CardDescription>A list of recently performed analyses.</CardDescription>
+            <CardTitle>Recent Topics</CardTitle>
+            <CardDescription>A list of topics you've recently studied.</CardDescription>
           </CardHeader>
           <CardContent>
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Name</TableHead>
+                  <TableHead>Topic</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead>Stage</TableHead>
+                  <TableHead>Category</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leads.map((lead) => (
-                  <TableRow key={lead.name}>
-                    <TableCell className="font-medium">{lead.name}</TableCell>
+                {recentTopics.map((topic) => (
+                  <TableRow key={topic.name}>
+                    <TableCell className="font-medium">{topic.name}</TableCell>
                     <TableCell>
-                       <Badge variant={lead.status === "Completed" ? "default" : lead.status === "At Risk" ? "destructive" : "secondary"}>
-                        {lead.status}
+                       <Badge variant={topic.status === "Completed" ? "default" : topic.status === "Struggling" ? "destructive" : "secondary"}>
+                        {topic.status}
                       </Badge>
                     </TableCell>
-                    <TableCell>{lead.stage}</TableCell>
+                    <TableCell>{topic.category}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>

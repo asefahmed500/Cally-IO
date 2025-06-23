@@ -7,8 +7,8 @@ import { getLoggedInUser } from '@/lib/auth';
 import { MobileHeader } from '@/components/layout/mobile-header';
 
 export const metadata: Metadata = {
-  title: 'Cally-IO - AI Business Analyst',
-  description: 'Your Personal AI Business Analyst for data analysis and market insights.',
+  title: 'Cally-IO - AI Learning Companion',
+  description: 'Your personal AI-powered learning companion to help you master any subject.',
 };
 
 export default async function RootLayout({

@@ -12,7 +12,7 @@ import {
   SidebarTrigger,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, Bot, BookOpen, LogOut, TrendingUp } from 'lucide-react';
+import { LayoutDashboard, Settings, Bot, BookOpen, LogOut, GraduationCap } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
@@ -59,15 +59,15 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
           </SidebarMenuItem>
            <SidebarMenuItem>
             <Link href="/knowledge-base" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/knowledge-base'} tooltip={{children: 'Data Sources'}}>
-                <a><BookOpen /><span>Data Sources</span></a>
+              <SidebarMenuButton asChild isActive={pathname === '/knowledge-base'} tooltip={{children: 'Subjects'}}>
+                <a><BookOpen /><span>Subjects</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="/chat" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/chat'} tooltip={{children: 'Analysis Studio'}}>
-                <a><TrendingUp /><span>Analysis Studio</span></a>
+              <SidebarMenuButton asChild isActive={pathname === '/chat'} tooltip={{children: 'Learning Studio'}}>
+                <a><GraduationCap /><span>Learning Studio</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>

@@ -22,8 +22,8 @@ export function AnalyticsChart() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Call Analytics</CardTitle>
-        <CardDescription>Performance and success rates of automated calls.</CardDescription>
+        <CardTitle>Learning Progress</CardTitle>
+        <CardDescription>Topics mastered over the last few months.</CardDescription>
       </CardHeader>
       <CardContent>
         {data.length > 0 ? (

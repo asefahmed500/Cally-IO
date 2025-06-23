@@ -1,9 +1,9 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { AnalysisPanel } from './analysis-panel';
+import { LearningPanel } from './chat-panel';
 import React from "react";
 
-export default async function AnalysisStudioPage() {
+export default async function LearningStudioPage() {
   const user = await getLoggedInUser();
   if (!user) {
     redirect("/login");
@@ -12,10 +12,10 @@ export default async function AnalysisStudioPage() {
   return (
     <React.Fragment>
        <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Analysis Studio</h1>
-        <p className="text-muted-foreground">Your AI-powered business intelligence workspace.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Learning Studio</h1>
+        <p className="text-muted-foreground">Your personal space to explore and learn new things.</p>
       </header>
-      <AnalysisPanel />
+      <LearningPanel />
     </React.Fragment>
   );
 }

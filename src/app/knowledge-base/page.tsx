@@ -15,9 +15,9 @@ export default function KnowledgeBasePage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Data Sources</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Manage Subjects</h1>
         <p className="text-muted-foreground">
-          Manage your documents to provide context to the AI analyst.
+          Upload your notes, documents, and reference materials for your subjects.
         </p>
       </header>
       
@@ -25,9 +25,9 @@ export default function KnowledgeBasePage() {
         <div className="lg:col-span-2">
             <Card>
                 <CardHeader>
-                    <CardTitle>Upload Documents</CardTitle>
+                    <CardTitle>Upload Materials</CardTitle>
                     <CardDescription>
-                        Upload CSVs, PDFs, or text files to Appwrite.
+                        Upload files related to your subjects.
                     </CardDescription>
                 </CardHeader>
                 <CardContent>
