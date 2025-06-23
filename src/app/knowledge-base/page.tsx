@@ -11,7 +11,7 @@ export default async function KnowledgeBasePage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+    <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Knowledge Base</h1>
         <p className="text-muted-foreground">

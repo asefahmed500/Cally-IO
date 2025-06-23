@@ -4,6 +4,7 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Toaster } from "@/components/ui/toaster"
 import { getLoggedInUser } from '@/lib/auth';
+import { MobileHeader } from '@/components/layout/mobile-header';
 
 export const metadata: Metadata = {
   title: 'Cally-IO',
@@ -29,7 +30,8 @@ export default async function RootLayout({
           <SidebarProvider>
             <SidebarNav user={user} />
             <SidebarInset>
-              <main className="min-h-screen">
+              <MobileHeader />
+              <main className="flex-1 p-4 sm:p-6 lg:p-8">
                 {children}
               </main>
             </SidebarInset>

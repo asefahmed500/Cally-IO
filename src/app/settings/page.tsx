@@ -16,7 +16,7 @@ export default async function SettingsPage() {
   }
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 space-y-8">
+    <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
         <p className="text-muted-foreground">Manage your Cally-IO configuration and integrations.</p>
