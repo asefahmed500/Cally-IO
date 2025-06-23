@@ -1,8 +1,4 @@
-export interface Lead {
-  id: string;
-  name: string;
-  email: string;
-  company: string;
-  title: string;
-  status: 'New' | 'Contacted' | 'Qualified' | 'Lost';
+export interface Message {
+  role: 'user' | 'model';
+  content: string;
 }

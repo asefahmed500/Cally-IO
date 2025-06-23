@@ -10,8 +10,8 @@ import { Inter } from 'next/font/google';
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'LeadKit - Your AI Sales Co-pilot',
-  description: 'An AI-powered platform for lead scoring and pipeline management.',
+  title: 'Cally-IO - Your AI Co-pilot',
+  description: 'An AI-powered conversational agent with real-time web search.',
 };
 
 export default async function RootLayout({
@@ -28,10 +28,12 @@ export default async function RootLayout({
           <SidebarProvider>
             <SidebarNav user={user} />
             <SidebarInset>
-              <MobileHeader />
-              <main className="flex-1 p-4 sm:p-6 lg:p-8">
-                {children}
-              </main>
+                <div className="flex flex-col h-svh">
+                    <MobileHeader />
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                        {children}
+                    </main>
+                </div>
             </SidebarInset>
           </SidebarProvider>
         ) : (

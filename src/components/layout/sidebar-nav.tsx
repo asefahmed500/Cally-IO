@@ -11,7 +11,7 @@ import {
   SidebarTrigger,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, LogOut, Target } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, BotMessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
@@ -20,9 +20,9 @@ import type { Models } from 'appwrite';
 const Logo = () => (
     <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
         <div className="p-1.5 bg-primary rounded-lg">
-            <Target className="w-6 h-6 text-primary-foreground" />
+            <BotMessageSquare className="w-6 h-6 text-primary-foreground" />
         </div>
-      <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden">LeadKit</h1>
+      <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden">Cally-IO</h1>
     </div>
 );
 
