@@ -25,52 +25,47 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import type { Lead } from '@/lib/types';
-import { scoreLead } from '@/ai/flows/score-lead';
-import { Loader2, PlusCircle, Sparkles } from 'lucide-react';
+import { generateScriptAndAudio, type GenerateScriptAndAudioOutput } from '@/ai/flows/score-lead';
+import { Loader2, PlusCircle, Phone } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 
 // Mock data for initial display
 const initialLeads: Lead[] = [
   { id: '1', name: 'Alice Johnson', email: 'alice@innovatech.com', company: 'Innovatech', title: 'CTO', status: 'New' },
   { id: '2', name: 'Bob Williams', email: 'bob@datasphere.io', company: 'DataSphere', title: 'Product Manager', status: 'New' },
-  { id: '3', name: 'Charlie Brown', email: 'charlie@solutioncorp.net', company: 'SolutionCorp', title: 'Marketing Lead', status: 'Contacted', score: 78, scoreCategory: 'Warm', scoreRationale: 'Good industry fit, but not a primary decision-maker.' },
+  { id: '3', name: 'Charlie Brown', email: 'charlie@solutioncorp.net', company: 'SolutionCorp', title: 'Marketing Lead', status: 'Contacted' },
 ];
 
 export function LeadManager() {
   const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
   const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
-  const [isScoring, setIsScoring] = React.useState(false);
+  const [isGenerating, setIsGenerating] = React.useState(false);
+  const [generationResult, setGenerationResult] = React.useState<GenerateScriptAndAudioOutput | null>(null);
   const [isAddLeadOpen, setIsAddLeadOpen] = React.useState(false);
   const { toast } = useToast();
 
-  const handleScoreLead = async (lead: Lead) => {
+  const handleGenerateScript = async (lead: Lead) => {
     setSelectedLead(lead);
-    setIsScoring(true);
+    setGenerationResult(null);
+    setIsGenerating(true);
     try {
-      const result = await scoreLead({
+      const result = await generateScriptAndAudio({
+        name: lead.name,
         company: lead.company,
         title: lead.title,
         industry: "Technology", // Assuming a default industry for now
       });
-      
-      const updatedLead = { ...lead, ...result };
-
-      setLeads(prevLeads => prevLeads.map(l => 
-        l.id === lead.id ? updatedLead : l
-      ));
-      setSelectedLead(updatedLead);
-
+      setGenerationResult(result);
     } catch (error) {
-      console.error("Error scoring lead:", error);
+      console.error("Error generating script and audio:", error);
       toast({
         variant: 'destructive',
-        title: 'Scoring Failed',
-        description: 'Could not get AI-powered score.',
+        title: 'Generation Failed',
+        description: 'Could not generate AI script and audio.',
       });
-      // Close the dialog on error
       setSelectedLead(null);
     } finally {
-      setIsScoring(false);
+      setIsGenerating(false);
     }
   };
 
@@ -91,15 +86,6 @@ export function LeadManager() {
       title: 'Lead Added',
       description: `${newLead.name} has been added to your pipeline.`,
     });
-  };
-
-  const getBadgeVariant = (category?: 'Hot' | 'Warm' | 'Cold') => {
-    switch (category) {
-      case 'Hot': return 'destructive';
-      case 'Warm': return 'warning';
-      case 'Cold': return 'secondary';
-      default: return 'outline';
-    }
   };
 
   return (
@@ -145,7 +131,6 @@ export function LeadManager() {
             </form>
           </DialogContent>
         </Dialog>
-
       </div>
 
       <Card>
@@ -156,7 +141,6 @@ export function LeadManager() {
                 <TableHead>Contact</TableHead>
                 <TableHead>Company</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="text-center">AI Score</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
@@ -174,17 +158,10 @@ export function LeadManager() {
                   <TableCell>
                     <Badge variant="outline">{lead.status}</Badge>
                   </TableCell>
-                  <TableCell className="text-center">
-                    {lead.score ? (
-                      <Badge variant={getBadgeVariant(lead.scoreCategory)}>{lead.scoreCategory} ({lead.score})</Badge>
-                    ) : (
-                      <span className="text-muted-foreground text-xs">Not Scored</span>
-                    )}
-                  </TableCell>
                   <TableCell className="text-right">
-                    <Button variant="outline" size="sm" onClick={() => handleScoreLead(lead)}>
-                      <Sparkles className="mr-2 h-4 w-4" />
-                      Score Lead
+                    <Button variant="outline" size="sm" onClick={() => handleGenerateScript(lead)}>
+                      <Phone className="mr-2 h-4 w-4" />
+                      Generate Script
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -194,34 +171,35 @@ export function LeadManager() {
         </CardContent>
       </Card>
 
-      <Dialog open={!!selectedLead} onOpenChange={(isOpen) => !isOpen && setSelectedLead(null)}>
-        <DialogContent>
+      <Dialog open={!!selectedLead} onOpenChange={(isOpen) => { if (!isOpen) setSelectedLead(null) }}>
+        <DialogContent className="max-w-2xl">
           <DialogHeader>
-            <DialogTitle>AI Lead Score: {selectedLead?.name}</DialogTitle>
+            <DialogTitle>AI-Generated Call Script: {selectedLead?.name}</DialogTitle>
             <DialogDescription>
-              AI-powered analysis of this lead's potential.
+              A personalized script and audio preview for your call.
             </DialogDescription>
           </DialogHeader>
-          {isScoring ? (
-            <div className="flex items-center justify-center p-8">
+          {isGenerating ? (
+            <div className="flex items-center justify-center p-12">
               <Loader2 className="h-8 w-8 animate-spin text-primary" />
-              <span className="ml-4">Scoring...</span>
+              <span className="ml-4">Generating script and audio...</span>
             </div>
           ) : (
-            <div className="space-y-4 py-4">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Category</p>
-                <Badge variant={getBadgeVariant(selectedLead?.scoreCategory)} className="text-lg px-4 py-1">{selectedLead?.scoreCategory}</Badge>
+            generationResult && (
+            <div className="space-y-4 py-4 max-h-[60vh] overflow-y-auto">
+              <div className="space-y-2">
+                  <h3 className="font-semibold">Audio Preview</h3>
+                  <audio controls className="w-full">
+                    <source src={generationResult.audioDataUri} type="audio/wav" />
+                    Your browser does not support the audio element.
+                  </audio>
               </div>
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground">Score</p>
-                <p className="text-4xl font-bold">{selectedLead?.score}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium">Rationale</p>
-                <p className="text-muted-foreground text-sm p-3 bg-muted/50 rounded-md">{selectedLead?.scoreRationale}</p>
+              <div className="space-y-2">
+                 <h3 className="font-semibold">Call Script</h3>
+                <p className="text-muted-foreground text-sm p-4 bg-muted/50 rounded-md whitespace-pre-wrap">{generationResult.script}</p>
               </div>
             </div>
+            )
           )}
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Close</Button></DialogClose>
