@@ -14,9 +14,6 @@ import { Query } from 'node-appwrite';
 import { z } from 'zod';
 import { cosineSimilarity } from '@/lib/vector-utils';
 
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const EMBEDDINGS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID!;
-
 const AssistantInputSchema = z.object({
   query: z.string(),
 });
@@ -31,6 +28,13 @@ interface Chunk {
 
 // Function to fetch all document chunks for the user
 async function fetchUserDocumentChunks(userId: string): Promise<Chunk[]> {
+  const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+  const collectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
+
+  if (!databaseId || !collectionId) {
+    throw new Error('Appwrite database or collection ID is not configured. Please set NEXT_PUBLIC_APPWRITE_DATABASE_ID and NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID in your environment variables.');
+  }
+
   try {
     let allDocuments: any[] = [];
     let hasMore = true;
@@ -46,8 +50,8 @@ async function fetchUserDocumentChunks(userId: string): Promise<Chunk[]> {
       }
 
       const response = await databases.listDocuments(
-        DATABASE_ID,
-        EMBEDDINGS_COLLECTION_ID,
+        databaseId,
+        collectionId,
         queries
       );
 
@@ -61,7 +65,8 @@ async function fetchUserDocumentChunks(userId: string): Promise<Chunk[]> {
     return allDocuments as Chunk[];
   } catch (error) {
     console.error("Failed to fetch user's document chunks:", error);
-    return [];
+    // Propagate a more generic error to the user
+    throw new Error("Could not access the knowledge base. Please ensure it's configured correctly.");
   }
 }
 
@@ -111,6 +116,8 @@ export const assistantFlow = ai.defineFlow(
   async function* ({ query }) {
     const user = await getLoggedInUser();
     if (!user) {
+      // This stream will be consumed by the API route, which will handle the error.
+      // For robustness, we can yield an error message, but throwing is cleaner.
       throw new Error('User must be logged in.');
     }
 

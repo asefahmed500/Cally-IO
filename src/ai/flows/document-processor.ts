@@ -22,14 +22,19 @@ const DocumentInputSchema = z.object({
 });
 export type DocumentInput = z.infer<typeof DocumentInputSchema>;
 
-const DATABASE_ID = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const EMBEDDINGS_COLLECTION_ID = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID!;
 
 async function extractTextFromFile(fileId: string): Promise<{ text: string; error?: string }> {
+  const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID;
+  if (!bucketId) {
+      const errorMsg = 'Appwrite Storage Bucket ID is not configured. Please set NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID in your environment variables.';
+      console.error(errorMsg);
+      return { text: '', error: errorMsg };
+  }
+
   try {
-    const file = await storage.getFileView(process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!, fileId);
+    const file = await storage.getFileView(bucketId, fileId);
     const fileBuffer = Buffer.from(file);
-    const fileInfo = await storage.getFile(process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!, fileId);
+    const fileInfo = await storage.getFile(bucketId, fileId);
     
     if (fileInfo.mimeType === 'application/pdf') {
       const data = await pdf(fileBuffer);
@@ -60,12 +65,20 @@ const documentProcessorFlow = ai.defineFlow(
       throw new Error('User must be logged in to process documents.');
     }
     
+    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
+
+    if (!databaseId || !collectionId) {
+      throw new Error('Appwrite database or collection ID is not configured. Please set NEXT_PUBLIC_APPWRITE_DATABASE_ID and NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID in your environment variables.');
+    }
+
     // First, delete any existing chunks for this document
     await deleteDocumentChunks(fileId);
 
     const { text, error } = await extractTextFromFile(fileId);
     if (error) {
       console.error(`Skipping processing for ${fileName}: ${error}`);
+      // Don't throw here, just stop processing for this file. The error is already logged.
       return;
     }
 
@@ -87,8 +100,8 @@ const documentProcessorFlow = ai.defineFlow(
       });
 
       await databases.createDocument(
-        DATABASE_ID,
-        EMBEDDINGS_COLLECTION_ID,
+        databaseId,
+        collectionId,
         ID.unique(),
         {
           documentId: fileId,
@@ -108,12 +121,19 @@ export async function processDocument(input: DocumentInput) {
 }
 
 export async function deleteDocumentChunks(documentId: string): Promise<void> {
+    const databaseId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
+
+    if (!databaseId || !collectionId) {
+      throw new Error('Appwrite database or collection ID is not configured. Please check your environment variables.');
+    }
+
     try {
         const user = await getLoggedInUser();
         if (!user) throw new Error("User not logged in.");
 
         let hasMore = true;
-        let cursor = undefined;
+        let cursor: string | undefined = undefined;
 
         while(hasMore) {
             const queries = [
@@ -126,8 +146,8 @@ export async function deleteDocumentChunks(documentId: string): Promise<void> {
             }
 
             const response = await databases.listDocuments(
-                DATABASE_ID,
-                EMBEDDINGS_COLLECTION_ID,
+                databaseId,
+                collectionId,
                 queries
             );
             
@@ -137,7 +157,7 @@ export async function deleteDocumentChunks(documentId: string): Promise<void> {
             }
 
             for (const doc of response.documents) {
-                await databases.deleteDocument(DATABASE_ID, EMBEDDINGS_COLLECTION_ID, doc.$id);
+                await databases.deleteDocument(databaseId, collectionId, doc.$id);
             }
             
             if (response.documents.length < 100) {

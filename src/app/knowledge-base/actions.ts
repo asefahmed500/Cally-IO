@@ -5,8 +5,6 @@ import { getLoggedInUser } from "@/lib/auth";
 import { storage, databases } from "@/lib/appwrite-server";
 import { revalidatePath } from "next/cache";
 
-const BUCKET_ID = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!;
-
 export async function processDocumentAction(fileId: string, fileName: string) {
     try {
         await processDocument({ fileId, fileName });
@@ -19,11 +17,17 @@ export async function processDocumentAction(fileId: string, fileName: string) {
 }
 
 export async function listDocuments() {
+    const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID;
+    if (!bucketId) {
+        console.error('Appwrite Storage Bucket ID is not configured. Please set NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID in your environment variables.');
+        return []; // Return empty array to prevent page crash, error is logged server-side.
+    }
+    
     try {
         const user = await getLoggedInUser();
         if (!user) throw new Error("User not authenticated");
 
-        const response = await storage.listFiles(BUCKET_ID);
+        const response = await storage.listFiles(bucketId);
         // In a real multi-tenant app, you'd filter by user permissions.
         // For this prototype, we'll assume the user can see all files.
         return response.files;
@@ -34,11 +38,18 @@ export async function listDocuments() {
 }
 
 export async function deleteDocumentAction(fileId: string) {
+    const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID;
+    if (!bucketId) {
+        const errorMessage = 'Appwrite Storage Bucket ID is not configured.';
+        console.error(errorMessage);
+        return { success: false, error: errorMessage };
+    }
+
     try {
         // First delete the chunks from the database
         await deleteDocumentChunks(fileId);
         // Then delete the file from storage
-        await storage.deleteFile(BUCKET_ID, fileId);
+        await storage.deleteFile(bucketId, fileId);
 
         revalidatePath('/knowledge-base');
         return { success: true };

@@ -10,7 +10,6 @@ import { processDocumentAction } from '@/app/knowledge-base/actions';
 import { Loader2, UploadCloud } from 'lucide-react';
 import { Progress } from '../ui/progress';
 
-const BUCKET_ID = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!;
 const ACCEPTED_FILE_TYPES = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'text/plain'];
 
 export function FileUploader() {
@@ -38,13 +37,23 @@ export function FileUploader() {
     const handleUpload = async () => {
         if (!file) return;
 
+        const bucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID;
+        if (!bucketId) {
+            toast({
+                variant: 'destructive',
+                title: 'Configuration Error',
+                description: 'Storage bucket is not configured. Please ask the administrator to set it up.',
+            });
+            return;
+        }
+
         setIsUploading(true);
         setIsProcessing(false);
         setUploadProgress(0);
 
         try {
             const response = await storage.createFile(
-                BUCKET_ID,
+                bucketId,
                 ID.unique(),
                 file,
                 undefined, // permissions
