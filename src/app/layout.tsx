@@ -5,10 +5,13 @@ import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Toaster } from "@/components/ui/toaster"
 import { getLoggedInUser } from '@/lib/auth';
 import { MobileHeader } from '@/components/layout/mobile-header';
+import { Inter } from 'next/font/google';
+
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export const metadata: Metadata = {
-  title: 'NewsGrid - Your Intelligent News Aggregator',
-  description: 'AI-powered news briefings, personalized to your interests.',
+  title: 'CorpKit - Your Business Foundation',
+  description: 'Authentication, user management, and company profiles.',
 };
 
 export default async function RootLayout({
@@ -19,13 +22,8 @@ export default async function RootLayout({
   const user = await getLoggedInUser();
 
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-      </head>
-      <body className="font-body antialiased">
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
+      <body className="font-sans antialiased">
         {user ? (
           <SidebarProvider>
             <SidebarNav user={user} />
@@ -35,13 +33,13 @@ export default async function RootLayout({
                 {children}
               </main>
             </SidebarInset>
-            <Toaster />
           </SidebarProvider>
         ) : (
           <main className="min-h-screen">
             {children}
           </main>
         )}
+         <Toaster />
       </body>
     </html>
   );
