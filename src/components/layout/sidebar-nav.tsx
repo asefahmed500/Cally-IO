@@ -11,7 +11,7 @@ import {
   SidebarTrigger,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, LogOut, BrainCircuit, BookOpen } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, BrainCircuit, BookOpen, MessageSquare } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
@@ -59,6 +59,13 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
             <Link href="/knowledge-base" passHref>
               <SidebarMenuButton asChild isActive={pathname.startsWith('/knowledge-base')} tooltip={{children: 'Knowledge Base'}}>
                 <a><BookOpen /><span>Knowledge Base</span></a>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <Link href="/assistant" passHref>
+              <SidebarMenuButton asChild isActive={pathname.startsWith('/assistant')} tooltip={{children: 'AI Assistant'}}>
+                <a><MessageSquare /><span>AI Assistant</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
