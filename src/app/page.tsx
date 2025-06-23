@@ -1,14 +1,14 @@
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Briefcase } from "lucide-react"
+import { Target } from "lucide-react"
 
 export default function LandingPage() {
   return (
     <div className="flex flex-col min-h-screen">
       <header className="px-4 lg:px-6 h-16 flex items-center bg-background border-b">
         <Link href="#" className="flex items-center justify-center" prefetch={false}>
-          <Briefcase className="h-6 w-6 text-primary" />
-          <span className="ml-2 text-lg font-bold">CorpKit</span>
+          <Target className="h-6 w-6 text-primary" />
+          <span className="ml-2 text-lg font-bold">LeadKit</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
@@ -26,15 +26,15 @@ export default function LandingPage() {
                <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Build Your Business Foundation
+                    Intelligent Lead Scoring
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    The essential toolkit for modern startups. Secure authentication, user management, and company profiles, all in one place.
+                    Our AI-powered platform helps you identify your most promising leads, so you can focus your efforts and close more deals.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Link href="/signup" passHref>
-                    <Button size="lg">Create Your Account</Button>
+                    <Button size="lg">Start Scoring for Free</Button>
                   </Link>
                    <Link href="/login" passHref>
                     <Button size="lg" variant="outline">Sign In</Button>
@@ -46,7 +46,7 @@ export default function LandingPage() {
                 width="600"
                 height="400"
                 alt="Hero"
-                data-ai-hint="business dashboard abstract"
+                data-ai-hint="sales dashboard analytics"
                 className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
               />
             </div>
@@ -54,7 +54,7 @@ export default function LandingPage() {
         </section>
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; 2024 CorpKit. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">&copy; 2024 LeadKit. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Terms of Service
