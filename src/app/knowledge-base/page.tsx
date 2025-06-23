@@ -1,8 +1,15 @@
+import { getLoggedInUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { DocumentList } from '@/components/knowledge-base/document-list';
 import { FileUploader } from '@/components/knowledge-base/file-uploader';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
-export default function KnowledgeBasePage() {
+export default async function KnowledgeBasePage() {
+  const user = await getLoggedInUser();
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       <header>

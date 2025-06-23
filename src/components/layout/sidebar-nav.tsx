@@ -10,8 +10,13 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarTrigger,
+  SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, MessageSquare, Settings, Bot, BookOpen } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Settings, Bot, BookOpen, LogOut } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
+import { logout } from '@/app/auth/actions';
+import { Button } from '../ui/button';
+import type { Models } from 'appwrite';
 
 const CallyLogo = () => (
     <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
@@ -22,7 +27,19 @@ const CallyLogo = () => (
     </div>
 );
 
-export function SidebarNav() {
+function LogoutForm() {
+    return (
+        <form action={logout}>
+            <Button type="submit" variant="ghost" className="w-full justify-start">
+                <LogOut className="mr-2 h-4 w-4" />
+                <span>Logout</span>
+            </Button>
+        </form>
+    )
+}
+
+
+export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) {
   const pathname = usePathname();
 
   return (
@@ -34,8 +51,8 @@ export function SidebarNav() {
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link href="/" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/'} tooltip={{children: 'Dashboard'}}>
+            <Link href="/dashboard" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip={{children: 'Dashboard'}}>
                 <a><LayoutDashboard /><span>Dashboard</span></a>
               </SidebarMenuButton>
             </Link>
@@ -63,6 +80,18 @@ export function SidebarNav() {
           </SidebarMenuItem>
         </SidebarMenu>
       </SidebarContent>
+       <SidebarFooter className="p-2 group-data-[collapsible=icon]:hidden">
+        <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback>{user.name.charAt(0)}</AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold text-sidebar-foreground">{user.name}</span>
+            <span className="text-xs text-muted-foreground">{user.email}</span>
+          </div>
+        </div>
+        <LogoutForm />
+      </SidebarFooter>
     </Sidebar>
   );
 }

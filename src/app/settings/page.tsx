@@ -1,3 +1,5 @@
+import { getLoggedInUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -7,7 +9,12 @@ import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
 
-export default function SettingsPage() {
+export default async function SettingsPage() {
+  const user = await getLoggedInUser();
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 space-y-8">
       <header>

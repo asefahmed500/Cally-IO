@@ -1,6 +1,13 @@
+import { getLoggedInUser } from "@/lib/auth";
+import { redirect } from "next/navigation";
 import { ChatPanel } from './chat-panel';
 
-export default function ChatPage() {
+export default async function ChatPage() {
+  const user = await getLoggedInUser();
+  if (!user) {
+    redirect("/login");
+  }
+
   return (
     <div className="p-4 sm:p-6 lg:p-8">
        <header className="mb-8">
