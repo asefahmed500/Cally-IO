@@ -31,9 +31,11 @@ export default function DashboardPage() {
           <CardContent>
             <div className="text-2xl font-bold">128 Docs</div>
             <p className="text-xs text-muted-foreground">+12 since last month</p>
-            <Button size="sm" className="mt-4 w-full">
-              <PlusCircle className="mr-2 h-4 w-4" /> Manage
-            </Button>
+            <Link href="/knowledge-base" passHref>
+              <Button size="sm" className="mt-4 w-full">
+                <PlusCircle className="mr-2 h-4 w-4" /> Manage
+              </Button>
+            </Link>
           </CardContent>
         </Card>
         <Card>

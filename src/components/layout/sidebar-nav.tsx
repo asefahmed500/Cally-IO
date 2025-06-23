@@ -11,7 +11,7 @@ import {
   SidebarMenuButton,
   SidebarTrigger,
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, MessageSquare, Settings, Bot } from 'lucide-react';
+import { LayoutDashboard, MessageSquare, Settings, Bot, BookOpen } from 'lucide-react';
 
 const CallyLogo = () => (
     <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
@@ -37,6 +37,13 @@ export function SidebarNav() {
             <Link href="/" passHref>
               <SidebarMenuButton asChild isActive={pathname === '/'} tooltip={{children: 'Dashboard'}}>
                 <a><LayoutDashboard /><span>Dashboard</span></a>
+              </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
+           <SidebarMenuItem>
+            <Link href="/knowledge-base" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/knowledge-base'} tooltip={{children: 'Knowledge Base'}}>
+                <a><BookOpen /><span>Knowledge Base</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
