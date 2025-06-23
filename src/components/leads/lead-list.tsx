@@ -5,11 +5,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AddLeadForm } from './add-lead-form';
 import { scoreLead, type LeadData, type LeadScore } from '@/ai/flows/score-lead-flow';
-import { Wand2, Loader2 } from 'lucide-react';
+import { generateScript, type CallScript } from '@/ai/flows/script-generator';
+import { Wand2, Loader2, Phone } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { ScrollArea } from '../ui/scroll-area';
 
 type LeadStatus = 'New' | 'Contacted' | 'Qualified' | 'Lost';
 export interface Lead {
@@ -51,8 +53,12 @@ function getScoreBadgeVariant(score: number | null) {
 export function LeadList() {
     const [leads, setLeads] = useState<Lead[]>(initialLeads);
     const [isScoringId, setIsScoringId] = useState<number | null>(null);
+    const [isGeneratingScriptId, setIsGeneratingScriptId] = useState<number | null>(null);
     const [isPending, startTransition] = useTransition();
     const [isAddLeadOpen, setAddLeadOpen] = useState(false);
+    const [generatedScript, setGeneratedScript] = useState<string | null>(null);
+    const [scriptForLead, setScriptForLead] = useState<Lead | null>(null);
+
     const { toast } = useToast();
 
     const handleAddLead = (newLead: Omit<Lead, 'id' | 'score' | 'rationale' | 'status'>) => {
@@ -102,81 +108,147 @@ export function LeadList() {
         });
     };
 
+    const handleGenerateScript = (lead: Lead) => {
+        setIsGeneratingScriptId(lead.id);
+        setScriptForLead(lead);
+        setGeneratedScript(null); // Clear previous script
+        startTransition(async () => {
+             try {
+                const leadData: LeadData = {
+                    companyName: lead.company,
+                    companyDescription: lead.description,
+                    contactTitle: lead.title,
+                    industry: lead.industry,
+                };
+                const result = await generateScript(leadData);
+                setGeneratedScript(result.script);
+            } catch (error) {
+                 toast({
+                    variant: "destructive",
+                    title: "Script Generation Error",
+                    description: "Could not generate script. Please try again.",
+                });
+                console.error("Script generation failed:", error);
+            } finally {
+                setIsGeneratingScriptId(null);
+            }
+        });
+    };
+
     return (
-        <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Sales Leads</CardTitle>
-                    <CardDescription>
-                        A list of your current sales leads. Click the magic wand to score a lead.
-                    </CardDescription>
-                </div>
-                 <Dialog open={isAddLeadOpen} onOpenChange={setAddLeadOpen}>
-                    <DialogTrigger asChild>
-                        <Button>Add Lead</Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                        <DialogHeader>
-                            <DialogTitle>Add New Lead</DialogTitle>
-                        </DialogHeader>
-                        <AddLeadForm onSubmit={handleAddLead} />
-                    </DialogContent>
-                </Dialog>
-            </CardHeader>
-            <CardContent>
-                <div className="border rounded-md">
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Company</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-center">AI Score</TableHead>
-                                <TableHead className="w-[50px]"></TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {leads.map(lead => (
-                                <TableRow key={lead.id}>
-                                    <TableCell>
-                                        <div className="font-medium">{lead.name}</div>
-                                        <div className="text-sm text-muted-foreground">{lead.title}</div>
-                                    </TableCell>
-                                    <TableCell>{lead.company}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={getStatusBadgeVariant(lead.status)}>{lead.status}</Badge>
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                         {lead.score !== null ? (
-                                            <Badge variant={getScoreBadgeVariant(lead.score)} className="text-base">
-                                                {lead.score}
-                                            </Badge>
-                                        ) : (
-                                            <span className="text-muted-foreground">-</span>
-                                        )}
-                                    </TableCell>
-                                    <TableCell>
-                                        <Button 
-                                            variant="ghost" 
-                                            size="icon" 
-                                            onClick={() => handleScoreLead(lead)}
-                                            disabled={isScoringId === lead.id}
-                                            title="Score Lead"
-                                        >
-                                            {isScoringId === lead.id ? (
-                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                            ) : (
-                                                <Wand2 className="h-4 w-4 text-primary" />
-                                            )}
-                                            <span className="sr-only">Score Lead</span>
-                                        </Button>
-                                    </TableCell>
+        <>
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div>
+                        <CardTitle>Sales Leads</CardTitle>
+                        <CardDescription>
+                            A list of your current sales leads. Click the wand to score or the phone to generate a call script.
+                        </CardDescription>
+                    </div>
+                    <Dialog open={isAddLeadOpen} onOpenChange={setAddLeadOpen}>
+                        <DialogTrigger asChild>
+                            <Button>Add Lead</Button>
+                        </DialogTrigger>
+                        <DialogContent>
+                            <DialogHeader>
+                                <DialogTitle>Add New Lead</DialogTitle>
+                            </DialogHeader>
+                            <AddLeadForm onSubmit={handleAddLead} />
+                        </DialogContent>
+                    </Dialog>
+                </CardHeader>
+                <CardContent>
+                    <div className="border rounded-md">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Name</TableHead>
+                                    <TableHead>Company</TableHead>
+                                    <TableHead>Status</TableHead>
+                                    <TableHead className="text-center">AI Score</TableHead>
+                                    <TableHead className="text-right">Actions</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                </div>
-            </CardContent>
-        </Card>
+                            </TableHeader>
+                            <TableBody>
+                                {leads.map(lead => (
+                                    <TableRow key={lead.id}>
+                                        <TableCell>
+                                            <div className="font-medium">{lead.name}</div>
+                                            <div className="text-sm text-muted-foreground">{lead.title}</div>
+                                        </TableCell>
+                                        <TableCell>{lead.company}</TableCell>
+                                        <TableCell>
+                                            <Badge variant={getStatusBadgeVariant(lead.status)}>{lead.status}</Badge>
+                                        </TableCell>
+                                        <TableCell className="text-center">
+                                            {lead.score !== null ? (
+                                                <Badge variant={getScoreBadgeVariant(lead.score)} className="text-base">
+                                                    {lead.score}
+                                                </Badge>
+                                            ) : (
+                                                <span className="text-muted-foreground">-</span>
+                                            )}
+                                        </TableCell>
+                                        <TableCell className="text-right">
+                                            <Dialog onOpenChange={(open) => !open && setGeneratedScript(null)}>
+                                                <DialogTrigger asChild>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="icon" 
+                                                        onClick={() => handleGenerateScript(lead)}
+                                                        title="Generate Script"
+                                                    >
+                                                        {isGeneratingScriptId === lead.id ? (
+                                                            <Loader2 className="h-4 w-4 animate-spin" />
+                                                        ) : (
+                                                            <Phone className="h-4 w-4 text-primary" />
+                                                        )}
+                                                        <span className="sr-only">Generate Script</span>
+                                                    </Button>
+                                                </DialogTrigger>
+                                            </Dialog>
+                                            <Button 
+                                                variant="ghost" 
+                                                size="icon" 
+                                                onClick={() => handleScoreLead(lead)}
+                                                disabled={isScoringId === lead.id}
+                                                title="Score Lead"
+                                            >
+                                                {isScoringId === lead.id ? (
+                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                ) : (
+                                                    <Wand2 className="h-4 w-4 text-primary" />
+                                                )}
+                                                <span className="sr-only">Score Lead</span>
+                                            </Button>
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Dialog open={!!scriptForLead && !!generatedScript} onOpenChange={(open) => !open && setScriptForLead(null)}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Call Script for {scriptForLead?.name}</DialogTitle>
+                        <DialogDescription>
+                            AI-generated script to guide your conversation with {scriptForLead?.company}.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="max-h-[60vh] p-4 border rounded-md">
+                        {generatedScript ? (
+                             <pre className="text-sm whitespace-pre-wrap font-sans">{generatedScript}</pre>
+                        ) : (
+                           <div className="flex justify-center items-center h-48">
+                                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                           </div>
+                        )}
+                    </ScrollArea>
+                </DialogContent>
+            </Dialog>
+        </>
     );
 }
