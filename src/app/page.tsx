@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Bot, GraduationCap, BrainCircuit, Sparkles } from "lucide-react"
+import { Newspaper, Filter, TrendingUp } from "lucide-react"
 import Link from "next/link"
 
 export default function LandingPage() {
@@ -8,8 +8,8 @@ export default function LandingPage() {
     <div className="flex flex-col min-h-screen">
       <header className="px-4 lg:px-6 h-16 flex items-center bg-background border-b">
         <Link href="#" className="flex items-center justify-center" prefetch={false}>
-          <Bot className="h-6 w-6 text-primary" />
-          <span className="ml-2 text-lg font-bold">Cally-IO</span>
+          <Newspaper className="h-6 w-6 text-primary" />
+          <span className="ml-2 text-lg font-bold">NewsGrid</span>
         </Link>
         <nav className="ml-auto flex gap-4 sm:gap-6">
           <Link href="/login" className="text-sm font-medium hover:underline underline-offset-4" prefetch={false}>
@@ -27,15 +27,15 @@ export default function LandingPage() {
                <div className="flex flex-col justify-center space-y-4">
                 <div className="space-y-2">
                   <h1 className="text-3xl font-bold tracking-tighter sm:text-5xl xl:text-6xl/none">
-                    Master Any Subject with Your AI Learning Companion
+                    Your Intelligent News Aggregator
                   </h1>
                   <p className="max-w-[600px] text-muted-foreground md:text-xl">
-                    Cally-IO explains complex topics in simple terms, adapts to your learning style, and helps you achieve your goals.
+                    NewsGrid uses AI to sift through the noise and deliver personalized news briefings that matter to you.
                   </p>
                 </div>
                 <div className="flex flex-col gap-2 min-[400px]:flex-row">
                   <Link href="/signup" passHref>
-                    <Button size="lg">Start Learning for Free</Button>
+                    <Button size="lg">Get Your First Briefing</Button>
                   </Link>
                 </div>
               </div>
@@ -44,7 +44,7 @@ export default function LandingPage() {
                 width="600"
                 height="400"
                 alt="Hero"
-                data-ai-hint="education e-learning"
+                data-ai-hint="news abstract technology"
                 className="mx-auto aspect-video overflow-hidden rounded-xl object-cover sm:w-full lg:order-last"
               />
             </div>
@@ -55,9 +55,9 @@ export default function LandingPage() {
             <div className="flex flex-col items-center justify-center space-y-4 text-center">
               <div className="space-y-2">
                 <div className="inline-block rounded-lg bg-secondary px-3 py-1 text-sm">Core Features</div>
-                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">A Smarter Way to Learn</h2>
+                <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">Stay Informed, Effortlessly</h2>
                 <p className="max-w-[900px] text-muted-foreground md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
-                  Our platform is designed to make learning intuitive, engaging, and effective.
+                  Our platform is designed to make staying up-to-date simple, fast, and personalized.
                 </p>
               </div>
             </div>
@@ -65,39 +65,39 @@ export default function LandingPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
                   <div className="rounded-full bg-primary/10 p-3">
-                    <GraduationCap className="h-6 w-6 text-primary" />
+                    <Newspaper className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle>Personalized Tutoring</CardTitle>
+                  <CardTitle>Personalized Briefings</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Get clear, simple explanations on any topic, tailored to your level of understanding.
+                    Get AI-generated summaries of the news you care about, delivered in a clear and concise format.
                   </CardDescription>
                 </CardContent>
               </Card>
               <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
                   <div className="rounded-full bg-primary/10 p-3">
-                    <BrainCircuit className="h-6 w-6 text-primary" />
+                    <Filter className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle>Interactive Learning</CardTitle>
+                  <CardTitle>Interest-Based Filtering</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Engage in dynamic conversations, ask follow-up questions, and test your knowledge.
+                    Tell the AI what you're interested in, and it will learn to filter out the noise and find relevant stories.
                   </CardDescription>
                 </CardContent>
               </Card>
                <Card>
                 <CardHeader className="flex flex-row items-center gap-4">
                    <div className="rounded-full bg-primary/10 p-3">
-                    <Sparkles className="h-6 w-6 text-primary" />
+                    <TrendingUp className="h-6 w-6 text-primary" />
                   </div>
-                  <CardTitle>Progress Tracking</CardTitle>
+                  <CardTitle>Trend Analysis</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <CardDescription>
-                    Monitor your learning journey, review past topics, and stay motivated with your study streak.
+                    Understand the bigger picture with insights into developing stories and market trends.
                   </CardDescription>
                 </CardContent>
               </Card>
@@ -106,7 +106,7 @@ export default function LandingPage() {
         </section>
       </main>
       <footer className="flex flex-col gap-2 sm:flex-row py-6 w-full shrink-0 items-center px-4 md:px-6 border-t">
-        <p className="text-xs text-muted-foreground">&copy; 2024 Cally-IO. All rights reserved.</p>
+        <p className="text-xs text-muted-foreground">&copy; 2024 NewsGrid. All rights reserved.</p>
         <nav className="sm:ml-auto flex gap-4 sm:gap-6">
           <Link href="#" className="text-xs hover:underline underline-offset-4" prefetch={false}>
             Terms of Service

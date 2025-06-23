@@ -1,66 +1,65 @@
 'use server';
 /**
- * @fileOverview An AI-powered learning companion.
+ * @fileOverview Generates personalized news briefings.
  *
- * - learningCompanion - A function that acts as a tutor to explain topics.
- * - LearningCompanionInput - The input type for the learningCompanion function.
- * - LearningCompanionOutput - The return type for the learningCompanion function.
+ * - generateNewsBriefing - A function that generates a news summary based on user interests.
+ * - GenerateNewsBriefingInput - The input type for the generateNewsBriefing function.
+ * - GenerateNewsBriefingOutput - The return type for the generateNewsBriefing function.
  */
 
 import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
-const LearningCompanionInputSchema = z.object({
-  query: z.string().describe('The topic or question the user wants to learn about.'),
-  sessionId: z.string().describe('A unique identifier for the user session.'),
+const GenerateNewsBriefingInputSchema = z.object({
+  interests: z.array(z.string()).describe('A list of topics the user is interested in.'),
 });
-export type LearningCompanionInput = z.infer<
-  typeof LearningCompanionInputSchema
+export type GenerateNewsBriefingInput = z.infer<
+  typeof GenerateNewsBriefingInputSchema
 >;
 
-const LearningCompanionOutputSchema = z.object({
-  explanation: z
+const GenerateNewsBriefingOutputSchema = z.object({
+  briefing: z
     .string()
-    .describe('The generated explanation for the given topic or question.'),
+    .describe('A news briefing formatted in markdown, including headlines and short summaries.'),
 });
-export type LearningCompanionOutput = z.infer<
-  typeof LearningCompanionOutputSchema
+export type GenerateNewsBriefingOutput = z.infer<
+  typeof GenerateNewsBriefingOutputSchema
 >;
 
-export async function learningCompanion(
-  input: LearningCompanionInput
-): Promise<LearningCompanionOutput> {
-  return learningCompanionFlow(input);
+export async function generateNewsBriefing(
+  input: GenerateNewsBriefingInput
+): Promise<GenerateNewsBriefingOutput> {
+  return newsBriefingFlow(input);
 }
 
 const prompt = ai.definePrompt({
-  name: 'learningCompanionPrompt',
+  name: 'newsBriefingPrompt',
   input: {
-    schema: z.object({ query: z.string() })
+    schema: GenerateNewsBriefingInputSchema
   },
   output: {
-    schema: LearningCompanionOutputSchema,
+    schema: GenerateNewsBriefingOutputSchema,
   },
-  prompt: `You are a friendly and encouraging AI Learning Companion. Your goal is to help users understand complex topics by breaking them down into simple, easy-to-digest explanations.
+  prompt: `You are an expert news analyst and anchor. Your goal is to provide a clear, concise, and engaging news briefing based on the user's specified interests.
 
-- Start by acknowledging the user's question.
-- Provide a clear, concise, and accurate explanation of the topic.
-- Use analogies and simple examples to make the content relatable.
-- Ask a follow-up question to check for understanding or to encourage further exploration of the topic.
-- Structure your response in a clear, professional format. Use markdown for formatting, such as headings, lists, and bold text, to improve readability.
+- Generate a summary of the top 3-5 news stories related to the provided interests.
+- For each story, create a bold headline.
+- Below the headline, write a 2-3 sentence summary of the key points.
+- Structure the entire response in well-formatted markdown.
+- Conclude with a friendly sign-off.
+- You are generating this based on your internal knowledge up to your last training data. Acknowledge this limitation if a very recent event is requested.
 
-User's Request: {{{query}}}`,
+User's Interests: {{{interests}}}`,
 });
 
-const learningCompanionFlow = ai.defineFlow(
+const newsBriefingFlow = ai.defineFlow(
   {
-    name: 'learningCompanionFlow',
-    inputSchema: LearningCompanionInputSchema,
-    outputSchema: LearningCompanionOutputSchema,
+    name: 'newsBriefingFlow',
+    inputSchema: GenerateNewsBriefingInputSchema,
+    outputSchema: GenerateNewsBriefingOutputSchema,
   },
   async (input) => {
-    const { output } = await prompt({ query: input.query });
-
-    return { explanation: output!.explanation };
+    const { output } = await prompt(input);
+    return { briefing: output!.briefing };
   }
 );

@@ -1,14 +1,14 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Switch } from "@/components/ui/switch"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Separator } from "@/components/ui/separator"
-import { Waypoints } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Rss } from "lucide-react";
 
 export default async function SettingsPage() {
   const user = await getLoggedInUser();
@@ -16,18 +16,27 @@ export default async function SettingsPage() {
     redirect("/login");
   }
 
+  const newsCategories = [
+    { id: "tech", label: "Technology" },
+    { id: "business", label: "Business & Finance" },
+    { id: "world", label: "World News" },
+    { id: "science", label: "Science & Health" },
+    { id: "sports", label: "Sports" },
+    { id: "entertainment", label: "Entertainment" },
+  ];
+
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-        <p className="text-muted-foreground">Manage your account and learning preferences.</p>
+        <p className="text-muted-foreground">Manage your account and briefing preferences.</p>
       </header>
 
       <Tabs defaultValue="account" className="w-full">
         <TabsList>
           <TabsTrigger value="account">Account</TabsTrigger>
-          <TabsTrigger value="ai">Learning Companion</TabsTrigger>
-          <TabsTrigger value="integrations">Subject Integrations</TabsTrigger>
+          <TabsTrigger value="preferences">Preferences</TabsTrigger>
+          <TabsTrigger value="sources">Sources</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account" className="mt-6">
@@ -52,75 +61,72 @@ export default async function SettingsPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="ai" className="mt-6">
+        <TabsContent value="preferences" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Companion Configuration</CardTitle>
-              <CardDescription>Customize the behavior of your AI Learning Companion.</CardDescription>
+              <CardTitle>Briefing Preferences</CardTitle>
+              <CardDescription>Customize how your news briefing is generated.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="learningStyle">Preferred Learning Style</Label>
-                <Select defaultValue="visual">
-                  <SelectTrigger id="learningStyle" className="w-[280px]">
-                    <SelectValue placeholder="Select a style" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="visual">Visual (diagrams, charts)</SelectItem>
-                    <SelectItem value="auditory">Auditory (discussions, analogies)</SelectItem>
-                    <SelectItem value="kinesthetic">Kinesthetic (practical examples)</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="space-y-4">
+                <Label>News Categories</Label>
+                <p className="text-sm text-muted-foreground">
+                    Select the topics you're most interested in.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  {newsCategories.map(category => (
+                    <div key={category.id} className="flex items-center space-x-2">
+                      <Checkbox id={category.id} defaultChecked={["tech", "business"].includes(category.id)} />
+                      <label
+                        htmlFor={category.id}
+                        className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                      >
+                        {category.label}
+                      </label>
+                    </div>
+                  ))}
+                </div>
               </div>
+              <Separator />
               <div className="flex items-center justify-between rounded-lg border p-4">
                 <div className="space-y-0.5">
-                    <Label>Proactive Suggestions</Label>
+                    <Label>Automatic Briefings</Label>
                     <p className="text-sm text-muted-foreground">
-                        Allow the AI to suggest new topics based on your history.
+                        Generate a new briefing automatically every morning.
                     </p>
                 </div>
-                <Switch defaultChecked />
+                <Switch />
               </div>
             </CardContent>
             <CardFooter>
-                <Button>Save AI Settings</Button>
+                <Button>Save Preferences</Button>
             </CardFooter>
           </Card>
         </TabsContent>
 
-        <TabsContent value="integrations" className="mt-6">
+        <TabsContent value="sources" className="mt-6">
           <Card>
             <CardHeader>
-              <CardTitle>Subject Integrations</CardTitle>
-              <CardDescription>Connect to external knowledge sources.</CardDescription>
+              <CardTitle>News Source Integrations</CardTitle>
+              <CardDescription>Connect to external news APIs for real-time data.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                 <div className="space-y-4">
                     <div className="flex items-center gap-2">
-                      <Waypoints className="h-5 w-5 text-muted-foreground" />
-                      <h3 className="font-medium">Khan Academy</h3>
+                      <Rss className="h-5 w-5 text-muted-foreground" />
+                      <h3 className="font-medium">NewsAPI.org</h3>
                     </div>
+                     <p className="text-sm text-muted-foreground">
+                        Connect your NewsAPI.org account to get real-time news from thousands of sources.
+                    </p>
                     <div className="space-y-2">
-                         <Button variant="outline">Connect Khan Academy</Button>
-                    </div>
-                </div>
-                <Separator />
-                 <div className="space-y-4">
-                    <div className="flex items-center gap-2">
-                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"></path><polyline points="14 2 14 8 20 8"></polyline><path d="M12 18h1"></path><path d="M15 18h1"></path><path d="M9 18h1"></path><path d="M12.5 15h-1v-2.5a.5.5 0 0 1 .5-.5h1a.5.5 0 0 1 .5.5v2.5a.5.5 0 0 1-.5.5z"></path></svg>
-                      <h3 className="font-medium">Google Scholar</h3>
-                    </div>
-                    <div className="space-y-2">
-                        <Label>Authentication</Label>
-                        <p className="text-sm text-muted-foreground">
-                            Connect your Google Account to authorize access.
-                        </p>
-                         <Button variant="outline">Connect Google Account</Button>
+                        <Label htmlFor="news-api-key">API Key</Label>
+                         <Input id="news-api-key" placeholder="Enter your NewsAPI.org API Key" />
                     </div>
                 </div>
             </CardContent>
             <CardFooter>
-                <Button>Save Integrations</Button>
+                <Button>Save Integration</Button>
             </CardFooter>
           </Card>
         </TabsContent>

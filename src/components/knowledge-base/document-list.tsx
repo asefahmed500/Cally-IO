@@ -45,13 +45,13 @@ export function DocumentList() {
             setDocuments(originalDocuments);
             toast({
                 variant: 'destructive',
-                title: 'Error deleting document',
+                title: 'Error deleting source file',
                 description: result.error,
             });
         } else {
             toast({
-                title: 'Document deleted',
-                description: 'The document has been removed.',
+                title: 'Source file deleted',
+                description: 'The source file has been removed.',
             });
         }
     };
@@ -59,8 +59,8 @@ export function DocumentList() {
     return (
         <Card>
             <CardHeader>
-                <CardTitle>Subject Materials</CardTitle>
-                <CardDescription>These are the materials you've uploaded.</CardDescription>
+                <CardTitle>Managed Sources</CardTitle>
+                <CardDescription>A list of your custom uploaded news source files.</CardDescription>
             </CardHeader>
             <CardContent>
                 {loading ? (
@@ -69,8 +69,8 @@ export function DocumentList() {
                     </div>
                 ) : documents.length === 0 ? (
                     <div className="text-center py-10">
-                        <p className="text-muted-foreground">No materials uploaded yet.</p>
-                        <p className="text-sm text-muted-foreground">Use the uploader to add files.</p>
+                        <p className="text-muted-foreground">No source files uploaded yet.</p>
+                        <p className="text-sm text-muted-foreground">Use the uploader to add custom sources.</p>
                     </div>
                 ) : (
                     <Table>

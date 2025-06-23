@@ -1,167 +1,75 @@
 
 "use client"
 
-import { useState, useEffect, useRef, useCallback, FormEvent, ChangeEvent } from 'react'
+import { useState, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
 import { Button } from "@/components/ui/button"
-import { Loader2, User, Bot, GraduationCap } from 'lucide-react'
-import { learningCompanion } from '@/ai/flows/ai-agent'
+import { Loader2, Newspaper } from 'lucide-react'
+import { generateNewsBriefing } from '@/ai/flows/ai-agent'
 import { useToast } from '@/hooks/use-toast'
 import { ScrollArea } from '@/components/ui/scroll-area'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { cn } from '@/lib/utils'
 
-interface Message {
-    role: 'user' | 'assistant'
-    content: string
-}
-
-const SESSION_ID_KEY = 'cally-io-session-id';
-const MESSAGES_KEY_PREFIX = 'cally-io-messages-';
-
-export function LearningPanel() {
+export function BriefingPanel() {
     const { toast } = useToast()
-    const viewportRef = useRef<HTMLDivElement>(null);
-
-    const [sessionId, setSessionId] = useState<string>('')
     const [loading, setLoading] = useState(false)
-    const [input, setInput] = useState('')
-    const [messages, setMessages] = useState<Message[]>([])
+    const [briefing, setBriefing] = useState<string | null>(null)
 
-    useEffect(() => {
-        let storedSessionId = localStorage.getItem(SESSION_ID_KEY);
-        if (!storedSessionId) {
-            storedSessionId = crypto.randomUUID();
-            localStorage.setItem(SESSION_ID_KEY, storedSessionId);
-        }
-        setSessionId(storedSessionId);
-
-        const storedMessages = localStorage.getItem(`${MESSAGES_KEY_PREFIX}${storedSessionId}`);
-        if (storedMessages) {
-            setMessages(JSON.parse(storedMessages));
-        } else {
-            setMessages([
-                {
-                    role: 'assistant',
-                    content: "Hello! I'm your AI Learning Companion. What topic would you like to explore today?",
-                }
-            ]);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (sessionId && messages.length > 0) {
-            localStorage.setItem(`${MESSAGES_KEY_PREFIX}${sessionId}`, JSON.stringify(messages));
-        }
-    }, [messages, sessionId]);
-
-    useEffect(() => {
-        if (viewportRef.current) {
-            viewportRef.current.scrollTo({
-                top: viewportRef.current.scrollHeight,
-                behavior: 'smooth'
-            });
-        }
-    }, [messages]);
-    
-    const handleInputChange = (e: ChangeEvent<HTMLTextAreaElement>) => {
-        setInput(e.target.value)
-    }
-
-    const handleSubmit = useCallback(async (currentQuery: string) => {
-        if (!currentQuery.trim() || !sessionId) {
-            return
-        }
+    const handleGenerateBriefing = useCallback(async () => {
         setLoading(true)
-        
-        const newUserMessage: Message = { role: 'user', content: currentQuery };
-        setMessages(prev => [...prev, newUserMessage]);
+        setBriefing(null)
         
         try {
-            const result = await learningCompanion({ query: currentQuery, sessionId })
-            const newAssistantMessage: Message = { role: 'assistant', content: result.explanation };
-            setMessages(prev => [...prev, newAssistantMessage]);
+            // In a real app, these interests would come from user settings.
+            const interests = ["Technology", "Artificial Intelligence", "Global Economy"];
+            const result = await generateNewsBriefing({ interests });
+            setBriefing(result.briefing);
         } catch (error) {
             console.error(error)
-            const errorMessage: Message = { role: 'assistant', content: "Sorry, I ran into an error. Please try again." };
-            setMessages(prev => [...prev, errorMessage]);
-            toast({ variant: 'destructive', title: 'Error', description: 'Failed to get explanation.' })
+            toast({ variant: 'destructive', title: 'Error', description: 'Failed to generate briefing.' })
         } finally {
             setLoading(false)
         }
-    }, [toast, sessionId]);
+    }, [toast]);
 
-    const handleFormSubmit = (e: FormEvent) => {
-        e.preventDefault();
-        const query = input;
-        setInput('');
-        handleSubmit(query);
-    }
 
     return (
-        <Card className="flex flex-col h-[75vh]">
+        <Card className="flex flex-col h-full min-h-[60vh]">
             <CardHeader>
-                <CardTitle>AI Learning Companion</CardTitle>
-                <CardDescription>Ask me anything! I'm here to help you learn and understand new topics.</CardDescription>
+                <CardTitle>Briefing Studio</CardTitle>
+                <CardDescription>Your personalized news summary, powered by AI.</CardDescription>
             </CardHeader>
-            <CardContent className="flex-1 overflow-hidden p-0">
-                <ScrollArea className="h-full" viewportRef={viewportRef}>
-                    <div className="space-y-4 p-6">
-                        {messages.map((message, index) => (
-                            <div key={index} className={cn("flex items-start gap-4", message.role === 'user' ? 'justify-end' : '')}>
-                                {message.role === 'assistant' && (
-                                    <Avatar className="h-8 w-8 border">
-                                        <AvatarFallback><Bot size={20} className="text-primary" /></AvatarFallback>
-                                    </Avatar>
-                                )}
-                                <div className={cn("max-w-[85%] rounded-lg p-3", message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-                                    <p className="whitespace-pre-wrap text-sm">{message.content}</p>
-                                </div>
-                                 {message.role === 'user' && (
-                                    <Avatar className="h-8 w-8 border">
-                                        <AvatarFallback><User size={20} /></AvatarFallback>
-                                    </Avatar>
-                                )}
-                            </div>
-                        ))}
+            <CardContent className="flex-1 overflow-hidden">
+                <ScrollArea className="h-full">
+                    <div className="p-1">
                         {loading && (
-                             <div className="flex items-start gap-4">
-                                <Avatar className="h-8 w-8 border">
-                                    <AvatarFallback><Bot size={20} className="text-primary"/></AvatarFallback>
-                                </Avatar>
-                                <div className="max-w-[75%] rounded-lg p-3 bg-muted flex items-center gap-2">
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                    <span className="text-sm text-muted-foreground">Thinking...</span>
-                                </div>
+                             <div className="flex flex-col items-center justify-center h-full gap-4 text-muted-foreground">
+                                <Loader2 className="h-12 w-12 animate-spin" />
+                                <p>Generating your briefing...</p>
+                                <p className="text-sm">This may take a moment.</p>
+                            </div>
+                        )}
+
+                        {!loading && !briefing && (
+                            <div className="flex flex-col items-center justify-center h-full gap-4 text-center">
+                                <Newspaper className="h-16 w-16 text-muted-foreground" />
+                                <h3 className="text-xl font-semibold">Ready for your news?</h3>
+                                <p className="text-muted-foreground">Click the button below to generate your personalized briefing.</p>
+                            </div>
+                        )}
+
+                        {briefing && (
+                             <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap rounded-lg bg-muted p-4">
+                                {briefing}
                             </div>
                         )}
                     </div>
                 </ScrollArea>
             </CardContent>
             <CardFooter className="pt-4 border-t">
-                 <form onSubmit={handleFormSubmit} className="flex w-full items-start gap-4">
-                    <Textarea
-                        id="query"
-                        name="query"
-                        placeholder="e.g., Explain the theory of relativity in simple terms..."
-                        value={input}
-                        onChange={handleInputChange}
-                        required
-                        className="flex-1 resize-none"
-                        rows={2}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                handleFormSubmit(e);
-                            }
-                        }}
-                    />
-                    <Button type="submit" size="icon" className="shrink-0" disabled={loading || !input.trim()}>
-                        <GraduationCap className="h-4 w-4" />
-                        <span className="sr-only">Ask</span>
-                    </Button>
-                </form>
+                 <Button onClick={handleGenerateBriefing} className="w-full" disabled={loading}>
+                    {loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Newspaper className="mr-2 h-4 w-4" />}
+                    {loading ? 'Generating...' : 'Generate New Briefing'}
+                </Button>
             </CardFooter>
         </Card>
     )

@@ -1,9 +1,9 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { LearningPanel } from './chat-panel';
+import { BriefingPanel } from './chat-panel';
 import React from "react";
 
-export default async function LearningStudioPage() {
+export default async function BriefingPage() {
   const user = await getLoggedInUser();
   if (!user) {
     redirect("/login");
@@ -12,10 +12,10 @@ export default async function LearningStudioPage() {
   return (
     <React.Fragment>
        <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">Learning Studio</h1>
-        <p className="text-muted-foreground">Your personal space to explore and learn new things.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Your News Briefing</h1>
+        <p className="text-muted-foreground">Generate a personalized summary of today's top stories.</p>
       </header>
-      <LearningPanel />
+      <BriefingPanel />
     </React.Fragment>
   );
 }

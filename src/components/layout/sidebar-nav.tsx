@@ -12,18 +12,18 @@ import {
   SidebarTrigger,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, Bot, BookOpen, LogOut, GraduationCap } from 'lucide-react';
+import { LayoutDashboard, Settings, Bot, List, LogOut, Newspaper } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
 import type { Models } from 'appwrite';
 
-const CallyLogo = () => (
+const NewsGridLogo = () => (
     <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
         <div className="p-1.5 bg-primary rounded-lg">
-            <Bot className="w-6 h-6 text-primary-foreground" />
+            <Newspaper className="w-6 h-6 text-primary-foreground" />
         </div>
-      <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden">Cally-IO</h1>
+      <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden">NewsGrid</h1>
     </div>
 );
 
@@ -45,7 +45,7 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
   return (
     <Sidebar collapsible="icon" className="group-data-[collapsible=icon]:p-0">
       <SidebarHeader className="h-16 justify-between p-2">
-            <CallyLogo />
+            <NewsGridLogo />
             <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
       </SidebarHeader>
       <SidebarContent>
@@ -58,16 +58,16 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
             </Link>
           </SidebarMenuItem>
            <SidebarMenuItem>
-            <Link href="/knowledge-base" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/knowledge-base'} tooltip={{children: 'Subjects'}}>
-                <a><BookOpen /><span>Subjects</span></a>
+            <Link href="/chat" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/chat'} tooltip={{children: 'Briefing'}}>
+                <a><Newspaper /><span>Briefing</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Link href="/chat" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/chat'} tooltip={{children: 'Learning Studio'}}>
-                <a><GraduationCap /><span>Learning Studio</span></a>
+            <Link href="/knowledge-base" passHref>
+              <SidebarMenuButton asChild isActive={pathname === '/knowledge-base'} tooltip={{children: 'Sources'}}>
+                <a><List /><span>Sources</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
