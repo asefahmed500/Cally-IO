@@ -4,7 +4,6 @@ import { SidebarProvider, SidebarInset } from '@/components/ui/sidebar';
 import { SidebarNav } from '@/components/layout/sidebar-nav';
 import { Toaster } from "@/components/ui/toaster"
 import { getLoggedInUser } from '@/lib/auth';
-import { usePathname } from 'next/navigation';
 
 export const metadata: Metadata = {
   title: 'Cally-IO',

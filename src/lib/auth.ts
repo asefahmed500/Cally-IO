@@ -1,7 +1,7 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { Account, Client } from 'node-appwrite';
+import { Account, Client } from 'appwrite';
 
 export async function getLoggedInUser() {
   try {
