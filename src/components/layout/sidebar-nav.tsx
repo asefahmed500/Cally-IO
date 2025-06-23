@@ -11,7 +11,7 @@ import {
   SidebarTrigger,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, LogOut, Target, MessageCircle } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, BrainCircuit, BookOpen } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
@@ -20,9 +20,9 @@ import type { Models } from 'appwrite';
 const Logo = () => (
     <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
         <div className="p-1.5 bg-primary rounded-lg">
-            <Target className="w-6 h-6 text-primary-foreground" />
+            <BrainCircuit className="w-6 h-6 text-primary-foreground" />
         </div>
-      <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden">LeadKit</h1>
+      <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden">Intellecta</h1>
     </div>
 );
 
@@ -56,9 +56,9 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
             </Link>
           </SidebarMenuItem>
            <SidebarMenuItem>
-            <Link href="/ai-assistant" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/ai-assistant'} tooltip={{children: 'AI Assistant'}}>
-                <a><MessageCircle /><span>AI Assistant</span></a>
+            <Link href="/knowledge-base" passHref>
+              <SidebarMenuButton asChild isActive={pathname.startsWith('/knowledge-base')} tooltip={{children: 'Knowledge Base'}}>
+                <a><BookOpen /><span>Knowledge Base</span></a>
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
