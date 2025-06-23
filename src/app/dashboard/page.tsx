@@ -1,9 +1,6 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { MessageSquare, BookOpen } from "lucide-react";
+import { LeadList } from "@/components/dashboard/lead-list";
 
 export default async function DashboardPage() {
   const user = await getLoggedInUser();
@@ -11,55 +8,56 @@ export default async function DashboardPage() {
     redirect("/login");
   }
 
+  // In a real application, you would fetch these leads from your database.
+  const mockLeads = [
+    {
+      id: "1",
+      name: "Alice Johnson",
+      title: "CTO",
+      company: "Innovate Inc.",
+      companyDescription: "A leading provider of cloud-based enterprise solutions.",
+      score: 92,
+      status: "Hot",
+    },
+    {
+      id: "2",
+      name: "Bob Williams",
+      title: "Marketing Director",
+      company: "Growth Co.",
+      companyDescription: "A fast-growing startup in the digital marketing space.",
+      score: 85,
+      status: "Warm",
+    },
+    {
+        id: "3",
+        name: "Charlie Brown",
+        title: "Product Manager",
+        company: "Synergy Corp.",
+        companyDescription: "Develops productivity software for remote teams.",
+        score: 78,
+        status: "Warm",
+    },
+    {
+        id: "4",
+        name: "Diana Miller",
+        title: "VP of Sales",
+        company: "Solutions LLC",
+        companyDescription: "Offers bespoke software development services for the finance industry.",
+        score: 65,
+        status: "Cold",
+    }
+  ];
+
   return (
     <div className="flex flex-col gap-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Welcome to Intellecta</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Lead Dashboard</h1>
         <p className="text-muted-foreground">
-          Your company's intelligent knowledge brain.
+          Manage and engage with your qualified leads.
         </p>
       </header>
       
-      <div className="grid md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-              <div className="flex items-center gap-3">
-                <BookOpen className="h-8 w-8 text-primary" />
-                <CardTitle>Manage Knowledge Base</CardTitle>
-              </div>
-              <CardDescription>
-                  Build your AI's brain by uploading your company documents.
-              </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-start gap-4">
-              <p>
-                  The first step is to upload your company's documents. You can upload PDFs, Word documents, or plain text files. Once uploaded, the system will automatically process and index them, making them searchable for the AI.
-              </p>
-              <Link href="/knowledge-base" passHref>
-                  <Button>Go to Knowledge Base</Button>
-              </Link>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-              <div className="flex items-center gap-3">
-                 <MessageSquare className="h-8 w-8 text-primary" />
-                <CardTitle>AI Assistant</CardTitle>
-              </div>
-              <CardDescription>
-                  Chat with your AI to get instant answers from your knowledge base.
-              </CardDescription>
-          </CardHeader>
-          <CardContent className="flex flex-col items-start gap-4">
-              <p>
-                  After you've uploaded documents, you can ask questions to your AI assistant. It will use the information from your knowledge base to provide accurate and contextual answers.
-              </p>
-              <Link href="/assistant" passHref>
-                  <Button>Start Chatting</Button>
-              </Link>
-          </CardContent>
-        </Card>
-      </div>
+      <LeadList leads={mockLeads} />
     </div>
   )
 }
