@@ -10,7 +10,6 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import wav from 'wav';
-import { googleAI } from '@genkit-ai/googleai';
 
 // Input Schema
 const ScriptGeneratorInputSchema = z.object({
@@ -94,9 +93,13 @@ const scriptGeneratorFlow = ai.defineFlow(
     const scriptResponse = await scriptPrompt(input);
     const scriptText = scriptResponse.output!;
 
+    if (!scriptText) {
+        throw new Error("AI script generation failed. This might be due to a missing or invalid API key.");
+    }
+
     // Step 2: Generate the audio from the script text
     const { media } = await ai.generate({
-      model: googleAI.model('gemini-2.5-flash-preview-tts'),
+      model: 'gemini-2.5-flash-preview-tts',
       config: {
         responseModalities: ['AUDIO'],
         speechConfig: {
