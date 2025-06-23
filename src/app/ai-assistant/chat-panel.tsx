@@ -7,39 +7,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bot, User, Loader2, FileText, CornerDownLeft } from 'lucide-react';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-
-interface Source {
-  type: 'document';
-  title: string;
-  content: string;
-}
+import { Bot, User, Loader2, CornerDownLeft } from 'lucide-react';
 
 interface Message {
   id: string;
   role: 'user' | 'assistant';
   content: string;
-  sources?: Source[];
-}
-
-// Simple utility to parse sources from the AI's markdown response
-function parseSources(text: string): Source[] {
-  const sources: Source[] = [];
-  const sourcesSection = text.split('**Sources:**')[1];
-  if (!sourcesSection) return sources;
-
-  // Regex to find list items starting with * or - and capture the filename and content
-  const sourceRegex = /[\*\-]\s*\*\*(.*?)\*\*:\s*([\s\S]*?)(?=\n[\*\-]|\n*$)/g;
-  let match;
-  while ((match = sourceRegex.exec(sourcesSection)) !== null) {
-    sources.push({
-      type: 'document',
-      title: match[1].trim(),
-      content: match[2].trim(),
-    });
-  }
-  return sources;
 }
 
 export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
@@ -65,7 +38,7 @@ export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: input, userId: user.$id }),
+        body: JSON.stringify({ query: input }),
       });
 
       if (!response.body) {
@@ -101,21 +74,6 @@ export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
     }
   };
 
-  // After the stream is complete, parse sources from the final message content
-  useEffect(() => {
-    if (messages.length > 0 && !isLoading) {
-      const lastMessage = messages[messages.length - 1];
-      if (lastMessage.role === 'assistant' && !lastMessage.sources) {
-        const parsed = parseSources(lastMessage.content);
-        if (parsed.length > 0) {
-          setMessages(prev => prev.map(msg => msg.id === lastMessage.id ? { ...msg, sources: parsed } : msg));
-        }
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isLoading]);
-
-
   // Auto-scroll to bottom
   useEffect(() => {
     const scrollDiv = scrollAreaRef.current?.querySelector('div[data-radix-scroll-area-viewport]');
@@ -128,6 +86,13 @@ export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
     <div className="flex flex-col flex-grow h-full border rounded-lg">
       <ScrollArea className="flex-grow p-4" ref={scrollAreaRef}>
         <div className="space-y-6">
+          {messages.length === 0 && (
+              <div className="text-center text-muted-foreground">
+                  <Bot className="w-12 h-12 mx-auto mb-4" />
+                  <h2 className="text-xl font-semibold">AI Sales Assistant</h2>
+                  <p className="mt-2">Ask me anything about sales, leads, or strategy.</p>
+              </div>
+          )}
           {messages.map((message) => (
             <div key={message.id} className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : ''}`}>
               {message.role === 'assistant' && (
@@ -137,28 +102,6 @@ export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
               )}
               <div className={`rounded-lg p-3 max-w-lg ${message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}`}>
                 <p className="whitespace-pre-wrap">{message.content}</p>
-                 {message.sources && message.sources.length > 0 && (
-                    <div className="mt-4">
-                        <Accordion type="single" collapsible className="w-full">
-                            <AccordionItem value="item-1">
-                                <AccordionTrigger>View Sources ({message.sources.length})</AccordionTrigger>
-                                <AccordionContent>
-                                    <div className="space-y-2">
-                                    {message.sources.map((source, idx) => (
-                                        <div key={idx} className="p-2 text-xs border rounded-md bg-background">
-                                            <p className="font-semibold truncate">
-                                                <FileText className="inline-block w-3 h-3 mr-1" />
-                                                {source.title}
-                                            </p>
-                                            <p className="mt-1 text-muted-foreground line-clamp-3">{source.content}</p>
-                                        </div>
-                                    ))}
-                                    </div>
-                                </AccordionContent>
-                            </AccordionItem>
-                        </Accordion>
-                    </div>
-                )}
               </div>
               {message.role === 'user' && (
                 <Avatar className="w-8 h-8">
@@ -183,7 +126,7 @@ export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
         <form onSubmit={handleSubmit} className="relative flex gap-2">
           <Input
             name="prompt"
-            placeholder="Ask a question..."
+            placeholder="Ask your sales assistant..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
             disabled={isLoading}
