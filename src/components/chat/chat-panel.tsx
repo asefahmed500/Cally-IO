@@ -96,6 +96,8 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
     setInput('');
     setIsLoading(true);
 
+    let modelResponse = '';
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -114,7 +116,7 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let modelResponse = '';
+      
 
       setMessages((prev) => [
         ...prev,

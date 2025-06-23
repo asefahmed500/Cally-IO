@@ -21,7 +21,7 @@ export default async function DashboardPage() {
       <header>
         <h1 className="text-3xl font-bold tracking-tight">AI Assistant</h1>
         <p className="text-muted-foreground">
-          Ask questions about your documents.
+          Ask questions about your documents. I&apos;ll remember our conversations.
         </p>
       </header>
       {!isGoogleConfigured && (
