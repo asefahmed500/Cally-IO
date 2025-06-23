@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { type Models } from 'appwrite';
 
-import { askQuestion, type RAGRetrievalOutput } from '@/ai/flows/rag-retrieval-flow';
+import { runAssistant, type AssistantOutput } from '@/ai/flows/rag-retrieval-flow';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -22,7 +22,7 @@ type FormValues = z.infer<typeof formSchema>;
 interface Message {
   role: 'user' | 'assistant';
   content: string;
-  sources?: RAGRetrievalOutput['retrievedChunks'];
+  sources?: AssistantOutput['sources'];
 }
 
 export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
@@ -44,11 +44,11 @@ export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
     form.reset();
 
     try {
-      const response = await askQuestion({ query: data.prompt, userId: user.$id });
+      const response = await runAssistant({ query: data.prompt, userId: user.$id });
       const assistantMessage: Message = {
         role: 'assistant',
         content: response.answer,
-        sources: response.retrievedChunks,
+        sources: response.sources,
       };
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
@@ -87,9 +87,9 @@ export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
                                         <div key={idx} className="p-2 text-xs border rounded-md bg-background">
                                             <p className="font-semibold truncate">
                                                 <FileText className="inline-block w-3 h-3 mr-1" />
-                                                {source.fileName}
+                                                {source.title}
                                             </p>
-                                            <p className="mt-1 text-muted-foreground line-clamp-3">{source.chunkText}</p>
+                                            <p className="mt-1 text-muted-foreground line-clamp-3">{source.content}</p>
                                         </div>
                                     ))}
                                     </div>
@@ -122,7 +122,7 @@ export function ChatPanel({ user }: { user: Models.User<Models.Preferences> }) {
         <form onSubmit={form.handleSubmit(onSubmit)} className="flex gap-2">
           <Input
             name="prompt"
-            placeholder="Ask a question about your documents..."
+            placeholder="Ask a question..."
             disabled={isSubmitting}
             autoComplete="off"
             {...form.register('prompt')}
