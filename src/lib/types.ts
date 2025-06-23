@@ -1,18 +1,11 @@
-import type { Models } from "node-appwrite";
-
-export interface DocumentChunk extends Models.Document {
-    documentId: string;
-    fileName: string;
-    chunkText: string;
-    userId: string;
-}
-
-export interface DocumentMetadata extends DocumentChunk {}
-
-
-export interface Message {
+export interface Lead {
   id: string;
-  role: "user" | "assistant";
-  content: string;
-  sources?: DocumentChunk[];
+  name: string;
+  email: string;
+  company: string;
+  title: string;
+  status: 'New' | 'Contacted' | 'Qualified' | 'Lost';
+  score?: number;
+  scoreRationale?: string;
+  scoreCategory?: 'Hot' | 'Warm' | 'Cold';
 }

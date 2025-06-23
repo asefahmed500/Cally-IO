@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { KeyRound } from "lucide-react";
+import { KeyRound, Share2 } from "lucide-react";
 
 export default async function SettingsPage() {
   const user = await getLoggedInUser();
@@ -25,7 +25,7 @@ export default async function SettingsPage() {
         <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="account">Account</TabsTrigger>
           <TabsTrigger value="security">Security</TabsTrigger>
-          <TabsTrigger value="api-keys">API Keys</TabsTrigger>
+          <TabsTrigger value="integrations">Integrations</TabsTrigger>
         </TabsList>
 
         <TabsContent value="account" className="mt-6">
@@ -76,11 +76,11 @@ export default async function SettingsPage() {
           </Card>
         </TabsContent>
 
-         <TabsContent value="api-keys" className="mt-6">
+         <TabsContent value="integrations" className="mt-6">
            <Card>
             <CardHeader>
-              <CardTitle>API Keys</CardTitle>
-              <CardDescription>Manage your API keys for third-party integrations.</CardDescription>
+              <CardTitle>CRM & API Integrations</CardTitle>
+              <CardDescription>Connect LeadKit to your favorite tools.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
                <Alert>
@@ -90,11 +90,17 @@ export default async function SettingsPage() {
                     Your Google AI API key is configured on the server. You can manage it in your project's environment variables.
                   </AlertDescription>
                 </Alert>
-              <div className="space-y-2">
-                <Label htmlFor="google-api-key">Google AI API Key</Label>
-                <Input id="google-api-key" placeholder="**************" disabled />
-              </div>
+                <Alert>
+                  <Share2 className="h-4 w-4" />
+                  <AlertTitle>Connect your CRM</AlertTitle>
+                  <AlertDescription>
+                    Integrate with platforms like Salesforce or HubSpot to automatically sync leads and activities. (Integration point)
+                  </AlertDescription>
+                </Alert>
             </CardContent>
+             <CardFooter>
+                <Button disabled>Manage Integrations</Button>
+            </CardFooter>
           </Card>
         </TabsContent>
       </Tabs>
