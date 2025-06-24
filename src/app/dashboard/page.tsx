@@ -48,9 +48,9 @@ export default async function DashboardPage() {
   return (
     <div className="flex flex-col h-full gap-4">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">AI Assistant</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Welcome, {user.name.split(' ')[0]}!</h1>
         <p className="text-muted-foreground">
-          Ask questions about your documents. I&apos;ll remember our conversations.
+          How can I help you today? Ask a question or upload a document to get started.
         </p>
       </header>
       {!isGoogleConfigured && (
@@ -59,7 +59,7 @@ export default async function DashboardPage() {
           <AlertTitle>Google AI Not Configured</AlertTitle>
           <AlertDescription>
             Please set the `GOOGLE_API_KEY` environment variable to enable the AI assistant.
-          </AAlertDescription>
+          </AlertDescription>
         </Alert>
       )}
       {!isAppwriteConfigured && (
@@ -71,15 +71,6 @@ export default async function DashboardPage() {
           </AlertDescription>
         </Alert>
       )}
-       {isAppwriteConfigured && isChatActive && (
-         <Alert>
-            <FileText className="h-4 w-4" />
-            <AlertTitle>Getting Started</AlertTitle>
-            <AlertDescription>
-             To begin, upload a document using the paperclip icon in the chat input below. You can upload PDF, DOCX, or TXT files. Once processed, you can ask the AI questions about their content.
-            </AlertDescription>
-          </Alert>
-       )}
        {!isChatActive && (
          <Alert variant="default" className="bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200">
             <Clock className="h-4 w-4" />

@@ -13,6 +13,7 @@ import { ID, Permission, Role, type Models } from 'appwrite';
 import { processDocument } from '@/ai/flows/process-document';
 import { logInteraction } from '@/ai/flows/log-metrics';
 import { v4 as uuidv4 } from 'uuid';
+import { ConversationStarters } from './conversation-starters';
 
 async function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -128,17 +129,16 @@ export function ChatPanel({
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const sendMessage = async (prompt: string) => {
+    if (!prompt.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: input, id: uuidv4() };
+    const userMessage: ChatMessage = { role: 'user', content: prompt, id: uuidv4() };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     let modelResponse = '';
-    const plainHistory: Message[] = messages.map(({role, content}) => ({role, content}));
+    const plainHistory: Message[] = [...messages, {role: 'user', content: prompt}].map(({role, content}) => ({role, content}));
 
     try {
       const response = await fetch('/api/chat', {
@@ -147,8 +147,8 @@ export function ChatPanel({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          history: plainHistory, // Send history *before* the new user message
-          prompt: input,
+          history: plainHistory.slice(0, -1), // Send history *before* the new user message
+          prompt: prompt,
         }),
       });
 
@@ -159,7 +159,6 @@ export function ChatPanel({
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       
-      // Add a placeholder for the model's response
       const modelMessageId = uuidv4();
       setMessages((prev) => [
         ...prev,
@@ -192,6 +191,11 @@ export function ChatPanel({
     } finally {
       setIsLoading(false);
     }
+  }
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    sendMessage(input);
   };
 
   React.useEffect(() => {
@@ -212,11 +216,12 @@ export function ChatPanel({
     <div className="flex flex-col h-[calc(100%-4rem)]">
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-6 pr-4">
-          {messages.length === 0 && (
+          {messages.length === 0 && !effectiveDisabled && (
+            <ConversationStarters onStarterClick={sendMessage} />
+          )}
+          {messages.length === 0 && effectiveDisabled && (
             <div className="text-center text-muted-foreground p-8">
-              {disabled ? 'Please configure the application to enable chat.' : 
-               isChatActive ? 'Start a conversation with Cally-IO.' : 'Chat is currently unavailable.'
-              }
+              {disabled ? 'Please configure the application to enable chat.' : 'Chat is currently unavailable.'}
             </div>
           )}
           {messages.map((message, index) => {
