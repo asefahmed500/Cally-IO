@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access, lead management, and performance analytics.
+Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access, lead management, performance analytics, and a call script generator.
 
 ## Project Structure
 
@@ -11,13 +11,13 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - `/src/app`: Contains the main application routes, pages, and layouts.
   - `/src/app/api`: API routes for server-side logic, like handling chat requests.
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
-  - `/src/app/settings`: The admin-only analytics dashboard page.
+  - `/src/app/settings`: The admin-only page for analytics and system settings (like Twilio).
   - `/src/app/leads`: The admin-only lead management dashboard.
   - `layout.tsx`: The root layout for the application.
   - `page.tsx`: The public-facing landing page.
 
 - `/src/ai`: Contains all Genkit-related code for AI functionality.
-  - `/src/ai/flows`: Defines the core AI workflows, such as document processing, conversational chat, and metrics logging.
+  - `/src/ai/flows`: Defines the core AI workflows, such as document processing, conversational chat, script generation, and metrics logging.
   - `/src/ai/genkit.ts`: Configures and initializes the Genkit AI instance.
 
 - `/src/components`: Contains reusable React components.
@@ -67,6 +67,13 @@ The project follows a standard Next.js App Router structure. Key directories inc
 2. The `logInteraction` Genkit flow is triggered with the message ID and feedback type.
 3. The flow saves a new document to the Appwrite "metrics" collection, containing the user's ID, the message ID, and the feedback provided.
 
+### Call Script Generation (`/src/ai/flows/generate-call-script.ts`)
+1. An admin user clicks the "Generate Script & Call" button on the leads dashboard.
+2. A server action (`initiateCall`) is invoked.
+3. The action calls the `generateCallScript` Genkit flow, passing the lead's details.
+4. The AI generates a personalized call script based on a pre-defined template and the lead's data.
+5. The script is returned to the UI and displayed in a notification.
+
 ### Admin Dashboards (`/src/app/settings/page.tsx` & `/src/app/leads/page.tsx`)
 1. An admin user navigates to the `/settings` or `/leads` page.
 2. The page component (running on the server) fetches all documents from the corresponding "metrics" or "leads" collection.
@@ -77,4 +84,5 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 - **Styling**: Colors and themes can be adjusted in `/src/app/globals.css`.
 - **AI Behavior**: The core AI prompt and instructions can be modified in `/src/ai/flows/conversational-chat.ts`.
+- **Call Script Template**: The template for generating call scripts can be modified in `/src/ai/flows/generate-call-script.ts`.
 - **UI Components**: UI components can be found and modified in `/src/components`.

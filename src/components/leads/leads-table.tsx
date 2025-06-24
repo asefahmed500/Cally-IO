@@ -14,12 +14,13 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, MoreHorizontal, Loader2 } from 'lucide-react';
+import { Download, MoreHorizontal, Loader2, Phone } from 'lucide-react';
 import type { Lead } from '@/app/leads/page';
-import { updateLeadStatus } from '@/app/leads/actions';
+import { updateLeadStatus, initiateCall } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { useRouter } from 'next/navigation';
 
@@ -32,7 +33,6 @@ const statusColors: { [key: string]: 'default' | 'secondary' | 'success' | 'warn
 
 export function LeadsTable({ leads }: { leads: Lead[] }) {
   const { toast } = useToast();
-  const router = useRouter();
   const [isPending, startTransition] = React.useTransition();
 
   const handleStatusChange = (leadId: string, newStatus: string) => {
@@ -49,9 +49,38 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
           title: 'Status Updated',
           description: 'The lead status has been successfully updated.',
         });
-        // The revalidation happens on the server, so no router refresh is strictly needed,
-        // but it's good practice for non-form actions.
       }
+    });
+  };
+
+  const handleInitiateCall = (lead: Lead) => {
+    startTransition(async () => {
+        toast({
+          title: 'Generating Script...',
+          description: `AI is creating a script for ${lead.name}.`,
+        });
+        const result = await initiateCall({
+            leadName: lead.name,
+            leadStatus: lead.status,
+            leadScore: lead.score,
+        });
+        if (result.error) {
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: result.error,
+            });
+        } else {
+            toast({
+                title: result.message || 'Script Generated!',
+                description: (
+                    <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
+                        <code className="text-white text-xs whitespace-pre-wrap">{result.script}</code>
+                    </pre>
+                ),
+                duration: 20000, // show for longer
+            });
+        }
     });
   };
 
@@ -129,6 +158,11 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
+                         <DropdownMenuItem onClick={() => handleInitiateCall(lead)} disabled={isPending}>
+                            <Phone className="mr-2 h-4 w-4" />
+                            Generate Script & Call
+                         </DropdownMenuItem>
+                         <DropdownMenuSeparator />
                         {Object.keys(statusColors).map((status) => (
                           <DropdownMenuItem
                             key={status}

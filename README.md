@@ -8,6 +8,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **UI**: React, ShadCN UI, Tailwind CSS
 - **AI**: Google Gemini via Genkit
 - **Backend & Database**: Appwrite (for authentication, storage, and database)
+- **Calling**: Twilio (for automated calling features)
 
 ## Core Features
 
@@ -16,6 +17,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **Lead Management Dashboard**: An admin-only dashboard to view, manage, and track all users who sign up.
 - **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
+- **AI Script Generator**: The AI can dynamically generate personalized call scripts for leads based on their profile.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
 - **Performance Analytics**: A dedicated, admin-only dashboard tracks key metrics like user satisfaction and resolution rates, powered by real user feedback.
 - **Responsive Design**: The UI is designed to work seamlessly on both desktop and mobile devices.
@@ -27,6 +29,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - Node.js (v18 or later)
 - An Appwrite project
 - A Google AI API Key
+- A Twilio account (optional, for calling features)
 
 ### 2. Installation
 
@@ -62,6 +65,12 @@ NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID=your_leads_collection_id
 # The email address for the first admin user. When a user signs up with this email,
 # they will be automatically assigned the 'admin' role.
 ADMIN_EMAIL=youradminemail@example.com
+
+# Twilio Configuration (Optional)
+# Required for the Automated Calling feature.
+TWILIO_ACCOUNT_SID=your_twilio_account_sid
+TWILIO_AUTH_TOKEN=your_twilio_auth_token
+TWILIO_PHONE_NUMBER=your_twilio_phone_number
 ```
 
 See the **Appwrite Setup** section below for details on how to get these values.
@@ -124,4 +133,5 @@ To create your admin account, sign up using the email you specified in the `ADMI
 5.  **Chat Interaction**: When a user asks a question, the `conversationalRagChat` flow is initiated. It queries the database to find document chunks created by *that specific user*.
 6.  **Response Generation**: The relevant, user-owned document chunks are passed as context to the Gemini model to generate a helpful answer.
 7.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
-8.  **Analytics & Leads**: Admin dashboards query the `metrics` and `leads` collections to provide live data on user satisfaction and to manage the customer lifecycle.
+8.  **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
+9.  **Analytics & Leads**: Admin dashboards query the `metrics` and `leads` collections to provide live data on user satisfaction and to manage the customer lifecycle.

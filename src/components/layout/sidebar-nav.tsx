@@ -11,7 +11,7 @@ import {
   SidebarTrigger,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, LogOut, BotMessageSquare, BarChart2, Users } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, BotMessageSquare, Users, Phone } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
@@ -67,8 +67,8 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
                 </SidebarMenuItem>
                 <SidebarMenuItem>
                     <Link href="/settings" passHref>
-                    <SidebarMenuButton asChild isActive={pathname === '/settings'} tooltip={{children: 'Analytics'}}>
-                        <a><BarChart2 /><span>Analytics</span></a>
+                    <SidebarMenuButton asChild isActive={pathname === '/settings'} tooltip={{children: 'Settings'}}>
+                        <a><Settings /><span>Settings</span></a>
                     </SidebarMenuButton>
                     </Link>
                 </SidebarMenuItem>
