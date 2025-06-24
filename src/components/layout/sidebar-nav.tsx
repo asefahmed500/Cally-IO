@@ -56,19 +56,19 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
+          <SidebarMenuItem>
+            <Link href="/knowledge" passHref>
+            <SidebarMenuButton asChild isActive={pathname === '/knowledge'} tooltip={{children: 'My Documents'}}>
+                <a><BookOpen /><span>My Documents</span></a>
+            </SidebarMenuButton>
+            </Link>
+          </SidebarMenuItem>
           {isAdmin && (
             <>
                 <SidebarMenuItem>
                     <Link href="/leads" passHref>
                     <SidebarMenuButton asChild isActive={pathname === '/leads'} tooltip={{children: 'Leads'}}>
                         <a><Users /><span>Leads</span></a>
-                    </SidebarMenuButton>
-                    </Link>
-                </SidebarMenuItem>
-                 <SidebarMenuItem>
-                    <Link href="/knowledge" passHref>
-                    <SidebarMenuButton asChild isActive={pathname === '/knowledge'} tooltip={{children: 'Knowledge'}}>
-                        <a><BookOpen /><span>Knowledge</span></a>
                     </SidebarMenuButton>
                     </Link>
                 </SidebarMenuItem>

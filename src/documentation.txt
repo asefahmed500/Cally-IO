@@ -13,7 +13,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
   - `/src/app/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
   - `/src/app/leads`: The admin-only lead management dashboard.
-  - `/src/app/knowledge`: The admin-only hub for managing the AI's knowledge base.
+  - `/src/app/knowledge`: A page for users to manage their documents, with an enhanced view for admins.
   - `layout.tsx`: The root layout for the application.
   - `page.tsx`: The public-facing landing page.
 
@@ -25,7 +25,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/components/chat`: Components specific to the chat interface.
   - `/src/components/layout`: Components for the overall application layout (sidebar, header).
   - `/src/components/leads`: Components specific to the leads dashboard, including the profile view.
-  - `/src/components/knowledge`: Components for the knowledge management dashboard.
+  - `/src/components/knowledge`: Components for the knowledge management page.
   - `/src/components/settings`: Components for the settings page forms.
   - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
 
@@ -53,11 +53,11 @@ The project follows a standard Next.js App Router structure. Key directories inc
 3. The `processDocument` Genkit flow is invoked with the file's data.
 4. The flow extracts text, splits it into chunks, generates embeddings, and saves them to the "embeddings" collection.
 
-### AI & Business Hours Configuration (`/src/app/settings/page.tsx` & `actions.ts`)
-1. An admin navigates to the Settings page.
-2. The page fetches the current AI & business configuration from the `settings` collection.
-3. The admin modifies the AI's personality, sets business hours, and configures an away message.
-4. The `updateAISettings` server action securely updates the configuration document in Appwrite.
+### Knowledge Management (`/src/app/knowledge/page.tsx`)
+1. A user navigates to the "My Documents" page.
+2. The page fetches and displays a list of only the documents that user has uploaded.
+3. The user can filter their documents by name and use the action menu to delete any document.
+4. If an admin visits this page, they see a "Knowledge Management" view with all documents from all users, and can delete any of them.
 
 ### Conversational Chat (`/src/ai/flows/conversational-chat.ts`)
 
@@ -65,15 +65,9 @@ The project follows a standard Next.js App Router structure. Key directories inc
 2. If outside hours, the chat is disabled and an away message is shown.
 3. If within hours, the user submits a question through the chat panel.
 4. The `conversationalRagChat` flow is triggered.
-5. The flow first fetches the latest AI configuration.
-6. It finds the most relevant document chunks for the *current user*.
-7. The relevant chunks, AI configuration, conversation history, and question are compiled into a dynamic prompt.
-8. The prompt is sent to the Gemini LLM to generate a personality-aligned response.
-
-### Analytics Logging (`/src/ai/flows/log-metrics.ts`)
-
-1. A user provides feedback (thumbs up/down) on an AI response.
-2. The `logInteraction` flow saves a new document to the "metrics" collection.
+5. It finds the most relevant document chunks for the *current user*.
+6. The relevant chunks, AI configuration, conversation history, and question are compiled into a dynamic prompt.
+7. The prompt is sent to the Gemini LLM to generate a personality-aligned response.
 
 ### Admin Dashboards (`/src/app/settings/page.tsx` & `/src/app/leads/page.tsx`)
 1. An admin user navigates to the `/settings` or `/leads` pages.
@@ -85,5 +79,4 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 - **Branding & Colors**: Primary colors and themes can be adjusted in `/src/app/globals.css`.
 - **AI Behavior**: Use the Admin Settings UI to configure the AI's personality and instructions. The core prompt template is in `/src/ai/flows/conversational-chat.ts`.
-- **Call Script Template**: The default template for call scripts is in `/src/ai/flows/generate-call-script.ts`.
 - **Integrations**: Add your custom logic for Slack, Google Sheets, and other webhooks in `/src/app/auth/actions.ts` where the `// TODO` comments are placed.

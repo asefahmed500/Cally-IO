@@ -14,7 +14,6 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -33,12 +32,11 @@ import { useToast } from '@/hooks/use-toast';
 import { deleteDocument } from '@/app/knowledge/actions';
 import { Input } from '../ui/input';
 
-export function DocumentList({ documents }: { documents: KnowledgeDocument[] }) {
+export function DocumentList({ documents, isAdmin }: { documents: KnowledgeDocument[], isAdmin: boolean }) {
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
   const [searchTerm, setSearchTerm] = React.useState('');
   const [deleteTarget, setDeleteTarget] = React.useState<KnowledgeDocument | null>(null);
-
 
   const handleDelete = (doc: KnowledgeDocument) => {
     startTransition(async () => {
@@ -61,14 +59,16 @@ export function DocumentList({ documents }: { documents: KnowledgeDocument[] }) 
 
   const filteredDocuments = documents.filter(doc => 
     doc.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    doc.userId.toLowerCase().includes(searchTerm.toLowerCase())
+    (isAdmin && doc.userId.toLowerCase().includes(searchTerm.toLowerCase()))
   );
+
+  const tableColSpan = isAdmin ? 4 : 3;
 
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
         <Input 
-          placeholder="Filter by name or user ID..."
+          placeholder={isAdmin ? "Filter by name or user ID..." : "Filter by file name..."}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="max-w-sm"
@@ -79,7 +79,7 @@ export function DocumentList({ documents }: { documents: KnowledgeDocument[] }) 
           <TableHeader>
             <TableRow>
               <TableHead>File Name</TableHead>
-              <TableHead>Uploaded By (User ID)</TableHead>
+              {isAdmin && <TableHead>Uploaded By (User ID)</TableHead>}
               <TableHead className="hidden md:table-cell">Date Added</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
@@ -89,7 +89,7 @@ export function DocumentList({ documents }: { documents: KnowledgeDocument[] }) 
               filteredDocuments.map((doc) => (
                 <TableRow key={doc.documentId}>
                   <TableCell className="font-medium">{doc.fileName}</TableCell>
-                  <TableCell className="text-muted-foreground">{doc.userId}</TableCell>
+                  {isAdmin && <TableCell className="text-muted-foreground font-mono text-xs">{doc.userId}</TableCell>}
                   <TableCell className="hidden md:table-cell">
                     {new Date(doc.$createdAt).toLocaleDateString()}
                   </TableCell>
@@ -116,7 +116,7 @@ export function DocumentList({ documents }: { documents: KnowledgeDocument[] }) 
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={4} className="h-24 text-center">
+                <TableCell colSpan={tableColSpan} className="h-24 text-center">
                   No documents found.
                 </TableCell>
               </TableRow>
@@ -131,7 +131,7 @@ export function DocumentList({ documents }: { documents: KnowledgeDocument[] }) 
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the document{' '}
-              <span className="font-semibold">"{deleteTarget?.fileName}"</span> and all of its associated data from the knowledge base.
+              <span className="font-semibold">"{deleteTarget?.fileName}"</span> and all of its associated data from your knowledge base.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
