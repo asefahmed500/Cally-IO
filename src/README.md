@@ -18,6 +18,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
 - **Advanced Knowledge Management**: An admin-only hub to view and manage all documents in the knowledge base, including secure deletion.
 - **Configurable AI Agent**: Admins can configure the AI's personality, response style, and add custom business instructions.
+- **Business Hours**: Admins can set operating hours, disabling the chat and showing an "away" message during off-hours.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
 - **AI Script Generator**: The AI can dynamically generate personalized call scripts for leads based on their profile.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
@@ -122,6 +123,11 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `ai_personality` (string, size: 255, required)
         *   `ai_style` (string, size: 255, required)
         *   `ai_instructions` (string, size: 8192, required)
+        *   `business_hours_enabled` (boolean, required, default `false`)
+        *   `business_hours_start` (string, size: 5, required, default `09:00`)
+        *   `business_hours_end` (string, size: 5, required, default `17:00`)
+        *   `business_hours_timezone` (string, size: 255, required, default `UTC`)
+        *   `away_message` (string, size: 1024, required, default `We are currently away...`)
     *   In the **Settings** tab, update the **Permissions** to be `Team (admin)`-only for all operations.
     *   Go to the **Documents** tab and create a single document. Enter `default_config` as the Document ID. Fill in initial values for the attributes (e.g., Personality: "Professional", Style: "Conversational", Instructions: "Your company name is Cally-IO."). The application will use this document to configure the AI.
 
@@ -142,8 +148,8 @@ To create your admin account, sign up using the email you specified in the `ADMI
 2.  **Lead Creation**: When a new user signs up, a corresponding document is created in the `leads` collection, accessible only by admins.
 3.  **Document Upload**: In the chat panel, users upload documents. These are sent to Appwrite Storage with permissions allowing access only for that user and read access for admins.
 4.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text, generates embeddings, and stores them in the Appwrite database with the same secure, document-level permissions.
-5.  **AI Configuration**: Admins can go to the Settings page to define the AI's personality, response style, and custom instructions. These settings are saved to a `settings` collection in Appwrite.
-6.  **Chat Interaction**: When a user asks a question, the `conversationalRagChat` flow is initiated. It first fetches the latest AI configuration from the `settings` collection. It then queries the database to find document chunks created by *that specific user*.
+5.  **AI & Business Configuration**: Admins can go to the Settings page to define the AI's personality, set business hours, and write a custom away message. These settings are saved to a `settings` collection in Appwrite.
+6.  **Chat Interaction**: When a user visits the dashboard, the app checks the business hours. If outside of hours, the chat is disabled. If within hours, the `conversationalRagChat` flow is initiated. It first fetches the latest AI configuration from the `settings` collection. It then queries the database to find document chunks created by *that specific user*.
 7.  **Response Generation**: The relevant, user-owned document chunks, the AI configuration, conversation history, and the user's question are compiled into a dynamic prompt. This is sent to the Gemini model to generate a helpful, context-aware, and personality-aligned response, which is streamed back to the UI.
 8.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
 9.  **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.

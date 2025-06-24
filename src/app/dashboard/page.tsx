@@ -2,7 +2,33 @@ import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { KeyRound, Database, FileText } from "lucide-react";
+import { KeyRound, Database, FileText, Clock } from "lucide-react";
+import { getAISettings } from "@/lib/settings";
+
+function isWithinBusinessHours(settings: Awaited<ReturnType<typeof getAISettings>>): boolean {
+    if (!settings.businessHoursEnabled) {
+        return true;
+    }
+    try {
+        const now = new Date();
+        // Use Intl.DateTimeFormat to get the current time in the target timezone
+        const timeFormatter = new Intl.DateTimeFormat('en-GB', {
+            timeZone: settings.businessHoursTimezone,
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false,
+        });
+        const currentTime = timeFormatter.format(now); // e.g., "14:30"
+        
+        // This is a simple string comparison. It works for same-day hours (e.g., 09:00-17:00).
+        // It does not handle overnight shifts (e.g., 22:00-05:00).
+        return currentTime >= settings.businessHoursStart && currentTime <= settings.businessHoursEnd;
+    } catch (e) {
+        console.error("Error parsing business hours, defaulting to active:", e);
+        // If timezone is invalid or another error occurs, default to being available.
+        return true;
+    }
+}
 
 export default async function DashboardPage() {
   const user = await getLoggedInUser();
@@ -16,6 +42,9 @@ export default async function DashboardPage() {
     !!process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID &&
     !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
 
+  const settings = await getAISettings();
+  const isChatActive = isWithinBusinessHours(settings);
+  
   return (
     <div className="flex flex-col h-full gap-4">
       <header>
@@ -30,7 +59,7 @@ export default async function DashboardPage() {
           <AlertTitle>Google AI Not Configured</AlertTitle>
           <AlertDescription>
             Please set the `GOOGLE_API_KEY` environment variable to enable the AI assistant.
-          </AlertDescription>
+          </AAlertDescription>
         </Alert>
       )}
       {!isAppwriteConfigured && (
@@ -42,7 +71,7 @@ export default async function DashboardPage() {
           </AlertDescription>
         </Alert>
       )}
-       {isAppwriteConfigured && (
+       {isAppwriteConfigured && isChatActive && (
          <Alert>
             <FileText className="h-4 w-4" />
             <AlertTitle>Getting Started</AlertTitle>
@@ -51,8 +80,21 @@ export default async function DashboardPage() {
             </AlertDescription>
           </Alert>
        )}
+       {!isChatActive && (
+         <Alert variant="default" className="bg-amber-100 border-amber-300 text-amber-900 dark:bg-amber-950 dark:border-amber-800 dark:text-amber-200">
+            <Clock className="h-4 w-4" />
+            <AlertTitle>Outside Business Hours</AlertTitle>
+            <AlertDescription>
+              {settings.awayMessage}
+            </AlertDescription>
+          </Alert>
+       )}
 
-      <ChatPanel user={user} disabled={!isGoogleConfigured || !isAppwriteConfigured} />
+      <ChatPanel 
+        user={user} 
+        disabled={!isGoogleConfigured || !isAppwriteConfigured} 
+        isChatActive={isChatActive}
+      />
     </div>
   );
 }

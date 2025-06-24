@@ -26,6 +26,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/components/layout`: Components for the overall application layout (sidebar, header).
   - `/src/components/leads`: Components specific to the leads dashboard, including the profile view.
   - `/src/components/knowledge`: Components for the knowledge management dashboard.
+  - `/src/components/settings`: Components for the settings page forms.
   - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
 
 - `/src/hooks`: Custom React hooks, such as `useToast` for notifications.
@@ -52,26 +53,22 @@ The project follows a standard Next.js App Router structure. Key directories inc
 3. The `processDocument` Genkit flow is invoked with the file's data.
 4. The flow extracts text, splits it into chunks, generates embeddings, and saves them to the "embeddings" collection.
 
-### Knowledge Management (`/src/app/knowledge/page.tsx`)
-1. An admin navigates to the Knowledge page.
-2. The page fetches a list of all unique documents from the `embeddings` collection.
-3. The admin can view all uploaded files and can permanently delete a document and all its associated data using the `deleteDocument` server action.
-4. UI placeholders exist for future FAQ management and content suggestion features.
-
-### AI Configuration (`/src/app/settings/page.tsx` & `actions.ts`)
+### AI & Business Hours Configuration (`/src/app/settings/page.tsx` & `actions.ts`)
 1. An admin navigates to the Settings page.
-2. The page fetches the current AI configuration from the `settings` collection.
-3. The admin modifies the AI's personality, response style, or custom instructions and saves the form.
+2. The page fetches the current AI & business configuration from the `settings` collection.
+3. The admin modifies the AI's personality, sets business hours, and configures an away message.
 4. The `updateAISettings` server action securely updates the configuration document in Appwrite.
 
 ### Conversational Chat (`/src/ai/flows/conversational-chat.ts`)
 
-1. The user submits a question through the chat panel.
-2. The `conversationalRagChat` flow is triggered.
-3. The flow first fetches the latest AI configuration.
-4. It finds the most relevant document chunks for the *current user*.
-5. The relevant chunks, AI configuration, conversation history, and question are compiled into a dynamic prompt.
-6. The prompt is sent to the Gemini LLM to generate a personality-aligned response.
+1. The user visits the dashboard. The app checks if the current time is within configured business hours.
+2. If outside hours, the chat is disabled and an away message is shown.
+3. If within hours, the user submits a question through the chat panel.
+4. The `conversationalRagChat` flow is triggered.
+5. The flow first fetches the latest AI configuration.
+6. It finds the most relevant document chunks for the *current user*.
+7. The relevant chunks, AI configuration, conversation history, and question are compiled into a dynamic prompt.
+8. The prompt is sent to the Gemini LLM to generate a personality-aligned response.
 
 ### Analytics Logging (`/src/ai/flows/log-metrics.ts`)
 
@@ -86,7 +83,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 ## Customization
 
-- **Styling**: Colors and themes can be adjusted in `/src/app/globals.css`.
+- **Branding & Colors**: Primary colors and themes can be adjusted in `/src/app/globals.css`.
 - **AI Behavior**: Use the Admin Settings UI to configure the AI's personality and instructions. The core prompt template is in `/src/ai/flows/conversational-chat.ts`.
 - **Call Script Template**: The default template for call scripts is in `/src/ai/flows/generate-call-script.ts`.
 - **Integrations**: Add your custom logic for Slack, Google Sheets, and other webhooks in `/src/app/auth/actions.ts` where the `// TODO` comments are placed.

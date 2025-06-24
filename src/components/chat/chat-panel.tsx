@@ -29,9 +29,11 @@ type ChatMessage = Message & { id: string };
 export function ChatPanel({
   disabled,
   user,
+  isChatActive = true,
 }: {
   disabled?: boolean;
   user: Models.User<Models.Preferences>;
+  isChatActive?: boolean;
 }) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState('');
@@ -204,13 +206,17 @@ export function ChatPanel({
     }
   }, [messages]);
 
+  const effectiveDisabled = disabled || !isChatActive;
+
   return (
     <div className="flex flex-col h-[calc(100%-4rem)]">
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-6 pr-4">
           {messages.length === 0 && (
             <div className="text-center text-muted-foreground p-8">
-              {disabled ? 'Please configure the application to enable chat.' : 'Start a conversation with Cally-IO.'}
+              {disabled ? 'Please configure the application to enable chat.' : 
+               isChatActive ? 'Start a conversation with Cally-IO.' : 'Chat is currently unavailable.'
+              }
             </div>
           )}
           {messages.map((message, index) => {
@@ -292,14 +298,14 @@ export function ChatPanel({
             onChange={handleFileChange}
             className="hidden"
             accept=".pdf,.docx,.txt"
-            disabled={isLoading || disabled}
+            disabled={isLoading || effectiveDisabled}
           />
           <Button
             type="button"
             size="icon"
             variant="ghost"
             onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || disabled}
+            disabled={isLoading || effectiveDisabled}
           >
             <Paperclip className="h-4 w-4" />
             <span className="sr-only">Attach Document</span>
@@ -307,14 +313,14 @@ export function ChatPanel({
           <Input
             value={input}
             onChange={handleInputChange}
-            placeholder="Ask anything..."
+            placeholder={effectiveDisabled ? 'Chat is currently unavailable' : 'Ask anything...'}
             className="flex-1"
-            disabled={isLoading || disabled}
+            disabled={isLoading || effectiveDisabled}
           />
           <Button
             type="submit"
             size="icon"
-            disabled={isLoading || !input.trim() || disabled}
+            disabled={isLoading || !input.trim() || effectiveDisabled}
           >
             {isLoading ? (
               <Loader2 className="h-4 w-4 animate-spin" />

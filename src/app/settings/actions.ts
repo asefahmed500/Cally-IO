@@ -23,6 +23,11 @@ export async function updateAISettings(formData: FormData) {
     ai_personality: formData.get('ai_personality') as string,
     ai_style: formData.get('ai_style') as string,
     ai_instructions: formData.get('ai_instructions') as string,
+    business_hours_enabled: formData.get('business_hours_enabled') === 'on',
+    business_hours_start: formData.get('business_hours_start') as string,
+    business_hours_end: formData.get('business_hours_end') as string,
+    business_hours_timezone: formData.get('business_hours_timezone') as string,
+    away_message: formData.get('away_message') as string,
   };
 
   try {
@@ -59,5 +64,6 @@ export async function updateAISettings(formData: FormData) {
   }
 
   revalidatePath('/settings');
-  return { success: true };
+  revalidatePath('/dashboard'); // To update business hours status
+  return { success: true, message: "Settings updated successfully!" };
 }
