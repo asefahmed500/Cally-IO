@@ -14,8 +14,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 
 - **Secure Authentication**: User signup, login, and password recovery functionality powered by Appwrite.
 - **Role-Based Access Control**: Differentiates between `user` and `admin` roles, ensuring data privacy and proper access levels.
-- **Lead Management Dashboard**: An admin-only dashboard to view, manage, track, and export all users who sign up.
-- **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
+- **Lead Management Pipeline**: An admin-only dashboard with a visual Kanban board to view, manage, track, and export leads through the sales funnel.
 - **Advanced Knowledge Management**: An admin-only hub to view and manage all documents in the knowledge base, including secure deletion.
 - **Configurable AI Agent**: Admins can configure the AI's personality, response style, and add custom business instructions.
 - **Business Hours**: Admins can set operating hours, disabling the chat and showing an "away" message during off-hours.
@@ -153,4 +152,4 @@ To create your admin account, sign up using the email you specified in the `ADMI
 7.  **Response Generation**: The relevant, user-owned document chunks, the AI configuration, conversation history, and the user's question are compiled into a dynamic prompt. This is sent to the Gemini model to generate a helpful, context-aware, and personality-aligned response, which is streamed back to the UI.
 8.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
 9.  **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
-10. **Admin Dashboards**: Admin dashboards query the `metrics`, `leads`, and `embeddings` collections to provide live data on user satisfaction, to manage the customer lifecycle, and to oversee the knowledge base.
+10. **Admin Dashboards**: Admin dashboards query the `metrics`, `leads`, and `embeddings` collections to provide live data on user satisfaction, to manage the customer lifecycle in a visual pipeline, and to oversee the knowledge base.

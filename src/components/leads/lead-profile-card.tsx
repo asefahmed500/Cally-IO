@@ -1,14 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { Lead } from "@/app/leads/page";
-import { User, Mail, Star, Activity, Calendar } from 'lucide-react';
-
-const statusColors: { [key: string]: 'default' | 'secondary' | 'success' | 'warning' } = {
-  New: 'secondary',
-  Qualified: 'warning',
-  Contacted: 'default',
-  Converted: 'success',
-};
+import { User, Star, Activity, Calendar, ClipboardList } from 'lucide-react';
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) {
     return (
@@ -33,9 +25,9 @@ export function LeadProfileCard({ lead }: { lead: Lead }) {
         </CardHeader>
       <CardContent className="space-y-4">
         <InfoRow 
-            icon={Badge}
+            icon={ClipboardList}
             label="Status"
-            value={<Badge variant={statusColors[lead.status] || 'default'}>{lead.status}</Badge>}
+            value={lead.status}
         />
         <InfoRow 
             icon={Star}

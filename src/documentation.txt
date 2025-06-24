@@ -12,7 +12,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/app/api`: API routes for server-side logic, like handling chat or Text-to-Speech requests.
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
   - `/src/app/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
-  - `/src/app/leads`: The admin-only lead management dashboard.
+  - `/src/app/leads`: The admin-only lead management dashboard, featuring a visual Kanban pipeline view.
   - `/src/app/knowledge`: A page for users to manage their documents, with an enhanced view for admins.
   - `layout.tsx`: The root layout for the application.
   - `page.tsx`: The public-facing landing page.
@@ -24,7 +24,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - `/src/components`: Contains reusable React components.
   - `/src/components/chat`: Components specific to the chat interface.
   - `/src/components/layout`: Components for the overall application layout (sidebar, header).
-  - `/src/components/leads`: Components specific to the leads dashboard, including the profile view.
+  - `/src/components/leads`: Components for the leads dashboard, including the Kanban board, lead cards, and profile view.
   - `/src/components/knowledge`: Components for the knowledge management page.
   - `/src/components/settings`: Components for the settings page forms.
   - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
@@ -78,7 +78,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 ### Admin Dashboards (`/src/app/settings/page.tsx` & `/src/app/leads/page.tsx`)
 1. An admin user navigates to the `/settings` or `/leads` pages.
 2. The pages fetch data from "metrics", "leads", and "settings" collections.
-3. The data is displayed in performance cards, interactive lead tables, customer profiles, and configuration forms.
+3. The data is displayed in performance cards, a visual lead pipeline, customer profiles, and configuration forms.
 4. The Settings page also includes UI for managing integrations (Slack, Google Sheets, etc.), which are currently placeholders ready for backend logic.
 
 ## Customization

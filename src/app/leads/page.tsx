@@ -2,9 +2,9 @@ import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
-import { LeadsTable } from "@/components/leads/leads-table";
+import { LeadsKanbanView } from "@/components/leads/leads-kanban-view";
 import type { Models } from "node-appwrite";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table } from "lucide-react";
 
@@ -30,7 +30,7 @@ async function getLeads(): Promise<Lead[]> {
         const response = await databases.listDocuments(
             dbId,
             leadsCollectionId,
-            [Query.orderDesc('$createdAt'), Query.limit(100)]
+            [Query.orderDesc('$createdAt'), Query.limit(200)] // Increased limit for Kanban
         );
         return response.documents as Lead[];
     } catch (e) {
@@ -51,19 +51,15 @@ export default async function LeadsPage() {
   const leads = await getLeads();
 
   return (
-    <div className="space-y-8">
-      <header>
-        <h1 className="text-3xl font-bold tracking-tight">Lead Management</h1>
-        <p className="text-muted-foreground">View, manage, and track all leads generated from conversations.</p>
+    <div className="flex flex-col h-full">
+      <header className="mb-8">
+        <h1 className="text-3xl font-bold tracking-tight">Lead Management Pipeline</h1>
+        <p className="text-muted-foreground">Visualize and manage your leads through the sales funnel.</p>
       </header>
         
-      <Card>
-        <CardHeader>
-          <CardTitle>All Leads</CardTitle>
-          <CardDescription>A list of all users who have interacted with your AI assistant.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            {!isConfigured ? (
+      {!isConfigured ? (
+          <Card>
+            <CardContent className="pt-6">
                 <Alert variant="destructive">
                     <Table className="h-4 w-4" />
                     <AlertTitle>Leads Collection Not Configured</AlertTitle>
@@ -71,11 +67,11 @@ export default async function LeadsPage() {
                         Please set the `NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID` environment variable and configure the collection in your Appwrite project to see your leads.
                     </AlertDescription>
                 </Alert>
-            ) : (
-                <LeadsTable leads={leads} />
-            )}
-        </CardContent>
-      </Card>
+            </CardContent>
+          </Card>
+      ) : (
+          <LeadsKanbanView initialLeads={leads} />
+      )}
     </div>
   )
 }
