@@ -1,0 +1,62 @@
+# Cally-IO Application Documentation
+
+## Project Overview
+
+Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents.
+
+## Project Structure
+
+The project follows a standard Next.js App Router structure. Key directories include:
+
+- `/src/app`: Contains the main application routes, pages, and layouts.
+  - `/src/app/api`: API routes for server-side logic, like handling chat requests.
+  - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
+  - `/src/app/settings`: The analytics dashboard page.
+  - `layout.tsx`: The root layout for the application.
+  - `page.tsx`: The public-facing landing page.
+
+- `/src/ai`: Contains all Genkit-related code for AI functionality.
+  - `/src/ai/flows`: Defines the core AI workflows, such as document processing and conversational chat.
+  - `/src/ai/genkit.ts`: Configures and initializes the Genkit AI instance.
+
+- `/src/components`: Contains reusable React components.
+  - `/src/components/chat`: Components specific to the chat interface.
+  - `/src/components/layout`: Components for the overall application layout (sidebar, header).
+  - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
+
+- `/src/hooks`: Custom React hooks, such as `useToast` for notifications.
+
+- `/src/lib`: Contains library functions, configurations, and utilities.
+  - `/src/lib/appwrite-client.ts`: Appwrite client-side SDK configuration.
+  - `/src/lib/appwrite-server.ts`: Appwrite server-side (Node) SDK configuration.
+  - `/src/lib/auth.ts`: Authentication helper functions for managing sessions.
+  - `/src/lib/utils.ts`: General utility functions.
+
+## Core Workflows
+
+### Document Processing (`/src/ai/flows/process-document.ts`)
+
+1. A file is uploaded via the chat panel (`/src/components/chat/chat-panel.tsx`).
+2. The file is sent to Appwrite Storage.
+3. The `processDocument` Genkit flow is invoked with the file's data.
+4. The flow extracts text from the file (handles PDF, DOCX, TXT).
+5. The text is split into smaller, manageable chunks using a text splitter.
+6. Embeddings are generated for each chunk using the `googleai/text-embedding-004` model.
+7. Each chunk, its embedding, and associated metadata (file name, user ID) are saved as a document in the Appwrite "embeddings" collection.
+
+### Conversational Chat (`/src/ai/flows/conversational-chat.ts`)
+
+1. The user submits a question through the chat panel.
+2. An API request is sent to `/api/chat/route.ts`.
+3. The `conversationalRagChat` flow is triggered.
+4. An embedding is generated for the user's question.
+5. A similarity search is performed against the embeddings in the Appwrite database to find the most relevant document chunks for the current user.
+6. The relevant chunks (context), conversation history, and the user's question are compiled into a single prompt.
+7. This prompt is sent to the Gemini LLM to generate a coherent, context-aware response.
+8. The response is streamed back to the UI in real-time.
+
+## Customization
+
+- **Styling**: Colors and themes can be adjusted in `/src/app/globals.css`. The application uses Tailwind CSS and HSL CSS variables for theming.
+- **AI Behavior**: The core AI prompt and instructions can be modified in `/src/ai/flows/conversational-chat.ts` within the `chatPrompt` definition.
+- **UI Components**: UI components can be found and modified in `/src/components`. Most are based on ShadCN UI and can be extended as needed.
