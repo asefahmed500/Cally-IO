@@ -1,7 +1,8 @@
+
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, BotMessageSquare, CheckCircle, Clock, Star, Phone, FileText, Cog, BrainCircuit, TestTube2, AlertCircle } from "lucide-react";
+import { BarChart2, BotMessageSquare, CheckCircle, Clock, Star, Phone, FileText, Cog, BrainCircuit, TestTube2, AlertCircle, Users } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Label } from "@/components/ui/label";
@@ -36,36 +37,46 @@ function StatCard({ title, value, icon: Icon }: { title: string, value: string, 
 async function getAnalyticsData() {
     const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
     const metricsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID;
+    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
 
-    if (!dbId || !metricsCollectionId) {
-        return { satisfactionRate: 0, totalConversations: 0, resolutionRate: 0 };
-    }
+    // Default values
+    let satisfactionRate = 0;
+    let totalConversations = 0;
+    let resolutionRate = 0;
+    let totalLeads = 0;
+    let conversionRate = 0;
 
-    try {
-        const metrics = await databases.listDocuments(
-            dbId,
-            metricsCollectionId,
-            [Query.limit(5000)] // Adjust limit as needed
-        );
-
-        const totalFeedback = metrics.total;
-        if (totalFeedback === 0) {
-            return { satisfactionRate: 0, totalConversations: 0, resolutionRate: 0 };
+    // Fetch metrics data
+    if (dbId && metricsCollectionId) {
+        try {
+            const metrics = await databases.listDocuments(dbId, metricsCollectionId, [Query.limit(5000)]);
+            const totalFeedback = metrics.total;
+            if (totalFeedback > 0) {
+                const goodFeedbackCount = metrics.documents.filter(d => d.feedback === 'good').length;
+                satisfactionRate = Math.round((goodFeedbackCount / totalFeedback) * 100);
+                resolutionRate = Math.min(90 + Math.floor(totalFeedback / 10), 98); // Simulated
+                totalConversations = totalFeedback;
+            }
+        } catch (e) {
+            console.error("Failed to fetch analytics:", e);
         }
-
-        const goodFeedbackCount = metrics.documents.filter(d => d.feedback === 'good').length;
-        const satisfactionRate = Math.round((goodFeedbackCount / totalFeedback) * 100);
-        
-        // This is a placeholder. Real resolution rate would need more complex logic.
-        const resolutionRate = Math.min(90 + Math.floor(totalFeedback / 10), 98);
-
-
-        return { satisfactionRate, totalConversations: totalFeedback, resolutionRate };
-    } catch (e) {
-        console.error("Failed to fetch analytics:", e);
-        // Return default values on error
-        return { satisfactionRate: 0, totalConversations: 0, resolutionRate: 0 };
     }
+
+    // Fetch leads data
+    if (dbId && leadsCollectionId) {
+        try {
+            const leads = await databases.listDocuments(dbId, leadsCollectionId, [Query.limit(5000)]);
+            totalLeads = leads.total;
+            if (totalLeads > 0) {
+                const convertedCount = leads.documents.filter(d => d.status === 'Converted').length;
+                conversionRate = Math.round((convertedCount / totalLeads) * 100);
+            }
+        } catch(e) {
+            console.error("Failed to fetch leads analytics:", e);
+        }
+    }
+
+    return { satisfactionRate, totalConversations, resolutionRate, totalLeads, conversionRate };
 }
 
 
@@ -80,7 +91,7 @@ export default async function SettingsPage() {
     redirect('/dashboard');
   }
 
-  const { satisfactionRate, totalConversations, resolutionRate } = await getAnalyticsData();
+  const { satisfactionRate, totalConversations, resolutionRate, totalLeads, conversionRate } = await getAnalyticsData();
   const aiSettings = await getAISettings();
   const isTwilioConfigured = !!process.env.TWILIO_ACCOUNT_SID;
   const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
@@ -88,21 +99,23 @@ export default async function SettingsPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Settings & Analytics</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Settings &amp; Analytics</h1>
         <p className="text-muted-foreground">Manage integrations, AI behavior, and track conversation quality.</p>
       </header>
         
       <Card>
         <CardHeader>
           <CardTitle>Performance Dashboard</CardTitle>
-          <CardDescription>Overview of your AI assistant's performance based on user feedback.</CardDescription>
+          <CardDescription>Overview of your AI assistant's performance based on user feedback and lead status.</CardDescription>
         </CardHeader>
         <CardContent>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                 <StatCard title="Avg. Satisfaction" value={`${satisfactionRate}%`} icon={Star} />
+                <StatCard title="Total Leads" value={totalLeads.toLocaleString()} icon={Users} />
+                <StatCard title="Conversion Rate" value={`${conversionRate}%`} icon={BarChart2} />
+                <StatCard title="Total Feedback" value={totalConversations.toLocaleString()} icon={BotMessageSquare} />
                 <StatCard title="Resolution Rate (Simulated)" value={`${resolutionRate}%`} icon={CheckCircle} />
-                <StatCard title="Total Feedback Interactions" value={totalConversations.toLocaleString()} icon={BotMessageSquare} />
-                <StatCard title="Avg. Response Time" value="1.8s" icon={Clock} />
+                <StatCard title="Avg. Response Time (Simulated)" value="1.8s" icon={Clock} />
             </div>
         </CardContent>
       </Card>
