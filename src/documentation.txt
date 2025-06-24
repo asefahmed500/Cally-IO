@@ -10,6 +10,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 - `/src/app`: Contains the main application routes, pages, and layouts.
   - `/src/app/api`: API routes for server-side logic, like handling chat or Text-to-Speech requests.
+  - `/src/app/auth`: Contains server actions for handling authentication logic (signup, login, logout, password recovery).
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
   - `/src/app/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
   - `/src/app/leads`: The admin-only lead management dashboard, featuring a visual Kanban pipeline view.
@@ -40,11 +41,11 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 ## Core Workflows
 
-### User Signup & Lead Creation (`/src/app/auth/actions.ts`)
-1. A user signs up with their name, email, and password.
+### User Authentication (`/src/app/auth/actions.ts` and `/src/app/(auth)`)
+1. A user can sign up, log in, or request a password reset.
 2. The `signup` server action creates a new user in Appwrite and assigns them the 'user' label (and 'admin' if their email matches `ADMIN_EMAIL`).
-3. Simultaneously, a new document is created in the `leads` collection with the user's details, visible only to admins.
-4. **Integration Hooks**: Placeholder comments in this action show where to trigger notifications to Slack, Google Sheets, or other webhooks.
+3. The `forgotPassword` action sends a recovery email, and `resetPassword` securely updates their credentials.
+4. **Integration Hooks**: Placeholder comments in the signup action show where to trigger notifications to Slack, Google Sheets, or other webhooks.
 
 ### Document Processing (`/src/ai/flows/process-document.ts`)
 
@@ -52,12 +53,6 @@ The project follows a standard Next.js App Router structure. Key directories inc
 2. The file is sent to Appwrite Storage with user-specific and admin-readable permissions.
 3. The `processDocument` Genkit flow is invoked with the file's data.
 4. The flow extracts text, splits it into chunks, generates embeddings, and saves them to the "embeddings" collection.
-
-### Knowledge Management (`/src/app/knowledge/page.tsx`)
-1. A user navigates to the "My Documents" page.
-2. The page fetches and displays a list of only the documents that user has uploaded.
-3. The user can filter their documents by name and use the action menu to delete any document.
-4. If an admin visits this page, they see a "Knowledge Management" view with all documents from all users, and can delete any of them.
 
 ### Conversational Chat (`/src/ai/flows/conversational-chat.ts`)
 
