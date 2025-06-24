@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, Square } from 'lucide-react';
+import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, Square, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
@@ -148,6 +148,42 @@ export function ChatPanel({
       console.error("Failed to log feedback", error);
     }
   }
+
+  const handleExportChat = () => {
+    if (messages.length === 0) {
+      toast({
+        title: 'Cannot Export',
+        description: 'There are no messages in the current conversation.',
+      });
+      return;
+    }
+
+    const formattedChat = messages
+      .map(msg => {
+        let content = msg.content;
+        if (msg.image) {
+            content = `[Image Attached] ${content}`;
+        }
+        return `${msg.role === 'user' ? 'You' : 'Cally-IO'}: ${content}`;
+      })
+      .join('\n\n---\n\n');
+
+    const blob = new Blob([formattedChat], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    const timestamp = new Date().toISOString().split('T')[0];
+    link.download = `cally-io-chat-${timestamp}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast({
+        title: 'Export Successful',
+        description: 'Your chat history has been downloaded.',
+    });
+  };
 
   const handlePlayAudio = async (message: ChatMessage) => {
     // Stop any currently playing audio
@@ -293,6 +329,18 @@ export function ChatPanel({
 
   return (
     <div className="flex flex-col h-[calc(100%-4rem)]">
+      <div className="flex items-center justify-between pb-2 mb-2 border-b">
+        <h3 className="text-lg font-semibold">Conversation</h3>
+        <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={handleExportChat}
+            disabled={messages.length === 0 || isLoading}
+        >
+            <Download className="mr-2 h-4 w-4" />
+            Export Chat
+        </Button>
+      </div>
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         <div className="space-y-6 pr-4">
           {messages.length === 0 && !effectiveDisabled && (
