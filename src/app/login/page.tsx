@@ -46,7 +46,7 @@ export default function LoginPage() {
               <Input id="password" type="password" name="password" required />
             </div>
             <div className="text-right text-sm">
-                <Link href="#" className="underline" prefetch={false}>
+                <Link href="/forgot-password" className="underline" prefetch={false}>
                     Forgot password?
                 </Link>
             </div>
