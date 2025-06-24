@@ -1,7 +1,7 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, BotMessageSquare, CheckCircle, Clock, Star, Phone, FileText } from "lucide-react";
+import { BarChart2, BotMessageSquare, CheckCircle, Clock, Star, Phone, FileText, Cog, BrainCircuit, TestTube2, AlertCircle } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,15 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { getAISettings } from "@/lib/settings";
+import { updateAISettings } from "@/app/settings/actions";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 
 function StatCard({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) {
     return (
@@ -72,13 +81,15 @@ export default async function SettingsPage() {
   }
 
   const { satisfactionRate, totalConversations, resolutionRate } = await getAnalyticsData();
+  const aiSettings = await getAISettings();
   const isTwilioConfigured = !!process.env.TWILIO_ACCOUNT_SID;
+  const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
 
   return (
     <div className="space-y-8">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Settings & Analytics</h1>
-        <p className="text-muted-foreground">Manage integrations and track conversation quality.</p>
+        <p className="text-muted-foreground">Manage integrations, AI behavior, and track conversation quality.</p>
       </header>
         
       <Card>
@@ -92,6 +103,92 @@ export default async function SettingsPage() {
                 <StatCard title="Resolution Rate (Simulated)" value={`${resolutionRate}%`} icon={CheckCircle} />
                 <StatCard title="Total Feedback Interactions" value={totalConversations.toLocaleString()} icon={BotMessageSquare} />
                 <StatCard title="Avg. Response Time" value="1.8s" icon={Clock} />
+            </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+            <div className="flex items-center gap-2">
+                <BrainCircuit className="h-6 w-6" />
+                <CardTitle>AI Agent Configuration</CardTitle>
+            </div>
+          <CardDescription>Define how your AI assistant should think, talk, and behave.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+             {!isSettingsConfigured ? (
+                <Alert variant="destructive">
+                    <Cog className="h-4 w-4" />
+                    <AlertTitle>Settings Collection Not Configured</AlertTitle>
+                    <AlertDescription>
+                        Please set the `NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID` environment variable and configure the collection to manage the AI agent.
+                    </AlertDescription>
+                </Alert>
+            ) : (
+                <form action={updateAISettings} className="space-y-4">
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="ai-personality">AI Personality</Label>
+                            <Select name="ai_personality" defaultValue={aiSettings.personality}>
+                                <SelectTrigger id="ai-personality">
+                                    <SelectValue placeholder="Select a personality" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Professional">Professional</SelectItem>
+                                    <SelectItem value="Friendly">Friendly</SelectItem>
+                                    <SelectItem value="Technical">Technical</SelectItem>
+                                    <SelectItem value="Witty">Witty</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                         <div className="space-y-2">
+                            <Label htmlFor="ai-style">Response Style</Label>
+                            <Select name="ai_style" defaultValue={aiSettings.style}>
+                                <SelectTrigger id="ai-style">
+                                    <SelectValue placeholder="Select a style" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Concise">Concise</SelectItem>
+                                    <SelectItem value="Detailed">Detailed</SelectItem>
+                                    <SelectItem value="Conversational">Conversational</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="ai-instructions">Custom Instructions</Label>
+                        <Textarea 
+                            id="ai-instructions"
+                            name="ai_instructions"
+                            placeholder="e.g., Your company name is Cally-IO. Always mention our 30-day money-back guarantee when discussing pricing." 
+                            className="min-h-32"
+                            defaultValue={aiSettings.instructions}
+                        />
+                    </div>
+                    <div className="flex justify-end">
+                        <Button type="submit">Save AI Configuration</Button>
+                    </div>
+                </form>
+            )}
+            <div className="grid md:grid-cols-2 gap-4 pt-4">
+                <Card className="bg-muted/50">
+                    <CardHeader className="flex-row items-center gap-2 space-y-0">
+                         <TestTube2 className="w-5 h-5" />
+                        <CardTitle className="text-lg">Knowledge Base Testing</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <p className="text-sm text-muted-foreground">To test your AI's responses, simply go to the main Dashboard, upload your documents, and start asking questions. This is the live environment for testing how the AI uses its knowledge base.</p>
+                    </CardContent>
+                </Card>
+                <Card className="bg-muted/50">
+                     <CardHeader className="flex-row items-center gap-2 space-y-0">
+                        <AlertCircle className="w-5 h-5" />
+                        <CardTitle className="text-lg">Escalation Rules</CardTitle>
+                    </CardHeader>
+                     <CardContent>
+                        <p className="text-sm text-muted-foreground">The AI is pre-configured to escalate to a human specialist when it doesn't know an answer. This behavior is part of the core prompt and is not currently editable via the UI.</p>
+                    </CardContent>
+                </Card>
             </div>
         </CardContent>
       </Card>

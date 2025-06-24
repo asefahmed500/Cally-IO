@@ -1,0 +1,96 @@
+# Cally-IO Application Documentation
+
+## Project Overview
+
+Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access, lead management, performance analytics, and a call script generator.
+
+## Project Structure
+
+The project follows a standard Next.js App Router structure. Key directories include:
+
+- `/src/app`: Contains the main application routes, pages, and layouts.
+  - `/src/app/api`: API routes for server-side logic, like handling chat requests.
+  - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
+  - `/src/app/settings`: The admin-only page for analytics, system settings (like Twilio), and AI agent configuration.
+  - `/src/app/leads`: The admin-only lead management dashboard.
+  - `layout.tsx`: The root layout for the application.
+  - `page.tsx`: The public-facing landing page.
+
+- `/src/ai`: Contains all Genkit-related code for AI functionality.
+  - `/src/ai/flows`: Defines the core AI workflows, such as document processing, conversational chat, script generation, and metrics logging.
+  - `/src/ai/genkit.ts`: Configures and initializes the Genkit AI instance.
+
+- `/src/components`: Contains reusable React components.
+  - `/src/components/chat`: Components specific to the chat interface.
+  - `/src/components/layout`: Components for the overall application layout (sidebar, header).
+  - `/src/components/leads`: Components specific to the leads dashboard.
+  - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
+
+- `/src/hooks`: Custom React hooks, such as `useToast` for notifications.
+
+- `/src/lib`: Contains library functions, configurations, and utilities.
+  - `/src/lib/appwrite-client.ts`: Appwrite client-side SDK configuration.
+  - `/src/lib/appwrite-server.ts`: Appwrite server-side (Node) SDK configuration.
+  - `/src/lib/auth.ts`: Authentication helper functions for managing sessions.
+  - `/src/lib/settings.ts`: Helpers for getting and updating AI configuration.
+  - `/src/lib/utils.ts`: General utility functions.
+
+## Core Workflows
+
+### User Signup & Lead Creation (`/src/app/auth/actions.ts`)
+1. A user signs up with their name, email, and password.
+2. The `signup` server action creates a new user in Appwrite and assigns them the 'user' label (and 'admin' if their email matches `ADMIN_EMAIL`).
+3. Simultaneously, a new document is created in the `leads` collection with the user's details, visible only to admins.
+
+### Document Processing (`/src/ai/flows/process-document.ts`)
+
+1. A file is uploaded via the chat panel (`/src/components/chat/chat-panel.tsx`).
+2. The file is sent to Appwrite Storage with user-specific and admin-readable permissions.
+3. The `processDocument` Genkit flow is invoked with the file's data.
+4. The flow extracts text from the file (handles PDF, DOCX, TXT).
+5. The text is split into smaller, manageable chunks.
+6. Embeddings are generated for each chunk.
+7. Each chunk and its embedding are saved to the Appwrite "embeddings" collection with role-based permissions.
+
+### AI Configuration (`/src/app/settings/page.tsx` & `actions.ts`)
+1. An admin navigates to the Settings page.
+2. The page fetches the current AI configuration from the `settings` collection in Appwrite.
+3. The admin modifies the AI's personality, response style, or custom instructions and saves the form.
+4. The `updateAISettings` server action securely updates the configuration document in Appwrite.
+
+### Conversational Chat (`/src/ai/flows/conversational-chat.ts`)
+
+1. The user submits a question through the chat panel.
+2. An API request is sent to `/api/chat/route.ts`.
+3. The `conversationalRagChat` flow is triggered.
+4. The flow first fetches the latest AI configuration from the `settings` collection.
+5. An embedding is generated for the user's question.
+6. A similarity search finds the most relevant document chunks for the *current user*.
+7. The relevant chunks, AI configuration, conversation history, and the user's question are compiled into a dynamic prompt.
+8. The prompt is sent to the Gemini LLM to generate a context-aware, personality-aligned response, which is streamed back to the UI.
+
+### Analytics Logging (`/src/ai/flows/log-metrics.ts`)
+
+1. A user provides feedback (thumbs up/down) on an AI response in the chat panel.
+2. The `logInteraction` Genkit flow is triggered with the message ID and feedback type.
+3. The flow saves a new document to the Appwrite "metrics" collection, containing the user's ID, the message ID, and the feedback provided.
+
+### Call Script Generation (`/src/ai/flows/generate-call-script.ts`)
+1. An admin user clicks the "Generate Script & Call" button on the leads dashboard.
+2. A server action (`initiateCall`) is invoked.
+3. The action calls the `generateCallScript` Genkit flow, passing the lead's details.
+4. The AI generates a personalized call script based on a pre-defined template and the lead's data.
+5. The script is returned to the UI and displayed in a notification.
+
+### Admin Dashboards (`/src/app/settings/page.tsx` & `/src/app/leads/page.tsx`)
+1. An admin user navigates to the `/settings` or `/leads` page.
+2. The page component (running on the server) fetches all documents from the corresponding collections ("metrics", "leads", "settings").
+3. It calculates statistics, displays lead data, or shows the current AI configuration.
+4. The live data is displayed in the dashboard cards, tables, and forms.
+
+## Customization
+
+- **Styling**: Colors and themes can be adjusted in `/src/app/globals.css`.
+- **AI Behavior**: The core AI prompt template can be modified in `/src/ai/flows/conversational-chat.ts`. However, it's recommended to use the Admin Settings UI to configure the AI's personality and instructions.
+- **Call Script Template**: The template for generating call scripts can be modified in `/src/ai/flows/generate-call-script.ts`.
+- **UI Components**: UI components can be found and modified in `/src/components`.
