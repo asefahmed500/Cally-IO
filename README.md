@@ -13,6 +13,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 
 - **Secure Authentication**: User signup and login functionality powered by Appwrite.
 - **Role-Based Access Control**: Differentiates between `user` and `admin` roles, ensuring data privacy and proper access levels.
+- **Lead Management Dashboard**: An admin-only dashboard to view, manage, and track all users who sign up.
 - **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
@@ -55,6 +56,7 @@ NEXT_PUBLIC_APPWRITE_DATABASE_ID=your_database_id
 NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID=your_storage_bucket_id
 NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID=your_embeddings_collection_id
 NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID=your_metrics_collection_id
+NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID=your_leads_collection_id
 
 # Admin User
 # The email address for the first admin user. When a user signs up with this email,
@@ -90,6 +92,17 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `feedback` (string, size: 255, required)
     *   In the **Indexes** tab, create an index on `userId`.
     *   In the **Settings** tab, update the **Permissions** similar to the embeddings collection.
+5.  **Leads Collection**:
+    *   Inside the same database, create a third collection for leads. Copy its **Collection ID** to your `.env` file.
+    *   In the **Attributes** tab, add the following:
+        *   `userId` (string, size: 255, required)
+        *   `name` (string, size: 255, required)
+        *   `email` (string, size: 255, required)
+        *   `status` (string, size: 255, required)
+        *   `score` (integer, required)
+        *   `lastActivity` (datetime, required)
+    *   In the **Indexes** tab, create an index on `userId` and `email`.
+    *   In the **Settings** tab, update the **Permissions**. This collection is managed by the server, so you should only grant permissions to the **`admin`** role for all CRUD operations. Leave the user-facing permissions empty.
 
 ### 5. Running the Development Server
 
@@ -105,9 +118,10 @@ To create your admin account, sign up using the email you specified in the `ADMI
 ## How It Works
 
 1.  **Authentication & Roles**: Users create an account. The system assigns a `user` label. If the email matches the `ADMIN_EMAIL`, it also assigns an `admin` label.
-2.  **Document Upload**: In the chat panel, users upload documents. These are sent to Appwrite Storage with permissions allowing access only for that user and read access for admins.
-3.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text, generates embeddings, and stores them in the Appwrite database with the same secure, document-level permissions.
-4.  **Chat Interaction**: When a user asks a question, the `conversationalRagChat` flow is initiated. It queries the database to find document chunks created by *that specific user*.
-5.  **Response Generation**: The relevant, user-owned document chunks are passed as context to the Gemini model to generate a helpful answer.
-6.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
-7.  **Analytics**: The admin dashboard queries the `metrics` collection to provide live data on user satisfaction and other key performance indicators.
+2.  **Lead Creation**: When a new user signs up, a corresponding document is created in the `leads` collection, accessible only by admins.
+3.  **Document Upload**: In the chat panel, users upload documents. These are sent to Appwrite Storage with permissions allowing access only for that user and read access for admins.
+4.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text, generates embeddings, and stores them in the Appwrite database with the same secure, document-level permissions.
+5.  **Chat Interaction**: When a user asks a question, the `conversationalRagChat` flow is initiated. It queries the database to find document chunks created by *that specific user*.
+6.  **Response Generation**: The relevant, user-owned document chunks are passed as context to the Gemini model to generate a helpful answer.
+7.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
+8.  **Analytics & Leads**: Admin dashboards query the `metrics` and `leads` collections to provide live data on user satisfaction and to manage the customer lifecycle.

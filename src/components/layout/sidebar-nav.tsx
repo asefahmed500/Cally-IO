@@ -11,7 +11,7 @@ import {
   SidebarTrigger,
   SidebarFooter
 } from '@/components/ui/sidebar';
-import { LayoutDashboard, Settings, LogOut, BotMessageSquare, BarChart2 } from 'lucide-react';
+import { LayoutDashboard, Settings, LogOut, BotMessageSquare, BarChart2, Users } from 'lucide-react';
 import { Avatar, AvatarFallback } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
@@ -39,6 +39,7 @@ function LogoutForm() {
 
 export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) {
   const pathname = usePathname();
+  const isAdmin = user.labels.includes('admin');
 
   return (
     <Sidebar collapsible="icon" className="group-data-[collapsible=icon]:p-0">
@@ -55,13 +56,24 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
               </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
-          <SidebarMenuItem>
-            <Link href="/settings" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/settings'} tooltip={{children: 'Analytics'}}>
-                <a><BarChart2 /><span>Analytics</span></a>
-              </SidebarMenuButton>
-            </Link>
-          </SidebarMenuItem>
+          {isAdmin && (
+            <>
+                <SidebarMenuItem>
+                    <Link href="/leads" passHref>
+                    <SidebarMenuButton asChild isActive={pathname === '/leads'} tooltip={{children: 'Leads'}}>
+                        <a><Users /><span>Leads</span></a>
+                    </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                    <Link href="/settings" passHref>
+                    <SidebarMenuButton asChild isActive={pathname === '/settings'} tooltip={{children: 'Analytics'}}>
+                        <a><BarChart2 /><span>Analytics</span></a>
+                    </SidebarMenuButton>
+                    </Link>
+                </SidebarMenuItem>
+            </>
+          )}
         </SidebarMenu>
       </SidebarContent>
        <SidebarFooter className="p-2 group-data-[collapsible=icon]:hidden">

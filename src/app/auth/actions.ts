@@ -1,8 +1,8 @@
 'use server'
 
-import { users, account } from '@/lib/appwrite-server';
+import { users, account, databases } from '@/lib/appwrite-server';
 import { setSessionCookie, deleteSessionCookie } from '@/lib/auth';
-import { ID } from 'node-appwrite';
+import { ID, Permission, Role } from 'node-appwrite';
 import { redirect } from 'next/navigation';
 import { headers } from 'next/headers';
 
@@ -12,14 +12,46 @@ export async function signup(prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
 
   try {
+    const newUser = await users.create(ID.unique(), email, undefined, password, name);
+    
     const isAdmin = process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
     const labels = isAdmin ? ['user', 'admin'] : ['user'];
+    await users.updateLabels(newUser.$id, labels);
+
+    // Create a corresponding lead document
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
+
+    if (dbId && leadsCollectionId) {
+        await databases.createDocument(
+            dbId,
+            leadsCollectionId,
+            ID.unique(),
+            {
+                userId: newUser.$id,
+                name: name,
+                email: email,
+                status: 'New',
+                score: Math.floor(Math.random() * 21) + 10, // Random score between 10-30
+                lastActivity: new Date().toISOString(),
+            },
+            [
+                Permission.read(Role.label('admin')),
+                Permission.update(Role.label('admin')),
+                Permission.delete(Role.label('admin')),
+            ]
+        );
+    }
     
-    await users.create(ID.unique(), email, '', password, name, { labels });
     const session = await account.createEmailPasswordSession(email, password);
     await setSessionCookie(session.secret, session.expire);
   } catch (e: any) {
     console.error(e);
+    // If user already exists, Appwrite throws a specific error.
+    // We can check for that and provide a friendlier message.
+    if (e.code === 409) {
+        return { message: 'A user with this email already exists. Please try logging in.'}
+    }
     return { message: e.message };
   }
   redirect('/dashboard');

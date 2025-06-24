@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access and performance analytics.
+Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access, lead management, and performance analytics.
 
 ## Project Structure
 
@@ -12,6 +12,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/app/api`: API routes for server-side logic, like handling chat requests.
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
   - `/src/app/settings`: The admin-only analytics dashboard page.
+  - `/src/app/leads`: The admin-only lead management dashboard.
   - `layout.tsx`: The root layout for the application.
   - `page.tsx`: The public-facing landing page.
 
@@ -22,6 +23,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - `/src/components`: Contains reusable React components.
   - `/src/components/chat`: Components specific to the chat interface.
   - `/src/components/layout`: Components for the overall application layout (sidebar, header).
+  - `/src/components/leads`: Components specific to the leads dashboard.
   - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
 
 - `/src/hooks`: Custom React hooks, such as `useToast` for notifications.
@@ -33,6 +35,11 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/lib/utils.ts`: General utility functions.
 
 ## Core Workflows
+
+### User Signup & Lead Creation (`/src/app/auth/actions.ts`)
+1. A user signs up with their name, email, and password.
+2. The `signup` server action creates a new user in Appwrite and assigns them the 'user' label (and 'admin' if their email matches `ADMIN_EMAIL`).
+3. Simultaneously, a new document is created in the `leads` collection with the user's details, visible only to admins.
 
 ### Document Processing (`/src/ai/flows/process-document.ts`)
 
@@ -60,12 +67,11 @@ The project follows a standard Next.js App Router structure. Key directories inc
 2. The `logInteraction` Genkit flow is triggered with the message ID and feedback type.
 3. The flow saves a new document to the Appwrite "metrics" collection, containing the user's ID, the message ID, and the feedback provided.
 
-### Analytics Dashboard (`/src/app/settings/page.tsx`)
-
-1. An admin user navigates to the `/settings` page.
-2. The page component (running on the server) fetches all documents from the "metrics" collection using the server-side Appwrite SDK.
-3. It calculates statistics like total conversations and overall satisfaction rate.
-4. The live data is displayed in the dashboard cards.
+### Admin Dashboards (`/src/app/settings/page.tsx` & `/src/app/leads/page.tsx`)
+1. An admin user navigates to the `/settings` or `/leads` page.
+2. The page component (running on the server) fetches all documents from the corresponding "metrics" or "leads" collection.
+3. It calculates statistics or displays lead data in an interactive table.
+4. The live data is displayed in the dashboard cards and tables.
 
 ## Customization
 
