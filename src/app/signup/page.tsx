@@ -1,6 +1,7 @@
 'use client'
 
-import { useFormState, useFormStatus } from 'react-dom'
+import { useActionState } from 'react'
+import { useFormStatus } from 'react-dom'
 import { signup } from '@/app/auth/actions'
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
@@ -16,7 +17,7 @@ function SubmitButton() {
 }
 
 export default function SignupPage() {
-    const [state, formAction] = useFormState(signup, null)
+    const [state, formAction] = useActionState(signup, null)
     
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
