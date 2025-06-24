@@ -1,10 +1,11 @@
 'use client';
 import * as React from 'react';
+import Image from 'next/image';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
@@ -24,8 +25,8 @@ async function fileToDataUri(file: File): Promise<string> {
   });
 }
 
-// Extend the Message type to include a client-side ID
-type ChatMessage = Message & { id: string };
+// Extend the Message type to include optional image data
+type ChatMessage = Message & { id: string; image?: string };
 
 export function ChatPanel({
   disabled,
@@ -38,6 +39,8 @@ export function ChatPanel({
 }) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState('');
+  const [imageFile, setImageFile] = React.useState<File | null>(null);
+  const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [feedbackSent, setFeedbackSent] = React.useState<Set<string>>(new Set());
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
@@ -48,72 +51,83 @@ export function ChatPanel({
     setInput(e.target.value);
   };
 
+  const resetFileInput = () => {
+    if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+  }
+
   const handleFileChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
 
-    setIsLoading(true);
-    toast({
-      title: 'Uploading document...',
-      description: `Processing "${file.name}". This may take a moment.`,
-    });
-
-    try {
-      const bucketId = await appwriteStorageBucketId();
-      if (!bucketId) {
-        throw new Error('Appwrite storage bucket not configured.');
-      }
-      
-      const permissions = [
-        Permission.read(Role.user(user.$id)),
-        Permission.update(Role.user(user.$id)),
-        Permission.delete(Role.user(user.$id)),
-        Permission.read(Role.label('admin')), // Admins can read all files
-      ];
-
-      // 1. Upload file to Appwrite Storage with permissions
-      const fileUploadResponse = await storage.createFile(
-        bucketId,
-        ID.unique(),
-        file,
-        permissions
-      );
-      const documentId = fileUploadResponse.$id;
-
-      // 2. Convert file to data URI for processing
-      const fileDataUri = await fileToDataUri(file);
-
-      // 3. Call the Genkit flow to process the document
-      await processDocument({
-        fileDataUri,
-        fileName: file.name,
-        documentId,
-      });
-
-      toast({
-        title: 'Success!',
-        description: `"${file.name}" has been processed and is ready for questions.`,
-      });
-    } catch (error: any) {
-      console.error('Error processing document:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error processing document',
-        description: error.message || 'An unknown error occurred.',
-      });
-    } finally {
-      setIsLoading(false);
-      // Reset the file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
+    const fileExtension = file.name.split('.').pop()?.toLowerCase();
+    const isDocument = ['pdf', 'docx', 'txt'].includes(fileExtension || '');
+    const isImage = ['png', 'jpg', 'jpeg', 'webp'].includes(fileExtension || '');
+    
+    if (isImage) {
+        setImageFile(file);
+        setImagePreview(URL.createObjectURL(file));
+        resetFileInput();
+        return;
     }
+
+    if (isDocument) {
+        setIsLoading(true);
+        toast({
+        title: 'Uploading document...',
+        description: `Processing "${file.name}". This may take a moment.`,
+        });
+
+        try {
+        const bucketId = await appwriteStorageBucketId();
+        if (!bucketId) {
+            throw new Error('Appwrite storage bucket not configured.');
+        }
+        
+        const permissions = [
+            Permission.read(Role.user(user.$id)),
+            Permission.update(Role.user(user.$id)),
+            Permission.delete(Role.user(user.$id)),
+            Permission.read(Role.label('admin')),
+        ];
+
+        const fileUploadResponse = await storage.createFile(bucketId, ID.unique(), file, permissions);
+        const documentId = fileUploadResponse.$id;
+        const fileDataUri = await fileToDataUri(file);
+
+        await processDocument({ fileDataUri, fileName: file.name, documentId });
+
+        toast({
+            title: 'Success!',
+            description: `"${file.name}" has been processed and is ready for questions.`,
+        });
+        } catch (error: any) {
+        console.error('Error processing document:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Error processing document',
+            description: error.message || 'An unknown error occurred.',
+        });
+        } finally {
+        setIsLoading(false);
+        resetFileInput();
+        }
+        return;
+    }
+
+    toast({
+        variant: 'destructive',
+        title: 'Unsupported File Type',
+        description: 'Please upload a PDF, DOCX, TXT, PNG, JPG, or WEBP file.'
+    });
+    resetFileInput();
   };
 
   const handleFeedback = async (message: ChatMessage, feedback: 'good' | 'bad') => {
-    if (feedbackSent.has(message.id)) return; // Prevent duplicate feedback
+    if (feedbackSent.has(message.id)) return;
 
     setFeedbackSent(prev => new Set(prev).add(message.id));
     toast({
@@ -125,45 +139,47 @@ export function ChatPanel({
       await logInteraction({ messageId: message.id, feedback });
     } catch (error) {
       console.error("Failed to log feedback", error);
-      // Optionally notify user of failure, but for now we fail silently
     }
   }
 
   const sendMessage = async (prompt: string) => {
     if (!prompt.trim() || isLoading) return;
 
-    const userMessage: ChatMessage = { role: 'user', content: prompt, id: uuidv4() };
-    setMessages((prev) => [...prev, userMessage]);
-    setInput('');
     setIsLoading(true);
 
+    let imageDataUri: string | undefined = undefined;
+    if (imageFile && imagePreview) {
+        imageDataUri = await fileToDataUri(imageFile);
+    }
+
+    const userMessage: ChatMessage = { role: 'user', content: prompt, id: uuidv4(), image: imageDataUri };
+    setMessages((prev) => [...prev, userMessage]);
+    
+    // Clear inputs immediately
+    setInput('');
+    setImageFile(null);
+    setImagePreview(null);
+
     let modelResponse = '';
-    const plainHistory: Message[] = [...messages, {role: 'user', content: prompt}].map(({role, content}) => ({role, content}));
+    const plainHistory: Message[] = [...messages.filter(m => !m.image), {role: 'user', content: prompt}].map(({role, content}) => ({role, content}));
 
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          history: plainHistory.slice(0, -1), // Send history *before* the new user message
+          history: plainHistory.slice(0, -1),
           prompt: prompt,
+          image: imageDataUri,
         }),
       });
 
-      if (!response.body) {
-        throw new Error('No response body');
-      }
-
+      if (!response.body) throw new Error('No response body');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       
       const modelMessageId = uuidv4();
-      setMessages((prev) => [
-        ...prev,
-        { role: 'model', content: '', id: modelMessageId },
-      ]);
+      setMessages((prev) => [ ...prev, { role: 'model', content: '', id: modelMessageId }]);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -202,10 +218,7 @@ export function ChatPanel({
     if (scrollAreaRef.current) {
       const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
       if (viewport) {
-        viewport.scrollTo({
-          top: viewport.scrollHeight,
-          behavior: 'smooth',
-        });
+        viewport.scrollTo({ top: viewport.scrollHeight, behavior: 'smooth' });
       }
     }
   }, [messages]);
@@ -224,38 +237,27 @@ export function ChatPanel({
               {disabled ? 'Please configure the application to enable chat.' : 'Chat is currently unavailable.'}
             </div>
           )}
-          {messages.map((message, index) => {
+          {messages.map((message) => {
             const isEscalation = message.role === 'model' && (
                 message.content.toLowerCase().includes('specialist') ||
                 message.content.toLowerCase().includes('human expert')
             );
             return (
-                <div
-                key={message.id}
-                className={cn(
-                    'flex items-start gap-4',
-                    message.role === 'user' ? 'justify-end' : ''
-                )}
-                >
+                <div key={message.id} className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : '')}>
                 {message.role === 'model' && (
-                    <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                        <Bot />
-                    </AvatarFallback>
-                    </Avatar>
+                    <Avatar className="h-8 w-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
                 )}
-                <div className="flex flex-col gap-2">
-                    <div
-                        className={cn(
-                        'max-w-prose rounded-lg p-3 text-sm',
-                        message.role === 'user'
-                            ? 'bg-primary text-primary-foreground'
-                            : 'bg-muted'
+                <div className="flex flex-col gap-2 max-w-prose">
+                    <div className={cn(
+                        'rounded-lg p-3 text-sm',
+                        message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                    )}>
+                        {message.image && (
+                            <Image src={message.image} alt="User upload" width={300} height={200} className="rounded-md mb-2" />
                         )}
-                    >
                         <p className="whitespace-pre-wrap">{message.content}</p>
                     </div>
-                    {message.role === 'model' && message.content && !isLoading && (
+                    {message.role === 'model' && message.content && (!isLoading || messages[messages.length-1].id !== message.id) && (
                         <div className="flex items-center gap-2">
                             <p className="text-xs text-muted-foreground">
                                 {isEscalation ? 'Escalation suggested for accuracy.' : 'Generated with high confidence.'}
@@ -272,22 +274,14 @@ export function ChatPanel({
                     )}
                 </div>
                 {message.role === 'user' && (
-                    <Avatar className="h-8 w-8">
-                    <AvatarFallback>
-                        <User />
-                    </AvatarFallback>
-                    </Avatar>
+                    <Avatar className="h-8 w-8"><AvatarFallback><User /></AvatarFallback></Avatar>
                 )}
                 </div>
             )
         })}
           {isLoading && messages[messages.length-1]?.role === 'user' && (
             <div className="flex items-start gap-4">
-              <Avatar className="h-8 w-8">
-                <AvatarFallback>
-                  <Bot />
-                </AvatarFallback>
-              </Avatar>
+              <Avatar className="h-8 w-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
               <div className="max-w-md rounded-lg p-3 text-sm bg-muted">
                 <Loader2 className="h-5 w-5 animate-spin" />
               </div>
@@ -296,24 +290,34 @@ export function ChatPanel({
         </div>
       </ScrollArea>
       <div className="mt-4">
+        {imagePreview && (
+          <div className="relative w-24 h-24 mb-2 rounded-md overflow-hidden">
+            <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
+            <Button
+              variant="destructive"
+              size="icon"
+              className="absolute top-1 right-1 h-6 w-6"
+              onClick={() => {
+                setImageFile(null);
+                setImagePreview(null);
+              }}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="flex items-center gap-2">
           <input
             type="file"
             ref={fileInputRef}
             onChange={handleFileChange}
             className="hidden"
-            accept=".pdf,.docx,.txt"
+            accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webp"
             disabled={isLoading || effectiveDisabled}
           />
-          <Button
-            type="button"
-            size="icon"
-            variant="ghost"
-            onClick={() => fileInputRef.current?.click()}
-            disabled={isLoading || effectiveDisabled}
-          >
+          <Button type="button" size="icon" variant="ghost" onClick={() => fileInputRef.current?.click()} disabled={isLoading || effectiveDisabled}>
             <Paperclip className="h-4 w-4" />
-            <span className="sr-only">Attach Document</span>
+            <span className="sr-only">Attach File</span>
           </Button>
           <Input
             value={input}
@@ -322,16 +326,8 @@ export function ChatPanel({
             className="flex-1"
             disabled={isLoading || effectiveDisabled}
           />
-          <Button
-            type="submit"
-            size="icon"
-            disabled={isLoading || !input.trim() || effectiveDisabled}
-          >
-            {isLoading ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
-            ) : (
-              <Send className="h-4 w-4" />
-            )}
+          <Button type="submit" size="icon" disabled={isLoading || (!input.trim() && !imageFile) || effectiveDisabled}>
+            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
             <span className="sr-only">Send</span>
           </Button>
         </form>

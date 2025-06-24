@@ -10,6 +10,7 @@ const ChatRequestSchema = z.object({
     })
   ),
   prompt: z.string(),
+  image: z.string().optional(),
 });
 
 export async function POST(req: Request) {
