@@ -9,7 +9,7 @@ const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const settingsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID!;
 const settingsDocumentId = 'default_config'; // Singleton document
 
-export async function updateAISettings(formData: FormData) {
+export async function updateAISettings(prevState: any, formData: FormData) {
   const user = await getLoggedInUser();
   if (!user || !user.labels.includes('admin')) {
     return { error: 'Unauthorized access.' };

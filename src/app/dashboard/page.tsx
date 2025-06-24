@@ -2,10 +2,10 @@ import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { KeyRound, Database, FileText, Clock } from "lucide-react";
-import { getAISettings } from "@/lib/settings";
+import { KeyRound, Database, Clock } from "lucide-react";
+import { getAISettings, type AISettings } from "@/lib/settings";
 
-function isWithinBusinessHours(settings: Awaited<ReturnType<typeof getAISettings>>): boolean {
+function isWithinBusinessHours(settings: AISettings): boolean {
     if (!settings.businessHoursEnabled) {
         return true;
     }

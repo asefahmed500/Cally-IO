@@ -13,7 +13,6 @@ export const GenerateCallScriptInputSchema = z.object({
   leadName: z.string().describe("The name of the lead to call."),
   leadStatus: z.string().describe("The current status of the lead (e.g., New, Qualified)."),
   leadScore: z.number().describe("The lead's quality score (1-100)."),
-  // In a real app, this template would be fetched from a database.
   scriptTemplate: z.string().optional().describe("A template for the call script. Uses Handlebars syntax like {{leadName}}."),
 });
 export type GenerateCallScriptInput = z.infer<typeof GenerateCallScriptInputSchema>;
@@ -42,17 +41,15 @@ const defaultScriptTemplate = `**Objective**: Briefly introduce Cally-IO, gauge 
 "Excellent. I'll send a calendar invite over right away. Looking forward to speaking then, {{leadName}}!"
 `;
 
+
 export async function generateScript(input: GenerateCallScriptInput): Promise<string> {
     const aiSettings = await getAISettings();
 
-    // This is a custom handlebars helper.
-    // It's not standard and would require registering it with a Handlebars instance.
-    // For Genkit's simple template, we'll use a workaround inside the prompt.
     const prompt = ai.definePrompt({
         name: 'generateCallScriptPrompt',
         input: { schema: GenerateCallScriptInputSchema },
         output: { schema: z.string() },
-        prompt: `You are an expert sales development representative who is a master at writing concise, effective, and personalized call scripts. Your AI personality is ${aiSettings.personality}.
+        prompt: `You are an expert sales development representative who is a master at writing concise, effective, and personalized call scripts. Your AI personality should be: ${aiSettings.personality}.
 
 Your task is to generate a natural and effective call script for an agent.
 
@@ -63,15 +60,15 @@ Your task is to generate a natural and effective call script for an agent.
 
 **Script Generation Instructions**:
 - Use the provided script template as your guide.
-- **CRITICAL**: The "Value Proposition" section MUST be adapted based on the lead's score.
-    - If score is high (e.g., > 70), use a confident, feature-focused approach. Assume they are an expert user.
-    - If score is medium (e.g., 40-70), focus on a core value proposition, like uploading documents. Assume they are an interested user.
-    - If score is low (e.g., < 40), use a general, educational, and discovery-focused approach. Assume they are just exploring.
 - **CRITICAL**: The "Opener" section MUST be adapted based on the lead's status.
-    - If status is 'New', use the default opener.
+    - If status is 'New', use a welcoming opener: "Hi {{leadName}}, this is [Your Name] from Cally-IO. I saw you recently signed up..."
     - If status is 'Contacted', modify the opener to be a follow-up: "Hi {{leadName}}, just following up on my previous message..."
-    - If status is 'Qualified', make the opener more direct: "Hi {{leadName}}, I'm reaching out because your usage indicates you might be a great fit for our advanced features..."
-- Replace placeholders like "[Your Name]" with generic but appropriate text (e.g., "Alex").
+    - If status is 'Qualified', make the opener more direct and value-focused: "Hi {{leadName}}, I'm reaching out because your usage indicates you might be a great fit for our advanced features..."
+- **CRITICAL**: The "Value Proposition" section MUST be adapted based on the lead's score.
+    - If score is high (> 70), use a confident, feature-focused approach. Assume they are an expert user.
+    - If score is medium (40-70), focus on a core value proposition, like uploading documents. Assume they are an interested user.
+    - If score is low (< 40), use a general, educational, and discovery-focused approach. Assume they are just exploring.
+- Replace placeholders like "[Your Name]" with a generic but appropriate name (e.g., "Alex").
 - The final output must be ONLY the script text, formatted in clean Markdown. Do not add any other commentary, headings, or introductions.
 
 **Call Script Template**:
@@ -81,6 +78,19 @@ Your task is to generate a natural and effective call script for an agent.
 
     const scriptTemplate = input.scriptTemplate || defaultScriptTemplate;
     
-    const { output } = await prompt({ ...input, scriptTemplate });
+    // This is a workaround for the lack of complex logic in Genkit's Handlebars.
+    // We can't directly use {{#if (isGreaterThan ...)}}.
+    // The logic is moved into the prompt instructions for the LLM to handle.
+    // To make it work, we add a placeholder helper to the template to satisfy the syntax,
+    // even though it won't be executed. The LLM will follow the text instructions instead.
+    const modifiedTemplate = scriptTemplate.replace(
+        /{{#if \(isGreaterThan leadScore (\d+)\)}}/g,
+        "{{#if leadScore}}"
+    ).replace(
+        /{{else if \(isGreaterThan leadScore (\d+)\)}}/g,
+        "{{else}}"
+    );
+
+    const { output } = await prompt({ ...input, scriptTemplate: modifiedTemplate });
     return output || "Could not generate a script.";
 }

@@ -2,25 +2,14 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, BotMessageSquare, CheckCircle, Clock, Star, Phone, FileText, Cog, BrainCircuit, TestTube2, AlertCircle, Users, Link as LinkIcon, Webhook, Sheet as SheetIcon } from "lucide-react";
+import { BarChart2, CheckCircle, Clock, Star, Users, Cog, FileText } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
-import { Label } from "@/components/ui/label";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getAISettings } from "@/lib/settings";
-import { updateAISettings } from "@/app/settings/actions";
-import { Switch } from "@/components/ui/switch";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { SettingsForm } from "@/components/settings/settings-form";
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
 
 function StatCard({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) {
     return (
@@ -95,15 +84,14 @@ export default async function SettingsPage() {
 
   const { satisfactionRate, totalConversations, resolutionRate, totalLeads, conversionRate } = await getAnalyticsData();
   const aiSettings = await getAISettings();
-  const isTwilioConfigured = !!process.env.TWILIO_ACCOUNT_SID;
   const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
   const timezones = Intl.supportedValuesOf('timeZone');
 
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="text-3xl font-bold tracking-tight">Settings &amp; Analytics</h1>
-        <p className="text-muted-foreground">Manage integrations, AI behavior, and track conversation quality.</p>
+        <h1 className="text-3xl font-bold tracking-tight">Admin Control Panel</h1>
+        <p className="text-muted-foreground">Manage integrations, AI behavior, and track system performance.</p>
       </header>
         
       <Card>
@@ -116,7 +104,7 @@ export default async function SettingsPage() {
                 <StatCard title="Avg. Satisfaction" value={`${satisfactionRate}%`} icon={Star} />
                 <StatCard title="Total Leads" value={totalLeads.toLocaleString()} icon={Users} />
                 <StatCard title="Conversion Rate" value={`${conversionRate}%`} icon={BarChart2} />
-                <StatCard title="Total Feedback" value={totalConversations.toLocaleString()} icon={BotMessageSquare} />
+                <StatCard title="Total Feedback" value={totalConversations.toLocaleString()} icon={Users} />
                 <StatCard title="Resolution Rate (Simulated)" value={`${resolutionRate}%`} icon={CheckCircle} />
                 <StatCard title="Avg. Response Time (Simulated)" value="1.8s" icon={Clock} />
             </div>

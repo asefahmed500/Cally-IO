@@ -1,5 +1,3 @@
-// This is a new file I'm adding to separate the form from the main page component.
-// It keeps the settings page cleaner and easier to manage.
 'use client';
 
 import * as React from 'react';
@@ -23,12 +21,13 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { BrainCircuit, Clock, TestTube2, AlertCircle, Phone, Link as LinkIcon, Webhook, Sheet as SheetIcon } from 'lucide-react';
-import { CheckCircle, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
+  const { pending } = useFormStatus();
   return (
-    <Button type="submit" disabled={isPending}>
-      {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+    <Button type="submit" disabled={pending || isPending} className="w-full sm:w-auto">
+      {(pending || isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
       Save All Settings
     </Button>
   );
@@ -36,8 +35,7 @@ function SubmitButton({ isPending }: { isPending: boolean }) {
 
 export function SettingsForm({ settings, timezones }: { settings: AISettings, timezones: string[] }) {
     const { toast } = useToast();
-    const [state, formAction] = useActionState(updateAISettings, null);
-    const { pending } = useFormStatus();
+    const [state, formAction, isPending] = useActionState(updateAISettings, null);
 
     React.useEffect(() => {
         if (state?.success) {
@@ -45,7 +43,6 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                 title: 'Success!',
                 description: state.message || "Your settings have been saved.",
                 variant: 'default',
-                className: "bg-green-100 border-green-300 text-green-900 dark:bg-green-950 dark:border-green-800 dark:text-green-200"
             });
         } else if (state?.error) {
             toast({
@@ -61,6 +58,77 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-2">
+                        <BrainCircuit className="h-6 w-6" />
+                        <CardTitle>AI Agent Configuration</CardTitle>
+                    </div>
+                    <CardDescription>Define how your AI assistant should think, talk, and behave.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                    <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="ai-personality">AI Personality</Label>
+                            <Select name="ai_personality" defaultValue={settings.personality}>
+                                <SelectTrigger id="ai-personality">
+                                    <SelectValue placeholder="Select a personality" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Professional">Professional</SelectItem>
+                                    <SelectItem value="Friendly">Friendly</SelectItem>
+                                    <SelectItem value="Technical">Technical</SelectItem>
+                                    <SelectItem value="Witty">Witty</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="ai-style">Response Style</Label>
+                            <Select name="ai_style" defaultValue={settings.style}>
+                                <SelectTrigger id="ai-style">
+                                    <SelectValue placeholder="Select a style" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Concise">Concise</SelectItem>
+                                    <SelectItem value="Detailed">Detailed</SelectItem>
+                                    <SelectItem value="Conversational">Conversational</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="ai-instructions">Custom Instructions</Label>
+                        <Textarea 
+                            id="ai-instructions"
+                            name="ai_instructions"
+                            placeholder="e.g., Your company name is Cally-IO. Always mention our 30-day money-back guarantee when discussing pricing." 
+                            className="min-h-32"
+                            defaultValue={settings.instructions}
+                        />
+                    </div>
+                    <div className="grid md:grid-cols-2 gap-4 pt-4">
+                        <Card className="bg-muted/50">
+                            <CardHeader className="flex-row items-center gap-2 space-y-0">
+                                <TestTube2 className="w-5 h-5" />
+                                <CardTitle className="text-lg">Knowledge Base Testing</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground">To test your AI's responses, simply go to the main Dashboard, upload your documents, and start asking questions. This is the live environment for testing how the AI uses its knowledge base.</p>
+                            </CardContent>
+                        </Card>
+                        <Card className="bg-muted/50">
+                            <CardHeader className="flex-row items-center gap-2 space-y-0">
+                                <AlertCircle className="w-5 h-5" />
+                                <CardTitle className="text-lg">Escalation Rules</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                                <p className="text-sm text-muted-foreground">The AI is pre-configured to escalate to a human specialist when it doesn't know an answer. This behavior is part of the core prompt and is not currently editable via the UI.</p>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </CardContent>
+            </Card>
+
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
                         <Clock className="h-6 w-6" />
                         <CardTitle>Business Hours</CardTitle>
                     </div>
@@ -71,7 +139,7 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                         <Switch id="business-hours-enabled" name="business_hours_enabled" defaultChecked={settings.businessHoursEnabled} />
                         <Label htmlFor="business-hours-enabled">Enable Business Hours</Label>
                     </div>
-                     <div className="grid md:grid-cols-3 gap-4">
+                    <div className="grid md:grid-cols-3 gap-4">
                         <div className="space-y-2">
                             <Label htmlFor="business-hours-start">Start Time</Label>
                             <Input id="business-hours-start" name="business_hours_start" type="time" defaultValue={settings.businessHoursStart} />
@@ -92,7 +160,7 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                             </Select>
                         </div>
                     </div>
-                     <div className="space-y-2">
+                    <div className="space-y-2">
                         <Label htmlFor="away-message">Away Message</Label>
                         <Textarea id="away-message" name="away_message" placeholder="We are currently away. Please leave a message..." className="min-h-24" defaultValue={settings.awayMessage} />
                         <p className="text-xs text-muted-foreground">This message will be shown to users who visit outside of business hours.</p>
@@ -149,85 +217,13 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-2">
-                        <BrainCircuit className="h-6 w-6" />
-                        <CardTitle>AI Agent Configuration</CardTitle>
-                    </div>
-                <CardDescription>Define how your AI assistant should think, talk, and behave.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                            <Label htmlFor="ai-personality">AI Personality</Label>
-                            <Select name="ai_personality" defaultValue={settings.personality}>
-                                <SelectTrigger id="ai-personality">
-                                    <SelectValue placeholder="Select a personality" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Professional">Professional</SelectItem>
-                                    <SelectItem value="Friendly">Friendly</SelectItem>
-                                    <SelectItem value="Technical">Technical</SelectItem>
-                                    <SelectItem value="Witty">Witty</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                        <div className="space-y-2">
-                            <Label htmlFor="ai-style">Response Style</Label>
-                            <Select name="ai_style" defaultValue={settings.style}>
-                                <SelectTrigger id="ai-style">
-                                    <SelectValue placeholder="Select a style" />
-                                </SelectTrigger>
-                                <SelectContent>
-                                    <SelectItem value="Concise">Concise</SelectItem>
-                                    <SelectItem value="Detailed">Detailed</SelectItem>
-                                    <SelectItem value="Conversational">Conversational</SelectItem>
-                                </SelectContent>
-                            </Select>
-                        </div>
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="ai-instructions">Custom Instructions</Label>
-                        <Textarea 
-                            id="ai-instructions"
-                            name="ai_instructions"
-                            placeholder="e.g., Your company name is Cally-IO. Always mention our 30-day money-back guarantee when discussing pricing." 
-                            className="min-h-32"
-                            defaultValue={settings.instructions}
-                        />
-                    </div>
-                    
-                    <div className="grid md:grid-cols-2 gap-4 pt-4">
-                        <Card className="bg-muted/50">
-                            <CardHeader className="flex-row items-center gap-2 space-y-0">
-                                <TestTube2 className="w-5 h-5" />
-                                <CardTitle className="text-lg">Knowledge Base Testing</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-muted-foreground">To test your AI's responses, simply go to the main Dashboard, upload your documents, and start asking questions. This is the live environment for testing how the AI uses its knowledge base.</p>
-                            </CardContent>
-                        </Card>
-                        <Card className="bg-muted/50">
-                            <CardHeader className="flex-row items-center gap-2 space-y-0">
-                                <AlertCircle className="w-5 h-5" />
-                                <CardTitle className="text-lg">Escalation Rules</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-sm text-muted-foreground">The AI is pre-configured to escalate to a human specialist when it doesn't know an answer. This behavior is part of the core prompt and is not currently editable via the UI.</p>
-                            </CardContent>
-                        </Card>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-2">
                         <Phone className="h-6 w-6" />
                         <CardTitle>Twilio Integration</CardTitle>
                     </div>
                 <CardDescription>Connect your Twilio account to enable automated calling capabilities. These values should be set in your .env file.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {!process.env.TWILIO_ACCOUNT_SID && (
+                    {!process.env.NEXT_PUBLIC_TWILIO_CONFIGURED && (
                         <Alert variant="destructive">
                             <Phone className="h-4 w-4" />
                             <AlertTitle>Twilio Not Configured</AlertTitle>
@@ -238,19 +234,19 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                     )}
                     <div className="space-y-2">
                         <Label htmlFor="twilio-sid">Account SID</Label>
-                        <Input id="twilio-sid" placeholder={process.env.TWILIO_ACCOUNT_SID ? "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" : "Not configured"} readOnly disabled />
+                        <Input id="twilio-sid" placeholder={process.env.NEXT_PUBLIC_TWILIO_CONFIGURED ? "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" : "Not configured"} readOnly disabled />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="twilio-token">Auth Token</Label>
-                        <Input id="twilio-token" type="password" value={process.env.TWILIO_ACCOUNT_SID ? "••••••••••••••••••••••••••••" : ""} readOnly disabled />
+                        <Input id="twilio-token" type="password" value={process.env.NEXT_PUBLIC_TWILIO_CONFIGURED ? "••••••••••••••••••••••••••••" : ""} readOnly disabled />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="twilio-phone">Twilio Phone Number</Label>
-                        <Input id="twilio-phone" placeholder={process.env.TWILIO_ACCOUNT_SID ? "+15551234567" : "Not configured"} readOnly disabled />
+                        <Input id="twilio-phone" placeholder={process.env.NEXT_PUBLIC_TWILIO_CONFIGURED ? "+15551234567" : "Not configured"} readOnly disabled />
                     </div>
                 </CardContent>
-                 <CardFooter className="flex justify-end">
-                    <SubmitButton isPending={pending} />
+                 <CardFooter className="bg-muted/50 border-t px-6 py-3 flex justify-end">
+                    <SubmitButton isPending={isPending} />
                 </CardFooter>
             </Card>
         </form>
