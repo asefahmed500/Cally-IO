@@ -12,7 +12,10 @@ export async function signup(prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
 
   try {
-    await users.create(ID.unique(), email, '', password, name);
+    const isAdmin = process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
+    const labels = isAdmin ? ['user', 'admin'] : ['user'];
+    
+    await users.create(ID.unique(), email, '', password, name, labels);
     const session = await account.createEmailPasswordSession(email, password);
     await setSessionCookie(session.secret, session.expire);
   } catch (e: any) {

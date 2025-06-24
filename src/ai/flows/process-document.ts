@@ -17,7 +17,7 @@ import {
   appwriteEmbeddingsCollectionId,
 } from '@/lib/appwrite-client';
 import { getLoggedInUser } from '@/lib/auth';
-import { ID } from 'appwrite';
+import { ID, Permission, Role } from 'appwrite';
 
 export const ProcessDocumentInputSchema = z.object({
   fileDataUri: z.string().describe('The document file as a data URI.'),
@@ -77,6 +77,13 @@ export const processDocument = ai.defineFlow(
         content: chunks,
       });
 
+      const permissions = [
+        Permission.read(Role.user(user.$id)),
+        Permission.update(Role.user(user.$id)),
+        Permission.delete(Role.user(user.$id)),
+        Permission.read(Role.label('admin')), // Admins can read all documents
+      ];
+
       for (let i = 0; i < chunks.length; i++) {
         await appwriteDatabases.createDocument(
           appwriteDatabaseId,
@@ -88,7 +95,8 @@ export const processDocument = ai.defineFlow(
             chunkText: chunks[i],
             embedding: embeddings[i],
             userId: user.$id,
-          }
+          },
+          permissions
         );
       }
     } catch (error) {

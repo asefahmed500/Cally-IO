@@ -52,7 +52,7 @@ export default async function DashboardPage() {
           </Alert>
        )}
 
-      <ChatPanel disabled={!isGoogleConfigured || !isAppwriteConfigured} />
+      <ChatPanel user={user} disabled={!isGoogleConfigured || !isAppwriteConfigured} />
     </div>
   );
 }

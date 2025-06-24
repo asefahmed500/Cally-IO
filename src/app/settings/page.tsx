@@ -23,6 +23,11 @@ export default async function AnalyticsPage() {
     redirect("/login");
   }
 
+  // Protect this route for admins only
+  if (!user.labels.includes('admin')) {
+    redirect('/dashboard');
+  }
+
   return (
     <div className="space-y-8">
       <header>

@@ -12,10 +12,11 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 ## Core Features
 
 - **Secure Authentication**: User signup and login functionality powered by Appwrite.
-- **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files through the chat interface.
+- **Role-Based Access Control**: Differentiates between `user` and `admin` roles, ensuring data privacy and proper access levels.
+- **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
-- **Performance Analytics**: A dedicated dashboard tracks key metrics like user satisfaction and resolution rates.
+- **Performance Analytics**: A dedicated, admin-only dashboard tracks key metrics like user satisfaction and resolution rates.
 - **Responsive Design**: The UI is designed to work seamlessly on both desktop and mobile devices.
 
 ## Getting Started
@@ -53,6 +54,11 @@ APPWRITE_API_KEY=your_appwrite_api_key
 NEXT_PUBLIC_APPWRITE_DATABASE_ID=your_database_id
 NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID=your_storage_bucket_id
 NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID=your_embeddings_collection_id
+
+# Admin User
+# The email address for the first admin user. When a user signs up with this email,
+# they will be automatically assigned the 'admin' role.
+ADMIN_EMAIL=youradminemail@example.com
 ```
 
 See the **Appwrite Setup** section below for details on how to get these values.
@@ -72,7 +78,9 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `embedding` (float, required, **array** enabled with size 768)
         *   `userId` (string, size: 255, required)
     *   In the **Indexes** tab, create an index on `userId`.
-    *   In the **Settings** tab, grant **Read, Create, Update, Delete** access to "All Users (role:member)".
+    *   In the **Settings** tab, update the **Permissions**. This is a critical security step. Set the permissions as follows:
+        *   **Create Access**: Add `All Users (role:member)`. This allows any logged-in user to create documents.
+        *   **Read Access, Update Access, Delete Access**: Leave these **empty**. Access for these operations will be controlled by secure, document-level permissions set by the application, ensuring users can only access their own data.
 
 ### 5. Running the Development Server
 
@@ -83,11 +91,12 @@ npm run dev
 ```
 
 Open [http://localhost:9002](http://localhost:9002) with your browser to see the result.
+To create your admin account, sign up using the email you specified in the `ADMIN_EMAIL` environment variable.
 
 ## How It Works
 
-1.  **Authentication**: Users create an account or log in. Appwrite handles the session management.
-2.  **Document Upload**: In the chat panel on the dashboard, users can upload documents. These files are sent to Appwrite Storage.
-3.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text from the document, splits it into chunks, generates embeddings for each chunk using Google's AI model, and stores the chunks and their embeddings in the Appwrite database.
-4.  **Chat Interaction**: When a user asks a question, the `conversationalRagChat` flow is initiated. It generates an embedding for the user's question and queries the Appwrite database to find the most similar document chunks (semantic search).
-5.  **Response Generation**: The relevant document chunks are passed as context to the Gemini model, which generates a final, helpful answer for the user.
+1.  **Authentication & Roles**: Users create an account. The system assigns a `user` label. If the email matches the `ADMIN_EMAIL`, it also assigns an `admin` label.
+2.  **Document Upload**: In the chat panel, users upload documents. These are sent to Appwrite Storage with permissions allowing access only for that user and read access for admins.
+3.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text, generates embeddings, and stores them in the Appwrite database with the same secure, document-level permissions.
+4.  **Chat Interaction**: When a user asks a question, the `conversationalRagChat` flow is initiated. It queries the database to find document chunks created by *that specific user*.
+5.  **Response Generation**: The relevant, user-owned document chunks are passed as context to the Gemini model to generate a helpful answer.

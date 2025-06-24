@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
 import { storage, appwriteStorageBucketId } from '@/lib/appwrite-client';
-import { ID } from 'appwrite';
+import { ID, Permission, Role, type Models } from 'appwrite';
 import { processDocument } from '@/ai/flows/process-document';
 
 async function fileToDataUri(file: File): Promise<string> {
@@ -21,7 +21,13 @@ async function fileToDataUri(file: File): Promise<string> {
   });
 }
 
-export function ChatPanel({ disabled }: { disabled?: boolean }) {
+export function ChatPanel({
+  disabled,
+  user,
+}: {
+  disabled?: boolean;
+  user: Models.User<Models.Preferences>;
+}) {
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
@@ -50,11 +56,20 @@ export function ChatPanel({ disabled }: { disabled?: boolean }) {
       if (!bucketId) {
         throw new Error('Appwrite storage bucket not configured.');
       }
-      // 1. Upload file to Appwrite Storage
+      
+      const permissions = [
+        Permission.read(Role.user(user.$id)),
+        Permission.update(Role.user(user.$id)),
+        Permission.delete(Role.user(user.$id)),
+        Permission.read(Role.label('admin')), // Admins can read all files
+      ];
+
+      // 1. Upload file to Appwrite Storage with permissions
       const fileUploadResponse = await storage.createFile(
         bucketId,
         ID.unique(),
-        file
+        file,
+        permissions
       );
       const documentId = fileUploadResponse.$id;
 
