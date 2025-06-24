@@ -12,15 +12,17 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 
 ## Core Features
 
-- **Secure Authentication**: User signup and login functionality powered by Appwrite.
+- **Secure Authentication**: User signup, login, and password recovery functionality powered by Appwrite.
 - **Role-Based Access Control**: Differentiates between `user` and `admin` roles, ensuring data privacy and proper access levels.
-- **Lead Management Dashboard**: An admin-only dashboard to view, manage, and track all users who sign up.
+- **Lead Management Dashboard**: An admin-only dashboard to view, manage, track, and export all users who sign up.
 - **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
+- **Advanced Knowledge Management**: An admin-only hub to view and manage all documents in the knowledge base, including secure deletion.
 - **Configurable AI Agent**: Admins can configure the AI's personality, response style, and add custom business instructions.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
 - **AI Script Generator**: The AI can dynamically generate personalized call scripts for leads based on their profile.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
 - **Performance Analytics**: A dedicated, admin-only dashboard tracks key metrics like user satisfaction and resolution rates, powered by real user feedback.
+- **CRM & Integration Hub**: A centralized place for admins to manage integrations with tools like Slack, Google Sheets, and other webhooks (UI placeholders).
 - **Responsive Design**: The UI is designed to work seamlessly on both desktop and mobile devices.
 
 ## Getting Started
@@ -61,7 +63,7 @@ NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID=your_storage_bucket_id
 NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID=your_embeddings_collection_id
 NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID=your_metrics_collection_id
 NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID=your_leads_collection_id
-NEXT_PUBLIC_APPWRITE_SETTINGS_COLlection_id=your_settings_collection_id
+NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID=your_settings_collection_id
 
 # Admin User
 # The email address for the first admin user. When a user signs up with this email,
@@ -91,10 +93,10 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `chunkText` (string, size: 4096, required)
         *   `embedding` (float, required, **array** enabled with size 768)
         *   `userId` (string, size: 255, required)
-    *   In the **Indexes** tab, create an index on `userId`.
+    *   In the **Indexes** tab, create an index on `userId` and `documentId`.
     *   In the **Settings** tab, update the **Permissions**. This is a critical security step. Set the permissions as follows:
         *   **Create Access**: Add `All Users (role:member)`. This allows any logged-in user to create documents.
-        *   **Read Access, Update Access, Delete Access**: Leave these **empty**. Access for these operations will be controlled by secure, document-level permissions set by the application, ensuring users can only access their own data.
+        *   **Read Access, Update Access, Delete Access**: Only add `Team (admin)` to these permissions. This ensures users can't access each other's data, but admins can manage it.
 4.  **Metrics Collection**:
     *   Inside the same database, create another new collection for metrics. Copy its **Collection ID** to your `.env` file.
     *   In the **Attributes** tab, add the following:
@@ -102,7 +104,7 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `messageId` (string, size: 255, required)
         *   `feedback` (string, size: 255, required)
     *   In the **Indexes** tab, create an index on `userId`.
-    *   In the **Settings** tab, update the **Permissions** similar to the embeddings collection.
+    *   In the **Settings** tab, set permissions similar to the embeddings collection.
 5.  **Leads Collection**:
     *   Inside the same database, create a third collection for leads. Copy its **Collection ID** to your `.env` file.
     *   In the **Attributes** tab, add the following:
@@ -113,14 +115,14 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `score` (integer, required)
         *   `lastActivity` (datetime, required)
     *   In the **Indexes** tab, create an index on `userId` and `email`.
-    *   In the **Settings** tab, update the **Permissions**. This collection is managed by the server, so you should only grant permissions to the **`admin`** role for all CRUD operations. Leave the user-facing permissions empty.
+    *   In the **Settings** tab, update the **Permissions**. This collection is managed by the server, so you should only grant permissions to the **`Team (admin)`** role for all CRUD operations.
 6.  **Settings Collection**:
     *   Inside the same database, create a fourth collection for AI settings. Copy its **Collection ID** to your `.env` file.
     *   In the **Attributes** tab, add the following:
         *   `ai_personality` (string, size: 255, required)
         *   `ai_style` (string, size: 255, required)
         *   `ai_instructions` (string, size: 8192, required)
-    *   In the **Settings** tab, update the **Permissions** to be `admin`-only for all operations.
+    *   In the **Settings** tab, update the **Permissions** to be `Team (admin)`-only for all operations.
     *   Go to the **Documents** tab and create a single document. Enter `default_config` as the Document ID. Fill in initial values for the attributes (e.g., Personality: "Professional", Style: "Conversational", Instructions: "Your company name is Cally-IO."). The application will use this document to configure the AI.
 
 ### 5. Running the Development Server
@@ -145,4 +147,4 @@ To create your admin account, sign up using the email you specified in the `ADMI
 7.  **Response Generation**: The relevant, user-owned document chunks, the AI configuration, conversation history, and the user's question are compiled into a dynamic prompt. This is sent to the Gemini model to generate a helpful, context-aware, and personality-aligned response, which is streamed back to the UI.
 8.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
 9.  **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
-10. **Analytics & Leads**: Admin dashboards query the `metrics` and `leads` collections to provide live data on user satisfaction and to manage the customer lifecycle.
+10. **Admin Dashboards**: Admin dashboards query the `metrics`, `leads`, and `embeddings` collections to provide live data on user satisfaction, to manage the customer lifecycle, and to oversee the knowledge base.

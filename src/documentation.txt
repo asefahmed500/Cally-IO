@@ -13,6 +13,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
   - `/src/app/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
   - `/src/app/leads`: The admin-only lead management dashboard.
+  - `/src/app/knowledge`: The admin-only hub for managing the AI's knowledge base.
   - `layout.tsx`: The root layout for the application.
   - `page.tsx`: The public-facing landing page.
 
@@ -24,6 +25,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/components/chat`: Components specific to the chat interface.
   - `/src/components/layout`: Components for the overall application layout (sidebar, header).
   - `/src/components/leads`: Components specific to the leads dashboard, including the profile view.
+  - `/src/components/knowledge`: Components for the knowledge management dashboard.
   - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
 
 - `/src/hooks`: Custom React hooks, such as `useToast` for notifications.
@@ -49,6 +51,12 @@ The project follows a standard Next.js App Router structure. Key directories inc
 2. The file is sent to Appwrite Storage with user-specific and admin-readable permissions.
 3. The `processDocument` Genkit flow is invoked with the file's data.
 4. The flow extracts text, splits it into chunks, generates embeddings, and saves them to the "embeddings" collection.
+
+### Knowledge Management (`/src/app/knowledge/page.tsx`)
+1. An admin navigates to the Knowledge page.
+2. The page fetches a list of all unique documents from the `embeddings` collection.
+3. The admin can view all uploaded files and can permanently delete a document and all its associated data using the `deleteDocument` server action.
+4. UI placeholders exist for future FAQ management and content suggestion features.
 
 ### AI Configuration (`/src/app/settings/page.tsx` & `actions.ts`)
 1. An admin navigates to the Settings page.
