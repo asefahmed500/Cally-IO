@@ -11,6 +11,8 @@ import { useToast } from '@/hooks/use-toast';
 import { storage, appwriteStorageBucketId } from '@/lib/appwrite-client';
 import { ID, Permission, Role, type Models } from 'appwrite';
 import { processDocument } from '@/ai/flows/process-document';
+import { logInteraction } from '@/ai/flows/log-metrics';
+import { v4 as uuidv4 } from 'uuid';
 
 async function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -21,6 +23,9 @@ async function fileToDataUri(file: File): Promise<string> {
   });
 }
 
+// Extend the Message type to include a client-side ID
+type ChatMessage = Message & { id: string };
+
 export function ChatPanel({
   disabled,
   user,
@@ -28,9 +33,10 @@ export function ChatPanel({
   disabled?: boolean;
   user: Models.User<Models.Preferences>;
 }) {
-  const [messages, setMessages] = React.useState<Message[]>([]);
+  const [messages, setMessages] = React.useState<ChatMessage[]>([]);
   const [input, setInput] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
+  const [feedbackSent, setFeedbackSent] = React.useState<Set<string>>(new Set());
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -103,25 +109,34 @@ export function ChatPanel({
     }
   };
 
-  const handleFeedback = (feedback: 'good' | 'bad') => {
+  const handleFeedback = async (message: ChatMessage, feedback: 'good' | 'bad') => {
+    if (feedbackSent.has(message.id)) return; // Prevent duplicate feedback
+
+    setFeedbackSent(prev => new Set(prev).add(message.id));
     toast({
         title: 'Feedback Received',
         description: "Thank you! We'll use your feedback to improve."
-    })
-    // In a real app, you would send this feedback to a logging service.
+    });
+    
+    try {
+      await logInteraction({ messageId: message.id, feedback });
+    } catch (error) {
+      console.error("Failed to log feedback", error);
+      // Optionally notify user of failure, but for now we fail silently
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
 
-    const userMessage: Message = { role: 'user', content: input };
+    const userMessage: ChatMessage = { role: 'user', content: input, id: uuidv4() };
     setMessages((prev) => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     let modelResponse = '';
-    const fullHistory = [...messages, userMessage];
+    const plainHistory: Message[] = messages.map(({role, content}) => ({role, content}));
 
     try {
       const response = await fetch('/api/chat', {
@@ -130,7 +145,7 @@ export function ChatPanel({
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          history: messages, // Send history *before* the new user message
+          history: plainHistory, // Send history *before* the new user message
           prompt: input,
         }),
       });
@@ -143,9 +158,10 @@ export function ChatPanel({
       const decoder = new TextDecoder();
       
       // Add a placeholder for the model's response
+      const modelMessageId = uuidv4();
       setMessages((prev) => [
         ...prev,
-        { role: 'model', content: '' },
+        { role: 'model', content: '', id: modelMessageId },
       ]);
 
       while (true) {
@@ -155,7 +171,10 @@ export function ChatPanel({
         modelResponse += decoder.decode(value, { stream: true });
         setMessages((prev) => {
           const newMessages = [...prev];
-          newMessages[newMessages.length - 1].content = modelResponse;
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.id === modelMessageId) {
+             lastMessage.content = modelResponse;
+          }
           return newMessages;
         });
       }
@@ -166,8 +185,7 @@ export function ChatPanel({
         title: 'Error',
         description: 'Failed to get a response from the AI assistant.',
       });
-      // Remove the user message and the empty model message on error
-      setMessages((prev) => prev.slice(0, prev.length - 2));
+       setMessages((prev) => prev.filter(m => m.id !== userMessage.id));
 
     } finally {
       setIsLoading(false);
@@ -176,11 +194,13 @@ export function ChatPanel({
 
   React.useEffect(() => {
     if (scrollAreaRef.current) {
-      const { scrollHeight, clientHeight } = scrollAreaRef.current;
-      scrollAreaRef.current.scrollTo({
-        top: scrollHeight - clientHeight,
-        behavior: 'smooth',
-      });
+      const viewport = scrollAreaRef.current.querySelector('div[data-radix-scroll-area-viewport]');
+      if (viewport) {
+        viewport.scrollTo({
+          top: viewport.scrollHeight,
+          behavior: 'smooth',
+        });
+      }
     }
   }, [messages]);
 
@@ -193,55 +213,63 @@ export function ChatPanel({
               {disabled ? 'Please configure the application to enable chat.' : 'Start a conversation with Cally-IO.'}
             </div>
           )}
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={cn(
-                'flex items-start gap-4',
-                message.role === 'user' ? 'justify-end' : ''
-              )}
-            >
-              {message.role === 'model' && (
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>
-                    <Bot />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-              <div className="flex flex-col gap-2">
+          {messages.map((message, index) => {
+            const isEscalation = message.role === 'model' && (
+                message.content.toLowerCase().includes('specialist') ||
+                message.content.toLowerCase().includes('human expert')
+            );
+            return (
                 <div
-                    className={cn(
-                    'max-w-prose rounded-lg p-3 text-sm',
-                    message.role === 'user'
-                        ? 'bg-primary text-primary-foreground'
-                        : 'bg-muted'
-                    )}
-                >
-                    <p className="whitespace-pre-wrap">{message.content}</p>
-                </div>
-                {message.role === 'model' && message.content && !isLoading && (
-                    <div className="flex items-center gap-2">
-                        <p className="text-xs text-muted-foreground">Generated with high confidence.</p>
-                        <div className="flex items-center gap-1">
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback('good')}>
-                                <ThumbsUp className="h-4 w-4" />
-                            </Button>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback('bad')}>
-                                <ThumbsDown className="h-4 w-4" />
-                            </Button>
-                        </div>
-                    </div>
+                key={message.id}
+                className={cn(
+                    'flex items-start gap-4',
+                    message.role === 'user' ? 'justify-end' : ''
                 )}
-              </div>
-              {message.role === 'user' && (
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback>
-                    <User />
-                  </AvatarFallback>
-                </Avatar>
-              )}
-            </div>
-          ))}
+                >
+                {message.role === 'model' && (
+                    <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                        <Bot />
+                    </AvatarFallback>
+                    </Avatar>
+                )}
+                <div className="flex flex-col gap-2">
+                    <div
+                        className={cn(
+                        'max-w-prose rounded-lg p-3 text-sm',
+                        message.role === 'user'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted'
+                        )}
+                    >
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                    </div>
+                    {message.role === 'model' && message.content && !isLoading && (
+                        <div className="flex items-center gap-2">
+                            <p className="text-xs text-muted-foreground">
+                                {isEscalation ? 'Escalation suggested for accuracy.' : 'Generated with high confidence.'}
+                            </p>
+                            <div className="flex items-center gap-1">
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'good')} disabled={feedbackSent.has(message.id)}>
+                                    <ThumbsUp className="h-4 w-4" />
+                                </Button>
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'bad')} disabled={feedbackSent.has(message.id)}>
+                                    <ThumbsDown className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                {message.role === 'user' && (
+                    <Avatar className="h-8 w-8">
+                    <AvatarFallback>
+                        <User />
+                    </AvatarFallback>
+                    </Avatar>
+                )}
+                </div>
+            )
+        })}
           {isLoading && messages[messages.length-1]?.role === 'user' && (
             <div className="flex items-start gap-4">
               <Avatar className="h-8 w-8">

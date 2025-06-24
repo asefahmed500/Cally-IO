@@ -16,7 +16,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
-- **Performance Analytics**: A dedicated, admin-only dashboard tracks key metrics like user satisfaction and resolution rates.
+- **Performance Analytics**: A dedicated, admin-only dashboard tracks key metrics like user satisfaction and resolution rates, powered by real user feedback.
 - **Responsive Design**: The UI is designed to work seamlessly on both desktop and mobile devices.
 
 ## Getting Started
@@ -54,6 +54,7 @@ APPWRITE_API_KEY=your_appwrite_api_key
 NEXT_PUBLIC_APPWRITE_DATABASE_ID=your_database_id
 NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID=your_storage_bucket_id
 NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID=your_embeddings_collection_id
+NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID=your_metrics_collection_id
 
 # Admin User
 # The email address for the first admin user. When a user signs up with this email,
@@ -81,6 +82,14 @@ To make the application fully functional, you need to configure your Appwrite pr
     *   In the **Settings** tab, update the **Permissions**. This is a critical security step. Set the permissions as follows:
         *   **Create Access**: Add `All Users (role:member)`. This allows any logged-in user to create documents.
         *   **Read Access, Update Access, Delete Access**: Leave these **empty**. Access for these operations will be controlled by secure, document-level permissions set by the application, ensuring users can only access their own data.
+4.  **Metrics Collection**:
+    *   Inside the same database, create another new collection for metrics. Copy its **Collection ID** to your `.env` file.
+    *   In the **Attributes** tab, add the following:
+        *   `userId` (string, size: 255, required)
+        *   `messageId` (string, size: 255, required)
+        *   `feedback` (string, size: 255, required)
+    *   In the **Indexes** tab, create an index on `userId`.
+    *   In the **Settings** tab, update the **Permissions** similar to the embeddings collection.
 
 ### 5. Running the Development Server
 
@@ -100,3 +109,5 @@ To create your admin account, sign up using the email you specified in the `ADMI
 3.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text, generates embeddings, and stores them in the Appwrite database with the same secure, document-level permissions.
 4.  **Chat Interaction**: When a user asks a question, the `conversationalRagChat` flow is initiated. It queries the database to find document chunks created by *that specific user*.
 5.  **Response Generation**: The relevant, user-owned document chunks are passed as context to the Gemini model to generate a helpful answer.
+6.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
+7.  **Analytics**: The admin dashboard queries the `metrics` collection to provide live data on user satisfaction and other key performance indicators.

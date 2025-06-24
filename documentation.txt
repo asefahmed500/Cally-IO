@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents.
+Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access and performance analytics.
 
 ## Project Structure
 
@@ -11,12 +11,12 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - `/src/app`: Contains the main application routes, pages, and layouts.
   - `/src/app/api`: API routes for server-side logic, like handling chat requests.
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
-  - `/src/app/settings`: The analytics dashboard page.
+  - `/src/app/settings`: The admin-only analytics dashboard page.
   - `layout.tsx`: The root layout for the application.
   - `page.tsx`: The public-facing landing page.
 
 - `/src/ai`: Contains all Genkit-related code for AI functionality.
-  - `/src/ai/flows`: Defines the core AI workflows, such as document processing and conversational chat.
+  - `/src/ai/flows`: Defines the core AI workflows, such as document processing, conversational chat, and metrics logging.
   - `/src/ai/genkit.ts`: Configures and initializes the Genkit AI instance.
 
 - `/src/components`: Contains reusable React components.
@@ -37,12 +37,12 @@ The project follows a standard Next.js App Router structure. Key directories inc
 ### Document Processing (`/src/ai/flows/process-document.ts`)
 
 1. A file is uploaded via the chat panel (`/src/components/chat/chat-panel.tsx`).
-2. The file is sent to Appwrite Storage.
+2. The file is sent to Appwrite Storage with user-specific and admin-readable permissions.
 3. The `processDocument` Genkit flow is invoked with the file's data.
 4. The flow extracts text from the file (handles PDF, DOCX, TXT).
-5. The text is split into smaller, manageable chunks using a text splitter.
-6. Embeddings are generated for each chunk using the `googleai/text-embedding-004` model.
-7. Each chunk, its embedding, and associated metadata (file name, user ID) are saved as a document in the Appwrite "embeddings" collection.
+5. The text is split into smaller, manageable chunks.
+6. Embeddings are generated for each chunk.
+7. Each chunk and its embedding are saved to the Appwrite "embeddings" collection with role-based permissions.
 
 ### Conversational Chat (`/src/ai/flows/conversational-chat.ts`)
 
@@ -50,13 +50,25 @@ The project follows a standard Next.js App Router structure. Key directories inc
 2. An API request is sent to `/api/chat/route.ts`.
 3. The `conversationalRagChat` flow is triggered.
 4. An embedding is generated for the user's question.
-5. A similarity search is performed against the embeddings in the Appwrite database to find the most relevant document chunks for the current user.
-6. The relevant chunks (context), conversation history, and the user's question are compiled into a single prompt.
-7. This prompt is sent to the Gemini LLM to generate a coherent, context-aware response.
-8. The response is streamed back to the UI in real-time.
+5. A similarity search finds the most relevant document chunks for the *current user*.
+6. The relevant chunks, conversation history, and the user's question are compiled into a prompt.
+7. The prompt is sent to the Gemini LLM to generate a context-aware response, which is streamed back to the UI.
+
+### Analytics Logging (`/src/ai/flows/log-metrics.ts`)
+
+1. A user provides feedback (thumbs up/down) on an AI response in the chat panel.
+2. The `logInteraction` Genkit flow is triggered with the message ID and feedback type.
+3. The flow saves a new document to the Appwrite "metrics" collection, containing the user's ID, the message ID, and the feedback provided.
+
+### Analytics Dashboard (`/src/app/settings/page.tsx`)
+
+1. An admin user navigates to the `/settings` page.
+2. The page component (running on the server) fetches all documents from the "metrics" collection using the server-side Appwrite SDK.
+3. It calculates statistics like total conversations and overall satisfaction rate.
+4. The live data is displayed in the dashboard cards.
 
 ## Customization
 
-- **Styling**: Colors and themes can be adjusted in `/src/app/globals.css`. The application uses Tailwind CSS and HSL CSS variables for theming.
-- **AI Behavior**: The core AI prompt and instructions can be modified in `/src/ai/flows/conversational-chat.ts` within the `chatPrompt` definition.
-- **UI Components**: UI components can be found and modified in `/src/components`. Most are based on ShadCN UI and can be extended as needed.
+- **Styling**: Colors and themes can be adjusted in `/src/app/globals.css`.
+- **AI Behavior**: The core AI prompt and instructions can be modified in `/src/ai/flows/conversational-chat.ts`.
+- **UI Components**: UI components can be found and modified in `/src/components`.
