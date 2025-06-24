@@ -9,7 +9,7 @@ Cally-IO is a Next.js web application designed to serve as an AI-powered convers
 The project follows a standard Next.js App Router structure. Key directories include:
 
 - `/src/app`: Contains the main application routes, pages, and layouts.
-  - `/src/app/api`: API routes for server-side logic, like handling chat requests.
+  - `/src/app/api`: API routes for server-side logic, like handling chat or Text-to-Speech requests.
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
   - `/src/app/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
   - `/src/app/leads`: The admin-only lead management dashboard.
@@ -18,7 +18,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `page.tsx`: The public-facing landing page.
 
 - `/src/ai`: Contains all Genkit-related code for AI functionality.
-  - `/src/ai/flows`: Defines the core AI workflows, such as document processing, conversational chat, script generation, and metrics logging.
+  - `/src/ai/flows`: Defines the core AI workflows, such as document processing, conversational chat, script generation, metrics logging, and Text-to-Speech.
   - `/src/ai/genkit.ts`: Configures and initializes the Genkit AI instance.
 
 - `/src/components`: Contains reusable React components.
@@ -68,6 +68,12 @@ The project follows a standard Next.js App Router structure. Key directories inc
 5. It finds the most relevant document chunks for the *current user*.
 6. The relevant chunks, AI configuration, conversation history, and question are compiled into a dynamic prompt.
 7. The prompt is sent to the Gemini LLM to generate a personality-aligned response.
+
+### Text-to-Speech (`/src/ai/flows/text-to-speech.ts`)
+1. After an AI response is generated, a user can click the speaker icon next to the message.
+2. This triggers a request to the `/api/tts` endpoint.
+3. The `generateSpeech` flow converts the message text into audio using a TTS model.
+4. The audio data is returned to the client and played in the browser.
 
 ### Admin Dashboards (`/src/app/settings/page.tsx` & `/src/app/leads/page.tsx`)
 1. An admin user navigates to the `/settings` or `/leads` pages.

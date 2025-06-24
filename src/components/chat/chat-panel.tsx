@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X } from 'lucide-react';
+import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, Square } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
@@ -28,6 +28,11 @@ async function fileToDataUri(file: File): Promise<string> {
 // Extend the Message type to include optional image data
 type ChatMessage = Message & { id: string; image?: string };
 
+type AudioPlaybackState = {
+  messageId: string | null;
+  status: 'idle' | 'loading' | 'playing';
+};
+
 export function ChatPanel({
   disabled,
   user,
@@ -43,8 +48,10 @@ export function ChatPanel({
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [feedbackSent, setFeedbackSent] = React.useState<Set<string>>(new Set());
+  const [audioState, setAudioState] = React.useState<AudioPlaybackState>({ messageId: null, status: 'idle' });
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -142,6 +149,55 @@ export function ChatPanel({
     }
   }
 
+  const handlePlayAudio = async (message: ChatMessage) => {
+    // Stop any currently playing audio
+    if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.onended = null;
+        audioRef.current = null;
+    }
+
+    // If the clicked message was already playing, just stop it.
+    if (audioState.status === 'playing' && audioState.messageId === message.id) {
+        setAudioState({ messageId: null, status: 'idle' });
+        return;
+    }
+
+    setAudioState({ messageId: message.id, status: 'loading' });
+
+    try {
+        const response = await fetch('/api/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text: message.content }),
+        });
+
+        if (!response.ok) {
+            throw new Error('Failed to generate audio.');
+        }
+
+        const { audioDataUri } = await response.json();
+        
+        audioRef.current = new Audio(audioDataUri);
+        audioRef.current.play();
+        setAudioState({ messageId: message.id, status: 'playing' });
+
+        audioRef.current.onended = () => {
+            setAudioState({ messageId: null, status: 'idle' });
+            audioRef.current = null;
+        };
+
+    } catch (error) {
+        console.error('Error playing audio:', error);
+        toast({
+            variant: 'destructive',
+            title: 'Audio Error',
+            description: 'Could not play the audio for this message.',
+        });
+        setAudioState({ messageId: null, status: 'idle' });
+    }
+  }
+
   const sendMessage = async (prompt: string) => {
     if (!prompt.trim() || isLoading) return;
 
@@ -222,6 +278,16 @@ export function ChatPanel({
       }
     }
   }, [messages]);
+  
+  // Cleanup audio on unmount
+  React.useEffect(() => {
+    return () => {
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.onended = null;
+        }
+    }
+  }, []);
 
   const effectiveDisabled = disabled || !isChatActive;
 
@@ -242,6 +308,9 @@ export function ChatPanel({
                 message.content.toLowerCase().includes('specialist') ||
                 message.content.toLowerCase().includes('human expert')
             );
+            const isThisMessageLoadingAudio = audioState.status === 'loading' && audioState.messageId === message.id;
+            const isThisMessagePlayingAudio = audioState.status === 'playing' && audioState.messageId === message.id;
+
             return (
                 <div key={message.id} className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : '')}>
                 {message.role === 'model' && (
@@ -259,9 +328,9 @@ export function ChatPanel({
                     </div>
                     {message.role === 'model' && message.content && (!isLoading || messages[messages.length-1].id !== message.id) && (
                         <div className="flex items-center gap-2">
-                            <p className="text-xs text-muted-foreground">
-                                {isEscalation ? 'Escalation suggested for accuracy.' : 'Generated with high confidence.'}
-                            </p>
+                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handlePlayAudio(message)} disabled={audioState.status === 'loading'}>
+                                {isThisMessageLoadingAudio ? <Loader2 className="h-4 w-4 animate-spin" /> : (isThisMessagePlayingAudio ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />)}
+                            </Button>
                             <div className="flex items-center gap-1">
                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'good')} disabled={feedbackSent.has(message.id)}>
                                     <ThumbsUp className="h-4 w-4" />
