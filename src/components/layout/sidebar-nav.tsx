@@ -16,6 +16,7 @@ import { Avatar, AvatarFallback } from '../ui/avatar';
 import { logout } from '@/app/auth/actions';
 import { Button } from '../ui/button';
 import type { Models } from 'appwrite';
+import { ThemeToggle } from './theme-toggle';
 
 const Logo = () => (
     <div className="flex items-center gap-2 group-data-[collapsible=icon]:justify-center">
@@ -25,17 +26,6 @@ const Logo = () => (
       <h1 className="text-xl font-bold text-primary group-data-[collapsible=icon]:hidden">Cally-IO</h1>
     </div>
 );
-
-function LogoutForm() {
-    return (
-        <form action={logout} className="w-full">
-            <Button type="submit" variant="ghost" className="w-full justify-start p-2 text-left">
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Logout</span>
-            </Button>
-        </form>
-    )
-}
 
 export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) {
   const pathname = usePathname();
@@ -83,7 +73,7 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
           )}
         </SidebarMenu>
       </SidebarContent>
-       <SidebarFooter className="p-2 group-data-[collapsible=icon]:hidden">
+       <SidebarFooter className="p-2 space-y-2 group-data-[collapsible=icon]:hidden">
         <div className="flex items-center gap-3 p-2 rounded-lg bg-sidebar-accent">
           <Avatar className="h-8 w-8">
             <AvatarFallback>{user.name.charAt(0).toUpperCase()}</AvatarFallback>
@@ -93,7 +83,15 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
             <span className="text-xs text-muted-foreground truncate">{user.email}</span>
           </div>
         </div>
-        <LogoutForm />
+        <div className="flex items-center justify-between">
+            <form action={logout} className="flex-1">
+                <Button type="submit" variant="ghost" className="w-full justify-start p-2 text-left">
+                    <LogOut className="mr-2 h-4 w-4" />
+                    <span>Logout</span>
+                </Button>
+            </form>
+            <ThemeToggle />
+        </div>
       </SidebarFooter>
     </Sidebar>
   );
