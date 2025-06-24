@@ -2,7 +2,7 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, BotMessageSquare, CheckCircle, Clock, Star, Phone, FileText, Cog, BrainCircuit, TestTube2, AlertCircle, Users } from "lucide-react";
+import { BarChart2, BotMessageSquare, CheckCircle, Clock, Star, Phone, FileText, Cog, BrainCircuit, TestTube2, AlertCircle, Users, Link as LinkIcon, Webhook, Sheet as SheetIcon } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Label } from "@/components/ui/label";
@@ -119,6 +119,55 @@ export default async function SettingsPage() {
             </div>
         </CardContent>
       </Card>
+
+       <Card>
+        <CardHeader>
+            <div className="flex items-center gap-2">
+                <LinkIcon className="h-6 w-6" />
+                <CardTitle>CRM &amp; Integrations</CardTitle>
+            </div>
+          <CardDescription>Connect Cally-IO to your other business tools to automate your workflows.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+            <div className="grid md:grid-cols-2 gap-6">
+                {/* Slack Integration */}
+                <div className="p-4 border rounded-lg space-y-2">
+                    <div className="flex items-center gap-2">
+                         <Webhook className="h-5 w-5" />
+                        <h4 className="font-semibold">Slack Notifications</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Get notified in a Slack channel when a new lead signs up.</p>
+                    <Label htmlFor="slack-webhook">Slack Webhook URL</Label>
+                    <Input id="slack-webhook" placeholder="https://hooks.slack.com/services/..." />
+                    <Button disabled>Save Slack Webhook</Button>
+                    <p className="text-xs text-muted-foreground pt-1">Note: Integration logic is not yet implemented. This is a UI placeholder.</p>
+                </div>
+
+                {/* Google Sheets Integration */}
+                <div className="p-4 border rounded-lg space-y-2">
+                     <div className="flex items-center gap-2">
+                         <SheetIcon className="h-5 w-5" />
+                        <h4 className="font-semibold">Google Sheets Sync</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Automatically export new lead data to a Google Sheet in real-time.</p>
+                    <Button disabled className="w-full">Connect to Google Sheets</Button>
+                     <p className="text-xs text-muted-foreground pt-1">Note: OAuth flow for Google Sheets is a placeholder and not yet functional.</p>
+                </div>
+            </div>
+             <div className="p-4 border rounded-lg space-y-2">
+                    <div className="flex items-center gap-2">
+                         <Webhook className="h-5 w-5" />
+                        <h4 className="font-semibold">Generic Webhooks</h4>
+                    </div>
+                    <p className="text-sm text-muted-foreground">Send new lead data to any system that accepts webhooks (e.g., Zapier, Make).</p>
+                    <Label htmlFor="generic-webhook">Webhook URL</Label>
+                    <Input id="generic-webhook" placeholder="https://yourapi.com/webhook" />
+                    <Button disabled>Save Webhook</Button>
+                    <p className="text-xs text-muted-foreground pt-1">Note: Integration logic is not yet implemented. This is a UI placeholder.</p>
+                </div>
+        </CardContent>
+      </Card>
+
 
       <Card>
         <CardHeader>

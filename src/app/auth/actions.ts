@@ -23,24 +23,30 @@ export async function signup(prevState: any, formData: FormData) {
     const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
 
     if (dbId && leadsCollectionId) {
+        const leadData = {
+            userId: newUser.$id,
+            name: name,
+            email: email,
+            status: 'New',
+            score: Math.floor(Math.random() * 21) + 10, // Random score between 10-30
+            lastActivity: new Date().toISOString(),
+        };
         await databases.createDocument(
             dbId,
             leadsCollectionId,
             ID.unique(),
-            {
-                userId: newUser.$id,
-                name: name,
-                email: email,
-                status: 'New',
-                score: Math.floor(Math.random() * 21) + 10, // Random score between 10-30
-                lastActivity: new Date().toISOString(),
-            },
+            leadData,
             [
                 Permission.read(Role.label('admin')),
                 Permission.update(Role.label('admin')),
                 Permission.delete(Role.label('admin')),
             ]
         );
+
+        // --- Integration Hooks ---
+        // TODO: Trigger Slack notification with leadData
+        // TODO: Add leadData to Google Sheet
+        // TODO: Send webhook with leadData
     }
     
     const session = await account.createEmailPasswordSession(email, password);

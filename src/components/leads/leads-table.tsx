@@ -16,13 +16,14 @@ import {
   DropdownMenuTrigger,
   DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Download, MoreHorizontal, Loader2, Phone } from 'lucide-react';
+import { Download, MoreHorizontal, Loader2, Phone, User } from 'lucide-react';
 import type { Lead } from '@/app/leads/page';
 import { updateLeadStatus, initiateCall } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
-import { useRouter } from 'next/navigation';
+import { LeadProfileCard } from './lead-profile-card';
 
 const statusColors: { [key: string]: 'default' | 'secondary' | 'success' | 'warning' } = {
   New: 'secondary',
@@ -34,6 +35,7 @@ const statusColors: { [key: string]: 'default' | 'secondary' | 'success' | 'warn
 export function LeadsTable({ leads }: { leads: Lead[] }) {
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
+  const [selectedLead, setSelectedLead] = React.useState<Lead | null>(null);
 
   const handleStatusChange = (leadId: string, newStatus: string) => {
     startTransition(async () => {
@@ -137,7 +139,7 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
           <TableBody>
             {leads.length > 0 ? (
               leads.map((lead) => (
-                <TableRow key={lead.$id}>
+                <TableRow key={lead.$id} className="cursor-pointer" onClick={() => setSelectedLead(lead)}>
                   <TableCell>
                     <div className="font-medium">{lead.name}</div>
                     <div className="text-sm text-muted-foreground">{lead.email}</div>
@@ -151,13 +153,17 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
                   </TableCell>
                   <TableCell className="text-right">
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
+                      <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
                         <Button variant="ghost" size="icon" disabled={isPending}>
                           {isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <MoreHorizontal className="h-4 w-4" />}
                           <span className="sr-only">Actions</span>
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
+                      <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+                         <DropdownMenuItem onClick={() => setSelectedLead(lead)}>
+                            <User className="mr-2 h-4 w-4" />
+                            View Profile
+                         </DropdownMenuItem>
                          <DropdownMenuItem onClick={() => handleInitiateCall(lead)} disabled={isPending}>
                             <Phone className="mr-2 h-4 w-4" />
                             Generate Script & Call
@@ -187,6 +193,18 @@ export function LeadsTable({ leads }: { leads: Lead[] }) {
           </TableBody>
         </Table>
       </div>
+
+       <Dialog open={!!selectedLead} onOpenChange={(open) => !open && setSelectedLead(null)}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Customer Profile</DialogTitle>
+            <DialogDescription>
+                Detailed information for this lead.
+            </DialogDescription>
+          </DialogHeader>
+            {selectedLead && <LeadProfileCard lead={selectedLead} />}
+        </DialogContent>
+       </Dialog>
     </div>
   );
 }
