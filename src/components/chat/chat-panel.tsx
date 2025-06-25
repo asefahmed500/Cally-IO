@@ -27,7 +27,7 @@ async function fileToDataUri(file: File): Promise<string> {
 }
 
 // Extend the Message type to include optional image data
-export type ChatMessage = Message & { id: string; image?: string };
+export type ChatMessage = Message & { image?: string };
 
 type AudioPlaybackState = {
   messageId: string | null;
@@ -83,19 +83,14 @@ export function ChatPanel({
 
   React.useEffect(() => {
     const fetchHistory = async () => {
+      setIsHistoryLoading(true);
       try {
         const response = await fetch('/api/chat/history');
         if (!response.ok) {
           throw new Error('Failed to fetch history');
         }
-        const history = await response.json();
-        const formattedHistory: ChatMessage[] = history.map((msg: Message) => ({
-            ...msg,
-            id: uuidv4(), // Assign a client-side unique ID
-            content: typeof msg.content === 'string' ? msg.content : msg.content?.[0]?.text || '',
-            image: typeof msg.content !== 'string' ? msg.content?.find(p => p.media)?.media?.url : undefined,
-        }));
-        setMessages(formattedHistory);
+        const history: ChatMessage[] = await response.json();
+        setMessages(history);
       } catch (error) {
         console.error(error);
         toast({
@@ -306,9 +301,11 @@ export function ChatPanel({
     setInput('');
     setImageFile(null);
     setImagePreview(null);
-
-    let modelResponse = '';
     
+    const modelMessageId = uuidv4();
+    // Add a placeholder for the model's response
+    setMessages((prev) => [ ...prev, { role: 'model', content: '', id: modelMessageId }]);
+
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -322,10 +319,8 @@ export function ChatPanel({
       if (!response.body) throw new Error('No response body');
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
+      let modelResponse = '';
       
-      const modelMessageId = uuidv4();
-      setMessages((prev) => [ ...prev, { role: 'model', content: '', id: modelMessageId }]);
-
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -342,13 +337,20 @@ export function ChatPanel({
       }
     } catch (error) {
       console.error('Error fetching chat response:', error);
+      const errorMessage = "I'm sorry, but I encountered an error. Please try again.";
+      setMessages((prev) => {
+          const newMessages = [...prev];
+          const lastMessage = newMessages[newMessages.length - 1];
+          if (lastMessage.id === modelMessageId) {
+             lastMessage.content = errorMessage;
+          }
+          return newMessages;
+        });
       toast({
         variant: 'destructive',
         title: 'Error',
         description: 'Failed to get a response from the AI assistant.',
       });
-       setMessages((prev) => prev.filter(m => m.id !== userMessage.id));
-
     } finally {
       setIsLoading(false);
     }
@@ -411,6 +413,9 @@ export function ChatPanel({
                 const isThisMessageLoadingAudio = audioState.status === 'loading' && audioState.messageId === message.id;
                 const isThisMessagePlayingAudio = audioState.status === 'playing' && audioState.messageId === message.id;
 
+                const isLastMessage = messages[messages.length-1].id === message.id;
+                const isModelTyping = isLoading && isLastMessage && message.role === 'model';
+
                 return (
                     <div key={message.id} className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : '')}>
                     {message.role === 'model' && (
@@ -424,9 +429,12 @@ export function ChatPanel({
                             {message.image && (
                                 <Image src={message.image} alt="User upload" width={300} height={200} className="rounded-md mb-2" />
                             )}
-                            <p className="whitespace-pre-wrap">{message.content}</p>
+                            
+                            {message.content ? (
+                                <p className="whitespace-pre-wrap">{message.content}</p>
+                            ) : ( isModelTyping && <Loader2 className="h-5 w-5 animate-spin" /> )}
                         </div>
-                        {message.role === 'model' && message.content && (!isLoading || messages[messages.length-1].id !== message.id) && (
+                        {message.role === 'model' && message.content && !isModelTyping && (
                             <div className="flex items-center gap-2">
                                 <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handlePlayAudio(message)} disabled={audioState.status === 'loading'}>
                                     {isThisMessageLoadingAudio ? <Loader2 className="h-4 w-4 animate-spin" /> : (isThisMessagePlayingAudio ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />)}
@@ -448,14 +456,6 @@ export function ChatPanel({
                     </div>
                 )
             })}
-            {isLoading && messages[messages.length-1]?.role === 'user' && (
-                <div className="flex items-start gap-4">
-                <Avatar className="h-8 w-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
-                <div className="max-w-md rounded-lg p-3 text-sm bg-muted">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                </div>
-                </div>
-            )}
             </div>
         )}
       </ScrollArea>

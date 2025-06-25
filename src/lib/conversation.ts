@@ -47,12 +47,11 @@ export async function getConversation(userId: string): Promise<ConversationDocum
  * @param userId The ID of the user.
  * @returns The newly created conversation document.
  */
-export async function createConversation(userId: string): Promise<ConversationDocument> {
+export async function createConversation(userId: string, initialHistory: Message[] = []): Promise<ConversationDocument> {
   if (!dbId || !collectionId) {
     throw new Error('Conversation database not configured.');
   }
   
-  const initialHistory: Message[] = [];
   const permissions = [
     Permission.read(Role.user(userId)),
     Permission.update(Role.user(userId)),

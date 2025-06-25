@@ -48,8 +48,8 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
           </SidebarMenuItem>
           <SidebarMenuItem>
             <Link href="/knowledge" passHref>
-            <SidebarMenuButton asChild isActive={pathname === '/knowledge'} tooltip={{children: 'My Documents'}}>
-                <a><BookOpen /><span>My Documents</span></a>
+            <SidebarMenuButton asChild isActive={pathname === '/knowledge'} tooltip={{children: 'Knowledge'}}>
+                <a><BookOpen /><span>Knowledge</span></a>
             </SidebarMenuButton>
             </Link>
           </SidebarMenuItem>
