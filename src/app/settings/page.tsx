@@ -2,7 +2,7 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, CheckCircle, Clock, Star, Users, Cog, FileText } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog, FileText } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -32,8 +32,7 @@ async function getAnalyticsData() {
 
     // Default values
     let satisfactionRate = 0;
-    let totalConversations = 0;
-    let resolutionRate = 0;
+    let totalFeedback = 0;
     let totalLeads = 0;
     let conversionRate = 0;
 
@@ -41,12 +40,10 @@ async function getAnalyticsData() {
     if (dbId && metricsCollectionId) {
         try {
             const metrics = await databases.listDocuments(dbId, metricsCollectionId, [Query.limit(5000)]);
-            const totalFeedback = metrics.total;
+            totalFeedback = metrics.total;
             if (totalFeedback > 0) {
                 const goodFeedbackCount = metrics.documents.filter(d => d.feedback === 'good').length;
                 satisfactionRate = Math.round((goodFeedbackCount / totalFeedback) * 100);
-                resolutionRate = Math.min(90 + Math.floor(totalFeedback / 10), 98); // Simulated
-                totalConversations = totalFeedback;
             }
         } catch (e) {
             console.error("Failed to fetch analytics:", e);
@@ -67,7 +64,7 @@ async function getAnalyticsData() {
         }
     }
 
-    return { satisfactionRate, totalConversations, resolutionRate, totalLeads, conversionRate };
+    return { satisfactionRate, totalFeedback, totalLeads, conversionRate };
 }
 
 
@@ -82,7 +79,7 @@ export default async function SettingsPage() {
     redirect('/dashboard');
   }
 
-  const { satisfactionRate, totalConversations, resolutionRate, totalLeads, conversionRate } = await getAnalyticsData();
+  const { satisfactionRate, totalFeedback, totalLeads, conversionRate } = await getAnalyticsData();
   const aiSettings = await getAISettings();
   const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
   const timezones = Intl.supportedValuesOf('timeZone');
@@ -97,16 +94,14 @@ export default async function SettingsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Performance Dashboard</CardTitle>
-          <CardDescription>Overview of your AI assistant's performance based on user feedback and lead status.</CardDescription>
+          <CardDescription>An overview of your AI assistant's performance based on real-time user feedback and lead data.</CardDescription>
         </CardHeader>
         <CardContent>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <StatCard title="Avg. Satisfaction" value={`${satisfactionRate}%`} icon={Star} />
                 <StatCard title="Total Leads" value={totalLeads.toLocaleString()} icon={Users} />
                 <StatCard title="Conversion Rate" value={`${conversionRate}%`} icon={BarChart2} />
-                <StatCard title="Total Feedback" value={totalConversations.toLocaleString()} icon={Users} />
-                <StatCard title="Resolution Rate (Simulated)" value={`${resolutionRate}%`} icon={CheckCircle} />
-                <StatCard title="Avg. Response Time (Simulated)" value="1.8s" icon={Clock} />
+                <StatCard title="Total Feedback Received" value={totalFeedback.toLocaleString()} icon={MessageSquare} />
             </div>
         </CardContent>
       </Card>
