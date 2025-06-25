@@ -150,3 +150,5 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
         </div>
     );
 }
+
+    

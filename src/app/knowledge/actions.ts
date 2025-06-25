@@ -150,3 +150,5 @@ export async function deleteFaq(faqId: string) {
         return { status: 'error', message: 'Database operation failed.' };
     }
 }
+
+    

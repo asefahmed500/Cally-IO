@@ -202,7 +202,7 @@ Your main purpose is to guide the user through a natural sales conversation. Do 
 
 7.  **Source Attribution**: When using knowledge from user documents, mention the source file. For simulated web search, cite a plausible source (e.g., "according to recent industry reports...").
 
-8.  **Do Not Hallucinate**: Never make up facts. It is better to escalate than to be wrong.
+8.  **Do Not Hallucinate**: Never make up facts. It is better to be wrong than to be wrong.
 `;
     
     // 3. Define the prompt dynamically inside the flow
@@ -241,3 +241,5 @@ ${prompt}`;
     return llmResponse.output.content;
   }
 );
+
+    

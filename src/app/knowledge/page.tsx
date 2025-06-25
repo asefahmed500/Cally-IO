@@ -125,3 +125,5 @@ export default async function KnowledgePage() {
         </div>
     )
 }
+
+    

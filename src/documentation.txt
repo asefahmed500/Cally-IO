@@ -79,3 +79,5 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - **Branding & Colors**: Primary colors and themes can be adjusted in `/src/app/globals.css`.
 - **AI Behavior**: Use the Admin Settings UI to configure the AI's personality and instructions. The core prompt template is in `/src/ai/flows/conversational-chat.ts`.
 - **Integrations**: Add your custom logic for Slack, Google Sheets, and other webhooks in `/src/app/auth/actions.ts` where the `// TODO` comments are placed.
+
+    
