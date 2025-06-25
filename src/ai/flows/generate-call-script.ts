@@ -13,34 +13,9 @@ export const GenerateCallScriptInputSchema = z.object({
   leadName: z.string().describe("The name of the lead to call."),
   leadStatus: z.string().describe("The current status of the lead (e.g., New, Qualified)."),
   leadScore: z.number().describe("The lead's quality score (1-100)."),
-  scriptTemplate: z.string().optional().describe("A template for the call script. Uses Handlebars syntax like {{leadName}}."),
+  scriptTemplate: z.string().describe("A template for the call script. Uses Handlebars syntax like {{leadName}}."),
 });
 export type GenerateCallScriptInput = z.infer<typeof GenerateCallScriptInputSchema>;
-
-const defaultScriptTemplate = `**Objective**: Briefly introduce Cally-IO, gauge interest, and book a 15-minute demo.
-
-**Opener**:
-"Hi {{leadName}}, this is [Your Name] from Cally-IO. I saw you recently signed up and wanted to personally reach out to see how you're finding it. Is now an okay time for a quick 30-second chat?"
-
-**Value Proposition (tailored to lead score)**:
-{{#if (isGreaterThan leadScore 70)}}
-"Great! Since you have a high engagement score, you might be interested in how companies like yours are using our full feature set to cut support tickets by up to 70% by integrating their existing knowledge bases."
-{{else if (isGreaterThan leadScore 40)}}
-"Great! Many of our users are saving a surprising amount of time by using our tool to get instant, accurate answers from their own documents. Have you had a chance to upload a file and try it out?"
-{{else}}
-"Great! Many people start by exploring how an AI assistant can help with internal team questions or customer support. What's the biggest challenge you're hoping to solve?"
-{{/if}}
-
-**Discovery Question**:
-"Just so I can point you in the right direction, what's the biggest challenge you're facing with customer or team support right now?"
-
-**Call to Action**:
-"Based on what you've said, I'm confident a quick 15-minute demo could show you exactly how we can help with that. I have some availability tomorrow afternoon. Would that work for you?"
-
-**Closing**:
-"Excellent. I'll send a calendar invite over right away. Looking forward to speaking then, {{leadName}}!"
-`;
-
 
 export async function generateScript(input: GenerateCallScriptInput): Promise<string> {
     const aiSettings = await getAISettings();
@@ -64,7 +39,7 @@ Your task is to generate a natural and effective call script for an agent.
     - If status is 'New', use a welcoming opener: "Hi {{leadName}}, this is [Your Name] from Cally-IO. I saw you recently signed up..."
     - If status is 'Contacted', modify the opener to be a follow-up: "Hi {{leadName}}, just following up on my previous message..."
     - If status is 'Qualified', make the opener more direct and value-focused: "Hi {{leadName}}, I'm reaching out because your usage indicates you might be a great fit for our advanced features..."
-- **CRITICAL**: The "Value Proposition" section MUST be adapted based on the lead's score.
+- **CRITICAL**: The "Value Proposition" section MUST be adapted based on the lead's score if the template contains logic for it.
     - If score is high (> 70), use a confident, feature-focused approach. Assume they are an expert user.
     - If score is medium (40-70), focus on a core value proposition, like uploading documents. Assume they are an interested user.
     - If score is low (< 40), use a general, educational, and discovery-focused approach. Assume they are just exploring.
@@ -76,21 +51,13 @@ Your task is to generate a natural and effective call script for an agent.
 `,
     });
 
-    const scriptTemplate = input.scriptTemplate || defaultScriptTemplate;
+    // The template is now required in the input.
+    if (!input.scriptTemplate) {
+        throw new Error("A script template must be provided.");
+    }
     
-    // This is a workaround for the lack of complex logic in Genkit's Handlebars.
-    // We can't directly use {{#if (isGreaterThan ...)}}.
-    // The logic is moved into the prompt instructions for the LLM to handle.
-    // To make it work, we add a placeholder helper to the template to satisfy the syntax,
-    // even though it won't be executed. The LLM will follow the text instructions instead.
-    const modifiedTemplate = scriptTemplate.replace(
-        /{{#if \(isGreaterThan leadScore (\d+)\)}}/g,
-        "{{#if leadScore}}"
-    ).replace(
-        /{{else if \(isGreaterThan leadScore (\d+)\)}}/g,
-        "{{else}}"
-    );
-
-    const { output } = await prompt({ ...input, scriptTemplate: modifiedTemplate });
+    // The workaround for Handlebars logic is now handled entirely within the LLM prompt instructions.
+    // We pass the template as-is.
+    const { output } = await prompt(input);
     return output || "Could not generate a script.";
 }

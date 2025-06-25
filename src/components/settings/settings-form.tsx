@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BrainCircuit, Clock, TestTube2, AlertCircle, Phone, Link as LinkIcon, Webhook, Sheet as SheetIcon } from 'lucide-react';
+import { BrainCircuit, Clock, TestTube2, AlertCircle, Phone, Link as LinkIcon, Webhook, Sheet as SheetIcon, FileText } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
@@ -125,6 +125,26 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                     </div>
                 </CardContent>
             </Card>
+            
+            <Card>
+                <CardHeader>
+                    <div className="flex items-center gap-2">
+                        <FileText className="h-6 w-6" />
+                        <CardTitle>Call Script Builder</CardTitle>
+                    </div>
+                  <CardDescription>Create a template for the AI to generate personalized call scripts. Use Handlebars placeholders like `{{leadName}}`, `{{leadStatus}}`, and `{{leadScore}}`.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <Textarea 
+                        name="call_script_template"
+                        defaultValue={settings.scriptTemplate}
+                        className="min-h-48 font-mono text-xs"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                        This template will be used by the AI to generate scripts on the Leads page. The AI is instructed to adapt the opener and value proposition based on the lead's status and score.
+                    </p>
+                </CardContent>
+            </Card>
 
             <Card>
                 <CardHeader>
@@ -180,7 +200,7 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                     <div className="grid md:grid-cols-2 gap-6">
                         <div className="p-4 border rounded-lg space-y-2">
                             <div className="flex items-center gap-2">
-                                <Webhook className="h-5 w-5" />
+                                <Webhook className="h-5 h-5" />
                                 <h4 className="font-semibold">Slack Notifications</h4>
                             </div>
                             <p className="text-sm text-muted-foreground">Get notified in a Slack channel when a new lead signs up.</p>

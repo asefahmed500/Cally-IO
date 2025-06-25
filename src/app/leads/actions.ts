@@ -5,6 +5,7 @@ import { getLoggedInUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import { generateScript, type GenerateCallScriptInput } from '@/ai/flows/generate-call-script';
 import { twilio } from 'twilio';
+import { getAISettings } from '@/lib/settings';
 
 const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
@@ -28,7 +29,10 @@ export async function updateLeadStatus(leadId: string, status: string) {
   }
 }
 
-export async function initiateCall(leadData: GenerateCallScriptInput) {
+// The input type is simplified as the template is fetched server-side.
+type InitiateCallInput = Omit<GenerateCallScriptInput, 'scriptTemplate'>;
+
+export async function initiateCall(leadData: InitiateCallInput) {
     const user = await getLoggedInUser();
     if (!user || !user.labels.includes('admin')) {
         return { error: 'Unauthorized access.' };
@@ -37,9 +41,20 @@ export async function initiateCall(leadData: GenerateCallScriptInput) {
     const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
 
     try {
-        const script = await generateScript(leadData);
+        // 1. Fetch the saved script template from settings
+        const settings = await getAISettings();
+        const scriptTemplate = settings.scriptTemplate;
+        
+        // 2. Combine lead data with the fetched template
+        const scriptInput: GenerateCallScriptInput = {
+            ...leadData,
+            scriptTemplate,
+        };
 
-        // Placeholder for actual Twilio call logic
+        // 3. Generate the script
+        const script = await generateScript(scriptInput);
+
+        // 4. (Simulate) Twilio Call
         if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_PHONE_NUMBER) {
             console.log("--- SIMULATING TWILIO CALL ---");
             console.log(`From: ${TWILIO_PHONE_NUMBER}`);
@@ -48,14 +63,6 @@ export async function initiateCall(leadData: GenerateCallScriptInput) {
             console.log("Generated Script to be used for Text-to-Speech:");
             console.log(script);
             console.log("-----------------------------");
-
-            // Example of real Twilio client usage:
-            // const client = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-            // await client.calls.create({
-            //     twiml: `<Response><Say>${script}</Say></Response>`,
-            //     to: '+1234567890', // The lead's actual phone number
-            //     from: TWILIO_PHONE_NUMBER
-            // });
 
             return { success: true, script, message: "Call initiated successfully (Simulated)." };
 

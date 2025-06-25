@@ -28,6 +28,7 @@ export async function updateAISettings(prevState: any, formData: FormData) {
     business_hours_end: formData.get('business_hours_end') as string,
     business_hours_timezone: formData.get('business_hours_timezone') as string,
     away_message: formData.get('away_message') as string,
+    call_script_template: formData.get('call_script_template') as string,
   };
 
   try {
@@ -65,5 +66,6 @@ export async function updateAISettings(prevState: any, formData: FormData) {
 
   revalidatePath('/settings');
   revalidatePath('/dashboard'); // To update business hours status
+  revalidatePath('/leads'); // To ensure new scripts are used
   return { success: true, message: "Settings updated successfully!" };
 }

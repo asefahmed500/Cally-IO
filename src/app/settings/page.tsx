@@ -2,14 +2,12 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, MessageSquare, Star, Users, Cog, FileText } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getAISettings } from "@/lib/settings";
 import { SettingsForm } from "@/components/settings/settings-form";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 
 function StatCard({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) {
     return (
@@ -117,24 +115,6 @@ export default async function SettingsPage() {
       ) : (
         <SettingsForm settings={aiSettings} timezones={timezones} />
       )}
-
-      <Card>
-        <CardHeader>
-            <div className="flex items-center gap-2">
-                <FileText className="h-6 w-6" />
-                <CardTitle>Call Script Builder</CardTitle>
-            </div>
-          <CardDescription>Create a template for the AI to generate personalized call scripts. Use placeholders like `{{leadName}}`, `{{leadStatus}}`, and `{{leadScore}}`.</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-            <Textarea 
-                placeholder="Hi {{leadName}}, this is [Your Name] from Cally-IO..." 
-                className="min-h-48"
-            />
-            <Button disabled>Save Template</Button>
-            <p className="text-sm text-muted-foreground">Note: Template saving is not yet implemented. The default template will be used for now.</p>
-        </CardContent>
-      </Card>
     </div>
   )
 }

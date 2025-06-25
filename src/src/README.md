@@ -19,6 +19,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **Curated FAQ Knowledge Base**: Admins can create and manage a set of Frequently Asked Questions that the AI will prioritize as its primary source of truth.
 - **Persistent Chat History**: Conversations are saved to a database, allowing users to resume their chat across different sessions and devices.
 - **Configurable AI Agent**: Admins can configure the AI's personality, response style, and add custom business instructions.
+- **Editable Call Script Templates**: Admins can create and edit a master call script template in the Admin Control Panel that the AI uses for lead outreach.
 - **Business Hours**: Admins can set operating hours, disabling the chat and showing an "away" message during off-hours.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
 - **AI Script Generator**: The AI can dynamically generate personalized call scripts for leads based on their profile.
@@ -131,6 +132,7 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `business_hours_end` (string, size: 5, required, default `17:00`)
         *   `business_hours_timezone` (string, size: 255, required, default `UTC`)
         *   `away_message` (string, size: 1024, required, default `We are currently away...`)
+        *   `call_script_template` (string, size: 8192, optional, default: `(your default script)`)
     *   In the **Settings** tab, update the **Permissions** to be `Team (admin)`-only for all operations.
     *   Go to the **Documents** tab and create a single document. Enter `default_config` as the Document ID. Fill in initial values for the attributes (e.g., Personality: "Professional", Style: "Conversational", Instructions: "Your company name is Cally-IO."). The application will use this document to configure the AI.
 7.  **Conversations Collection**:
@@ -174,7 +176,5 @@ To create your admin account, sign up using the email you specified in the `ADMI
 8.  **Response Generation**: The AI first fetches all curated FAQs. These, along with relevant document chunks, the AI configuration, the full conversation history, and the user's question, are compiled into a dynamic prompt. This is sent to the Gemini model to generate a helpful, context-aware, and personality-aligned response, which is streamed back to the UI.
 9.  **History Persistence**: After the AI response is complete, the API saves the AI's message to the user's conversation history in the database, ensuring it's available for the next session.
 10. **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
-11. **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
+11. **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which fetches the master script template (editable in the admin settings) and creates a personalized script for a specific lead.
 12. **Admin Dashboards**: Admin dashboards query the `metrics`, `leads`, and `embeddings` collections to provide live data on user satisfaction, to manage the customer lifecycle in a visual pipeline, and to oversee the knowledge base.
-
-    

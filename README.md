@@ -19,7 +19,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **Persistent Chat History**: Conversations are saved and synced across devices for a seamless user experience.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
 - **Curated FAQ Knowledge Base**: Admins can create and manage a set of Frequently Asked Questions that the AI will prioritize as its primary source of truth.
-- **AI Script Generator**: The AI can dynamically generate personalized call scripts for leads based on their profile.
+- **AI Script Generator**: Admins can edit a master call script template, and the AI will use it to dynamically generate personalized call scripts for leads.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
 - **Performance Analytics**: A dedicated, admin-only dashboard tracks key metrics like user satisfaction and resolution rates, powered by real user feedback.
 - **Responsive Design**: The UI is designed to work seamlessly on both desktop and mobile devices.
@@ -64,6 +64,7 @@ NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID=your_metrics_collection_id
 NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID=your_leads_collection_id
 NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID=your_conversations_collection_id
 NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID=your_faqs_collection_id
+NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID=your_settings_collection_id
 
 # Admin User
 # The email address for the first admin user. When a user signs up with this email,
@@ -120,7 +121,7 @@ To make the application fully functional, you need to configure your Appwrite pr
     * Inside the same database, create a new collection for chat history. Copy its **Collection ID** to your `.env` file.
     * In the **Attributes** tab, add the following:
         * `userId` (string, size: 255, required)
-        * `history` (string, size: 4096, required, default: `[]`)
+        * `history` (string, size: 1000000, required, default: `[]`)
     * In the **Indexes** tab, create an index on `userId`.
     * In the **Settings** tab, update the **Permissions** so users can manage their own history.
         * **Create Access**: `All Users (role:member)`
@@ -133,7 +134,20 @@ To make the application fully functional, you need to configure your Appwrite pr
     *   In the **Settings** tab, update the **Permissions** as follows:
         *   **Read Access**: `Any (role:all)`. This is important so the AI can read the FAQs.
         *   **Create, Update, Delete Access**: `Team (admin)`. This ensures only admins can manage the FAQs.
-
+8.  **Settings Collection**:
+    *   Inside the same database, create a fourth collection for AI settings. Copy its **Collection ID** to your `.env` file.
+    *   In the **Attributes** tab, add the following:
+        *   `ai_personality` (string, size: 255, required)
+        *   `ai_style` (string, size: 255, required)
+        *   `ai_instructions` (string, size: 8192, required)
+        *   `business_hours_enabled` (boolean, required, default `false`)
+        *   `business_hours_start` (string, size: 5, required, default `09:00`)
+        *   `business_hours_end` (string, size: 5, required, default `17:00`)
+        *   `business_hours_timezone` (string, size: 255, required, default `UTC`)
+        *   `away_message` (string, size: 1024, required, default `We are currently away...`)
+        *   `call_script_template` (string, size: 8192, optional)
+    *   In the **Settings** tab, update the **Permissions** to be `Team (admin)`-only for all operations.
+    *   Go to the **Documents** tab and create a single document. Enter `default_config` as the Document ID. Fill in initial values for the attributes. The application will use this document to configure the AI.
 
 ### 5. Running the Development Server
 
@@ -156,7 +170,5 @@ To create your admin account, sign up using the email you specified in the `ADMI
 6.  **Response Generation**: The AI first fetches all curated FAQs from the database. These FAQs, along with relevant document chunks, the full conversation history, and the user's question, are passed as context to the Gemini model to generate a helpful answer.
 7. **History Persistence**: The new user question and the AI's final response are saved back to the database, ensuring the conversation can be resumed on any device.
 8.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
-9.  **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
+9.  **Script Generation**: From the leads dashboard, an admin can trigger the `initiateCall` flow. The flow fetches the master script template (editable in the Admin Control Panel) and combines it with lead data to create a personalized script.
 10. **Analytics & Leads**: Admin dashboards query the `metrics` and `leads` collections to provide live data on user satisfaction and to manage the customer lifecycle in a visual pipeline.
-
-    
