@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, Square, Download } from 'lucide-react';
+import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, Square, Download, Trash2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
@@ -16,6 +16,17 @@ import { logInteraction } from '@/ai/flows/log-metrics';
 import { v4 as uuidv4 } from 'uuid';
 import { ConversationStarters } from './conversation-starters';
 import { Skeleton } from '../ui/skeleton';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+
 
 async function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -76,6 +87,8 @@ export function ChatPanel({
   const [isHistoryLoading, setIsHistoryLoading] = React.useState(true);
   const [feedbackSent, setFeedbackSent] = React.useState<Set<string>>(new Set());
   const [audioState, setAudioState] = React.useState<AudioPlaybackState>({ messageId: null, status: 'idle' });
+  const [isClearConfirmOpen, setIsClearConfirmOpen] = React.useState(false);
+  const [isClearing, startClearingTransition] = React.useTransition();
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
@@ -235,6 +248,36 @@ export function ChatPanel({
     });
   };
 
+  const handleClearHistory = () => {
+    startClearingTransition(async () => {
+        setIsClearConfirmOpen(false); // Close the dialog
+        
+        // Optimistically clear UI
+        const originalMessages = messages;
+        setMessages([]);
+
+        try {
+            const response = await fetch('/api/chat/history/clear', { method: 'POST' });
+            if (!response.ok) {
+                throw new Error("Failed to clear history on the server.");
+            }
+            toast({
+                title: 'History Cleared',
+                description: 'Your conversation has been reset.',
+            });
+        } catch (error) {
+            console.error(error);
+            toast({
+                variant: 'destructive',
+                title: 'Error',
+                description: 'Could not clear your chat history. Your messages have been restored.',
+            });
+            // Revert on failure
+            setMessages(originalMessages);
+        }
+    });
+  };
+
   const handlePlayAudio = async (message: ChatMessage) => {
     // Stop any currently playing audio
     if (audioRef.current) {
@@ -386,15 +429,26 @@ export function ChatPanel({
     <div className="flex flex-col h-[calc(100%-4rem)]">
       <div className="flex items-center justify-between pb-2 mb-2 border-b">
         <h3 className="text-lg font-semibold">Conversation</h3>
-        <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={handleExportChat}
-            disabled={messages.length === 0 || isLoading}
-        >
-            <Download className="mr-2 h-4 w-4" />
-            Export Chat
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setIsClearConfirmOpen(true)}
+                disabled={messages.length === 0 || isLoading || isClearing}
+            >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Clear
+            </Button>
+            <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={handleExportChat}
+                disabled={messages.length === 0 || isLoading}
+            >
+                <Download className="mr-2 h-4 w-4" />
+                Export
+            </Button>
+        </div>
       </div>
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         {isHistoryLoading ? (
@@ -502,6 +556,28 @@ export function ChatPanel({
           </Button>
         </form>
       </div>
+
+       <AlertDialog open={isClearConfirmOpen} onOpenChange={setIsClearConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+                This will permanently clear your current conversation history. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isClearing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+                className="bg-destructive hover:bg-destructive/90"
+                onClick={handleClearHistory}
+                disabled={isClearing}
+            >
+                {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Yes, clear history
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+       </AlertDialog>
     </div>
   );
 }
