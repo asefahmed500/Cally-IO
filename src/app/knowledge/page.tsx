@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { BookOpen, Database, FileQuestion, MessageSquarePlus } from "lucide-react";
 import { DocumentList } from "@/components/knowledge/document-list";
 import { FaqManager } from "@/components/knowledge/faq-manager";
+import { getFaqs, type Faq } from "./actions";
 
 export interface KnowledgeDocument extends Models.Document {
     documentId: string;
@@ -24,13 +25,11 @@ async function getKnowledgeDocuments(user: Models.User<Models.Preferences>): Pro
         return [];
     }
     
-    // Admins can see all documents, users see only their own.
     const queries = isAdmin ? [Query.limit(5000)] : [Query.equal('userId', user.$id), Query.limit(5000)];
 
     try {
         const response = await databases.listDocuments(dbId, collectionId, queries);
         
-        // Use a Map to get unique documents by documentId
         const uniqueDocsMap = new Map<string, KnowledgeDocument>();
         response.documents.forEach(doc => {
             if (!uniqueDocsMap.has(doc.documentId)) {
@@ -52,8 +51,13 @@ export default async function KnowledgePage() {
     }
 
     const isAdmin = user.labels.includes('admin');
-    const isConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
-    const documents = await getKnowledgeDocuments(user);
+    const isEmbeddingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
+    const isFaqsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID;
+
+    const [documents, faqs] = await Promise.all([
+        getKnowledgeDocuments(user),
+        isAdmin ? getFaqs() : Promise.resolve([] as Faq[])
+    ]);
 
     return (
         <div className="space-y-8">
@@ -68,7 +72,7 @@ export default async function KnowledgePage() {
                     <CardDescription>{isAdmin ? "A list of all documents uploaded by users across the platform." : "A list of all documents you have uploaded."}</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    {!isConfigured ? (
+                    {!isEmbeddingsConfigured ? (
                         <Alert variant="destructive">
                             <Database className="h-4 w-4" />
                             <AlertTitle>Embeddings Collection Not Configured</AlertTitle>
@@ -90,7 +94,17 @@ export default async function KnowledgePage() {
                             <CardDescription>Create and manage a library of frequently asked questions for the AI to use.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <FaqManager />
+                             {!isFaqsConfigured ? (
+                                <Alert variant="destructive">
+                                    <Database className="h-4 w-4" />
+                                    <AlertTitle>FAQs Collection Not Configured</AlertTitle>
+                                    <AlertDescription>
+                                        Please set the `NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID` environment variable to manage FAQs.
+                                    </AlertDescription>
+                                </Alert>
+                            ) : (
+                                <FaqManager initialFaqs={faqs} />
+                            )}
                         </CardContent>
                     </Card>
 

@@ -13,6 +13,7 @@ import {
   appwriteDatabases,
   appwriteEmbeddingsCollectionId,
   appwriteDatabaseId,
+  appwriteFaqsCollectionId,
 } from '@/lib/appwrite-client';
 import { Query } from 'appwrite';
 import { getLoggedInUser } from '@/lib/auth';
@@ -50,6 +51,29 @@ function cosineSimilarity(vecA: number[], vecB: number[]): number {
     return 0;
   }
   return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+async function getFaqs(): Promise<string> {
+  const dbId = appwriteDatabaseId;
+  const collectionId = appwriteFaqsCollectionId;
+
+  if (!dbId || !collectionId) {
+    return '';
+  }
+  try {
+    const response = await appwriteDatabases.listDocuments(dbId, collectionId, [
+      Query.limit(100), // Fetch up to 100 FAQs
+    ]);
+    if (response.documents.length === 0) {
+      return '';
+    }
+    return response.documents
+      .map((doc: any) => `Question: ${doc.question}\nAnswer: ${doc.answer}`)
+      .join('\n\n---\n\n');
+  } catch (error) {
+    console.error('Error fetching FAQs:', error);
+    return ''; // Fail silently on the AI's side
+  }
 }
 
 async function searchEmbeddings(
@@ -121,9 +145,13 @@ export const conversationalRagChat = ai.defineFlow(
     }
     const { history, prompt, image } = input;
 
-    // 1. Get AI settings dynamically
-    const aiSettings = await getAISettings();
-
+    // 1. Get AI settings, FAQs, and Document Context concurrently
+    const [aiSettings, faqContext, docContext] = await Promise.all([
+        getAISettings(),
+        getFaqs(),
+        searchEmbeddings(prompt, user.$id),
+    ]);
+    
     // 2. Construct the system prompt dynamically with advanced instructions
     const systemPromptText = `You are Cally-IO, an advanced AI assistant designed for an exceptional customer support and sales experience. Your primary goal is to act as a consultative partner, understanding the user's needs and guiding them to the right solutions.
 
@@ -155,19 +183,26 @@ Your main purpose is to guide the user through a natural sales conversation. Do 
 
 **Your Core Behavior Model & Knowledge Sources:**
 
-1.  **Image Analysis**: If a user provides an image, it is the most important piece of context for that turn. Analyze it first before consulting documents.
+1.  **Primary Source (FAQs)**: The "FREQUENTLY ASKED QUESTIONS" context is your highest priority source of truth. If a user's question is answered here, use this information first. If this context exists, state that the information comes from the company's FAQ.
+    
+    FREQUENTLY ASKED QUESTIONS:
+    ${faqContext || 'No FAQs provided.'}
 
-2.  **Knowledge Hierarchy & Competitive Intelligence**:
+2.  **Image Analysis**: If a user provides an image, it is the most important piece of context for that turn. Analyze it first before consulting documents.
+
+3.  **Secondary Source (Documents)**: The "DOCUMENT CONTEXT" provided is your source of truth for your own product's features and details not covered in the FAQs.
+
+4.  **Knowledge Hierarchy & Competitive Intelligence**:
     *   **Primary Source**: The "DOCUMENT CONTEXT" provided is your absolute source of truth for your own product's features and details.
     *   **Secondary Source (Simulated Web Search)**: For general knowledge or questions about competitors ("How do you compare to [Competitor]?"), act as if you are accessing real-time web data. Preface these answers with "Based on current market information..." to build trust.
 
-3.  **Preference Learning (In-session)**: Adapt to the user's language. If they're technical, you get technical. If they're simple, you keep it high-level.
+5.  **Preference Learning (In-session)**: Adapt to the user's language. If they're technical, you get technical. If they're simple, you keep it high-level.
 
-4.  **Acknowledge Limitations & Escalate Intelligently**: If you don't know the answer and it's not in the documents or plausible general knowledge, **DO NOT invent an answer**. Gracefully escalate: "That's an excellent question. To get you the most accurate details, I can connect you with a product specialist. Would that be helpful?"
+6.  **Acknowledge Limitations & Escalate Intelligently**: If you don't know the answer and it's not in the documents or plausible general knowledge, **DO NOT invent an answer**. Gracefully escalate: "That's an excellent question. To get you the most accurate details, I can connect you with a product specialist. Would that be helpful?"
 
-5.  **Source Attribution**: When using knowledge from user documents, mention the source file. For simulated web search, cite a plausible source (e.g., "according to recent industry reports...").
+7.  **Source Attribution**: When using knowledge from user documents, mention the source file. For simulated web search, cite a plausible source (e.g., "according to recent industry reports...").
 
-6.  **Do Not Hallucinate**: Never make up facts. It is better to escalate than to be wrong.
+8.  **Do Not Hallucinate**: Never make up facts. It is better to escalate than to be wrong.
 `;
     
     // 3. Define the prompt dynamically inside the flow
@@ -177,18 +212,16 @@ Your main purpose is to guide the user through a natural sales conversation. Do 
       tools: [],
     });
 
-    // 4. Retrieve context from documents (RAG)
-    const docContext = await searchEmbeddings(prompt, user.$id);
-
-    const userMessageContent: Part[] = [{
-      text: `DOCUMENT CONTEXT:
-${docContext || 'No context found in documents.'}
+    // 4. Construct the user message, now only including document context and the question
+    const userMessageText = `DOCUMENT CONTEXT:
+${docContext || 'No context found in your documents for this query.'}
 
 ---
 
-QUESTION:
-${prompt}`
-    }];
+USER QUESTION:
+${prompt}`;
+
+    const userMessageContent: Part[] = [{ text: userMessageText }];
 
     if (image) {
       userMessageContent.unshift({ media: { url: image } });

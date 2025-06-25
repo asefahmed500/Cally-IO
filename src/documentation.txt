@@ -14,7 +14,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
   - `/src/app/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
   - `/src/app/leads`: The admin-only lead management dashboard, featuring a visual Kanban pipeline view.
-  - `/src/app/knowledge`: A page for users to manage their documents, with an enhanced view for admins.
+  - `/src/app/knowledge`: A page for users to manage their documents and for admins to manage the entire knowledge base, including documents and FAQs.
   - `layout.tsx`: The root layout for the application.
   - `page.tsx`: The public-facing landing page.
 
@@ -26,7 +26,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/components/chat`: Components specific to the chat interface.
   - `/src/components/layout`: Components for the overall application layout (sidebar, header).
   - `/src/components/leads`: Components for the leads dashboard, including the Kanban board, lead cards, and profile view.
-  - `/src/components/knowledge`: Components for the knowledge management page.
+  - `/src/components/knowledge`: Components for the knowledge management page, including the interactive FAQ manager.
   - `/src/components/settings`: Components for the settings page forms.
   - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
 
@@ -48,22 +48,19 @@ The project follows a standard Next.js App Router structure. Key directories inc
 3. The `forgotPassword` action sends a recovery email, and `resetPassword` securely updates their credentials.
 4. **Integration Hooks**: Placeholder comments in the signup action show where to trigger notifications to Slack, Google Sheets, or other webhooks.
 
-### Document Processing (`/src/ai/flows/process-document.ts`)
-
-1. A file is uploaded via the chat panel (`/src/components/chat/chat-panel.tsx`).
-2. The file is sent to Appwrite Storage with user-specific and admin-readable permissions.
-3. The `processDocument` Genkit flow is invoked with the file's data.
-4. The flow extracts text, splits it into chunks, generates embeddings, and saves them to the "embeddings" collection.
+### Knowledge Management (`/src/app/knowledge/actions.ts` & `/src/app/knowledge/page.tsx`)
+1.  **Document Upload**: Users upload documents via the chat panel. These are processed and stored by the `processDocument` flow.
+2.  **Document Management**: Users can see their own documents on the `/knowledge` page and delete them. Admins see all documents and can delete any of them.
+3.  **FAQ Management**: Admins can use the `/knowledge` page to create, update, and delete FAQs. These are stored in a separate collection.
 
 ### Conversational Chat & History Persistence (`/src/app/api/chat/route.ts`)
 
 1. The chat panel loads and fetches the user's past messages from `/api/chat/history`.
 2. The user submits a question. The backend API finds or creates a "conversation" document for that user.
-3. The new user message is added to the history and saved to the database.
-4. The `conversationalRagChat` flow is triggered with the full, up-to-date history.
+3. The `conversationalRagChat` flow is triggered. It first fetches all FAQs from the database to use as its primary source of truth. Then, it performs a vector search on the user's own documents to find relevant context.
+4. The AI's personality settings, the FAQs, the document context, and the user's full history are all compiled into a prompt for the Gemini LLM.
 5. The AI response is streamed to the UI.
-6. Once the stream is complete, the final AI message is appended to the history and saved to the database, ensuring the conversation can be resumed on any device.
-7. Users can clear their own chat history using a button in the chat panel, which calls the `/api/chat/history/clear` endpoint.
+6. Once the stream is complete, the final AI message is appended to the history and saved to the database.
 
 ### Text-to-Speech (`/src/ai/flows/text-to-speech.ts`)
 1. After an AI response is generated, a user can click the speaker icon next to the message.

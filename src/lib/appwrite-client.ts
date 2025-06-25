@@ -9,6 +9,7 @@ export const appwriteMetricsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_METR
 export const appwriteLeadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID || '';
 export const appwriteSettingsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID || '';
 export const appwriteConversationsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID || '';
+export const appwriteFaqsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID || '';
 
 
 const client = new Client();
