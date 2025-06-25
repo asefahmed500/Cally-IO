@@ -16,6 +16,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **Role-Based Access Control**: Differentiates between `user` and `admin` roles, ensuring data privacy and proper access levels.
 - **Lead Management Pipeline**: An admin-only dashboard with a visual Kanban board to view, manage, track, and export leads through the sales funnel.
 - **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
+- **Persistent Chat History**: Conversations are saved and synced across devices for a seamless user experience.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
 - **AI Script Generator**: The AI can dynamically generate personalized call scripts for leads based on their profile.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
@@ -60,6 +61,7 @@ NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID=your_storage_bucket_id
 NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID=your_embeddings_collection_id
 NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID=your_metrics_collection_id
 NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID=your_leads_collection_id
+NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID=your_conversations_collection_id
 
 # Admin User
 # The email address for the first admin user. When a user signs up with this email,
@@ -112,6 +114,16 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `lastActivity` (datetime, required)
     *   In the **Indexes** tab, create an index on `userId` and `email`.
     *   In the **Settings** tab, update the **Permissions**. This collection is managed by the server, so you should only grant permissions to the **`admin`** role for all CRUD operations. Leave the user-facing permissions empty.
+6. **Conversations Collection**:
+    * Inside the same database, create a new collection for chat history. Copy its **Collection ID** to your `.env` file.
+    * In the **Attributes** tab, add the following:
+        * `userId` (string, size: 255, required)
+        * `history` (string, size: 4096, required, default: `[]`)
+    * In the **Indexes** tab, create an index on `userId`.
+    * In the **Settings** tab, update the **Permissions** so users can manage their own history.
+        * **Create Access**: `All Users (role:member)`
+        * **Read, Update, Delete Access**: Set these on a per-document basis using `Role.user(userId)`. The application handles this automatically. Grant `Team (admin)` read access for support.
+
 
 ### 5. Running the Development Server
 
@@ -130,8 +142,9 @@ To create your admin account, sign up using the email you specified in the `ADMI
 2.  **Lead Creation**: When a new user signs up, a corresponding document is created in the `leads` collection, accessible only by admins.
 3.  **Document Upload**: In the chat panel, users upload documents. These are sent to Appwrite Storage with permissions allowing access only for that user and read access for admins.
 4.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text, generates embeddings, and stores them in the Appwrite database with the same secure, document-level permissions.
-5.  **Chat Interaction**: When a user asks a question, the `conversationalRagChat` flow is initiated. It queries the database to find document chunks created by *that specific user*.
-6.  **Response Generation**: The relevant, user-owned document chunks are passed as context to the Gemini model to generate a helpful answer.
-7.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
-8.  **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
-9.  **Analytics & Leads**: Admin dashboards query the `metrics` and `leads` collections to provide live data on user satisfaction and to manage the customer lifecycle in a visual pipeline.
+5.  **Chat Interaction & History**: When a user asks a question, the backend fetches their past conversation history from the `user_conversations` collection.
+6.  **Response Generation**: The relevant document chunks, the full conversation history, and the user's question are passed as context to the Gemini model to generate a helpful answer.
+7. **History Persistence**: The new user question and the AI's final response are saved back to the database, ensuring the conversation can be resumed on any device.
+8.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
+9.  **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
+10. **Analytics & Leads**: Admin dashboards query the `metrics` and `leads` collections to provide live data on user satisfaction and to manage the customer lifecycle in a visual pipeline.

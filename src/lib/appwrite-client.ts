@@ -8,6 +8,7 @@ export const appwriteStorageBucketId = async () => process.env.NEXT_PUBLIC_APPWR
 export const appwriteMetricsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID || '';
 export const appwriteLeadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID || '';
 export const appwriteSettingsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID || '';
+export const appwriteConversationsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID || '';
 
 
 const client = new Client();

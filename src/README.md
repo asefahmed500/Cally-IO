@@ -16,6 +16,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **Role-Based Access Control**: Differentiates between `user` and `admin` roles, ensuring data privacy and proper access levels.
 - **Lead Management Pipeline**: An admin-only dashboard with a visual Kanban board to view, manage, track, and export leads through the sales funnel.
 - **Advanced Knowledge Management**: An admin-only hub to view and manage all documents in the knowledge base, including secure deletion.
+- **Persistent Chat History**: Conversations are saved to a database, allowing users to resume their chat across different sessions and devices.
 - **Configurable AI Agent**: Admins can configure the AI's personality, response style, and add custom business instructions.
 - **Business Hours**: Admins can set operating hours, disabling the chat and showing an "away" message during off-hours.
 - **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
@@ -64,6 +65,7 @@ NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID=your_embeddings_collection_id
 NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID=your_metrics_collection_id
 NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID=your_leads_collection_id
 NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID=your_settings_collection_id
+NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID=your_conversations_collection_id
 
 # Admin User
 # The email address for the first admin user. When a user signs up with this email,
@@ -129,6 +131,15 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `away_message` (string, size: 1024, required, default `We are currently away...`)
     *   In the **Settings** tab, update the **Permissions** to be `Team (admin)`-only for all operations.
     *   Go to the **Documents** tab and create a single document. Enter `default_config` as the Document ID. Fill in initial values for the attributes (e.g., Personality: "Professional", Style: "Conversational", Instructions: "Your company name is Cally-IO."). The application will use this document to configure the AI.
+7.  **Conversations Collection**:
+    *   Inside the same database, create a new collection for chat history. Copy its **Collection ID** to your `.env` file.
+    *   In the **Attributes** tab, add the following:
+        *   `userId` (string, size: 255, required)
+        *   `history` (string, size: 1000000, required, default: `[]`)
+    *   In the **Indexes** tab, create an index on `userId`.
+    *   In the **Settings** tab, update the **Permissions** so users can manage their own history.
+        *   **Create Access**: Add `All Users (role:member)`.
+        *   **Read Access, Update Access**: Add `Team (admin)`. The application uses document-level permissions to ensure users can only access their own conversation.
 
 ### 5. Running the Development Server
 
@@ -148,8 +159,9 @@ To create your admin account, sign up using the email you specified in the `ADMI
 3.  **Document Upload**: In the chat panel, users upload documents. These are sent to Appwrite Storage with permissions allowing access only for that user and read access for admins.
 4.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text, generates embeddings, and stores them in the Appwrite database with the same secure, document-level permissions.
 5.  **AI & Business Configuration**: Admins can go to the Settings page to define the AI's personality, set business hours, and write a custom away message. These settings are saved to a `settings` collection in Appwrite.
-6.  **Chat Interaction**: When a user visits the dashboard, the app checks the business hours. If outside of hours, the chat is disabled. If within hours, the `conversationalRagChat` flow is initiated. It first fetches the latest AI configuration from the `settings` collection. It then queries the database to find document chunks created by *that specific user*.
-7.  **Response Generation**: The relevant, user-owned document chunks, the AI configuration, conversation history, and the user's question are compiled into a dynamic prompt. This is sent to the Gemini model to generate a helpful, context-aware, and personality-aligned response, which is streamed back to the UI.
-8.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
-9.  **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
-10. **Admin Dashboards**: Admin dashboards query the `metrics`, `leads`, and `embeddings` collections to provide live data on user satisfaction, to manage the customer lifecycle in a visual pipeline, and to oversee the knowledge base.
+6.  **Chat Interaction & History**: When a user submits a question, the backend API first fetches their entire past conversation from the `user_conversations` collection. It then adds the new question to the history before sending it to the AI.
+7.  **Response Generation**: The relevant, user-owned document chunks, the AI configuration, the full conversation history, and the user's question are compiled into a dynamic prompt. This is sent to the Gemini model to generate a helpful, context-aware, and personality-aligned response, which is streamed back to the UI.
+8.  **History Persistence**: After the AI response is complete, the API saves the AI's message to the user's conversation history in the database, ensuring it's available for the next session.
+9.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
+10. **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which creates a personalized script for a specific lead.
+11. **Admin Dashboards**: Admin dashboards query the `metrics`, `leads`, and `embeddings` collections to provide live data on user satisfaction, to manage the customer lifecycle in a visual pipeline, and to oversee the knowledge base.

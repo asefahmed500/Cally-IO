@@ -9,7 +9,7 @@ Cally-IO is a Next.js web application designed to serve as an AI-powered convers
 The project follows a standard Next.js App Router structure. Key directories include:
 
 - `/src/app`: Contains the main application routes, pages, and layouts.
-  - `/src/app/api`: API routes for server-side logic, like handling chat or Text-to-Speech requests.
+  - `/src/app/api`: API routes for server-side logic, like handling chat, history, or Text-to-Speech requests.
   - `/src/app/auth`: Contains server actions for handling authentication logic (signup, login, logout, password recovery).
   - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
   - `/src/app/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
@@ -36,6 +36,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/lib/appwrite-client.ts`: Appwrite client-side SDK configuration.
   - `/src/lib/appwrite-server.ts`: Appwrite server-side (Node) SDK configuration.
   - `/src/lib/auth.ts`: Authentication helper functions for managing sessions.
+  - `/src/lib/conversation.ts`: Server-side helpers for managing chat history persistence.
   - `/src/lib/settings.ts`: Helpers for getting and updating AI configuration.
   - `/src/lib/utils.ts`: General utility functions.
 
@@ -54,15 +55,14 @@ The project follows a standard Next.js App Router structure. Key directories inc
 3. The `processDocument` Genkit flow is invoked with the file's data.
 4. The flow extracts text, splits it into chunks, generates embeddings, and saves them to the "embeddings" collection.
 
-### Conversational Chat (`/src/ai/flows/conversational-chat.ts`)
+### Conversational Chat & History Persistence (`/src/app/api/chat/route.ts`)
 
-1. The user visits the dashboard. The app checks if the current time is within configured business hours.
-2. If outside hours, the chat is disabled and an away message is shown.
-3. If within hours, the user submits a question through the chat panel.
-4. The `conversationalRagChat` flow is triggered.
-5. It finds the most relevant document chunks for the *current user*.
-6. The relevant chunks, AI configuration, conversation history, and question are compiled into a dynamic prompt.
-7. The prompt is sent to the Gemini LLM to generate a personality-aligned response.
+1. The chat panel loads and fetches the user's past messages from `/api/chat/history`.
+2. The user submits a question. The backend API finds or creates a "conversation" document for that user.
+3. The new user message is added to the history and saved to the database.
+4. The `conversationalRagChat` flow is triggered with the full, up-to-date history.
+5. The AI response is streamed to the UI.
+6. Once the stream is complete, the final AI message is appended to the history and saved to the database, ensuring the conversation can be resumed on any device.
 
 ### Text-to-Speech (`/src/ai/flows/text-to-speech.ts`)
 1. After an AI response is generated, a user can click the speaker icon next to the message.

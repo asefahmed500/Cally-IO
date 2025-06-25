@@ -15,6 +15,7 @@ import { processDocument } from '@/ai/flows/process-document';
 import { logInteraction } from '@/ai/flows/log-metrics';
 import { v4 as uuidv4 } from 'uuid';
 import { ConversationStarters } from './conversation-starters';
+import { Skeleton } from '../ui/skeleton';
 
 async function fileToDataUri(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -26,12 +27,37 @@ async function fileToDataUri(file: File): Promise<string> {
 }
 
 // Extend the Message type to include optional image data
-type ChatMessage = Message & { id: string; image?: string };
+export type ChatMessage = Message & { id: string; image?: string };
 
 type AudioPlaybackState = {
   messageId: string | null;
   status: 'idle' | 'loading' | 'playing';
 };
+
+function ChatSkeleton() {
+    return (
+        <div className="space-y-6 pr-4">
+            <div className="flex items-start gap-4">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="flex flex-col gap-2">
+                    <Skeleton className="h-16 w-64" />
+                </div>
+            </div>
+            <div className="flex items-start gap-4 justify-end">
+                 <div className="flex flex-col gap-2 items-end">
+                    <Skeleton className="h-10 w-48" />
+                </div>
+                <Skeleton className="h-8 w-8 rounded-full" />
+            </div>
+             <div className="flex items-start gap-4">
+                <Skeleton className="h-8 w-8 rounded-full" />
+                <div className="flex flex-col gap-2">
+                    <Skeleton className="h-12 w-56" />
+                </div>
+            </div>
+        </div>
+    )
+}
 
 export function ChatPanel({
   disabled,
@@ -47,12 +73,41 @@ export function ChatPanel({
   const [imageFile, setImageFile] = React.useState<File | null>(null);
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
+  const [isHistoryLoading, setIsHistoryLoading] = React.useState(true);
   const [feedbackSent, setFeedbackSent] = React.useState<Set<string>>(new Set());
   const [audioState, setAudioState] = React.useState<AudioPlaybackState>({ messageId: null, status: 'idle' });
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+
+  React.useEffect(() => {
+    const fetchHistory = async () => {
+      try {
+        const response = await fetch('/api/chat/history');
+        if (!response.ok) {
+          throw new Error('Failed to fetch history');
+        }
+        const history = await response.json();
+        const formattedHistory: ChatMessage[] = history.map((msg: Message) => ({
+            ...msg,
+            id: uuidv4(), // Assign a client-side unique ID
+            content: typeof msg.content === 'string' ? msg.content : msg.content?.[0]?.text || '',
+            image: typeof msg.content !== 'string' ? msg.content?.find(p => p.media)?.media?.url : undefined,
+        }));
+        setMessages(formattedHistory);
+      } catch (error) {
+        console.error(error);
+        toast({
+            variant: 'destructive',
+            title: 'Could not load chat history.',
+        });
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    };
+    fetchHistory();
+  }, [toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -253,14 +308,12 @@ export function ChatPanel({
     setImagePreview(null);
 
     let modelResponse = '';
-    const plainHistory: Message[] = [...messages.filter(m => !m.image), {role: 'user', content: prompt}].map(({role, content}) => ({role, content}));
-
+    
     try {
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          history: plainHistory.slice(0, -1),
           prompt: prompt,
           image: imageDataUri,
         }),
@@ -342,69 +395,69 @@ export function ChatPanel({
         </Button>
       </div>
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
-        <div className="space-y-6 pr-4">
-          {messages.length === 0 && !effectiveDisabled && (
-            <ConversationStarters onStarterClick={sendMessage} />
-          )}
-          {messages.length === 0 && effectiveDisabled && (
-            <div className="text-center text-muted-foreground p-8">
-              {disabled ? 'Please configure the application to enable chat.' : 'Chat is currently unavailable.'}
-            </div>
-          )}
-          {messages.map((message) => {
-            const isEscalation = message.role === 'model' && (
-                message.content.toLowerCase().includes('specialist') ||
-                message.content.toLowerCase().includes('human expert')
-            );
-            const isThisMessageLoadingAudio = audioState.status === 'loading' && audioState.messageId === message.id;
-            const isThisMessagePlayingAudio = audioState.status === 'playing' && audioState.messageId === message.id;
+        {isHistoryLoading ? (
+            <ChatSkeleton />
+        ) : (
+            <div className="space-y-6 pr-4">
+            {messages.length === 0 && !effectiveDisabled && (
+                <ConversationStarters onStarterClick={sendMessage} />
+            )}
+            {messages.length === 0 && effectiveDisabled && (
+                <div className="text-center text-muted-foreground p-8">
+                {disabled ? 'Please configure the application to enable chat.' : 'Chat is currently unavailable.'}
+                </div>
+            )}
+            {messages.map((message) => {
+                const isThisMessageLoadingAudio = audioState.status === 'loading' && audioState.messageId === message.id;
+                const isThisMessagePlayingAudio = audioState.status === 'playing' && audioState.messageId === message.id;
 
-            return (
-                <div key={message.id} className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : '')}>
-                {message.role === 'model' && (
-                    <Avatar className="h-8 w-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
-                )}
-                <div className="flex flex-col gap-2 max-w-prose">
-                    <div className={cn(
-                        'rounded-lg p-3 text-sm',
-                        message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
-                    )}>
-                        {message.image && (
-                            <Image src={message.image} alt="User upload" width={300} height={200} className="rounded-md mb-2" />
-                        )}
-                        <p className="whitespace-pre-wrap">{message.content}</p>
-                    </div>
-                    {message.role === 'model' && message.content && (!isLoading || messages[messages.length-1].id !== message.id) && (
-                        <div className="flex items-center gap-2">
-                             <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handlePlayAudio(message)} disabled={audioState.status === 'loading'}>
-                                {isThisMessageLoadingAudio ? <Loader2 className="h-4 w-4 animate-spin" /> : (isThisMessagePlayingAudio ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />)}
-                            </Button>
-                            <div className="flex items-center gap-1">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'good')} disabled={feedbackSent.has(message.id)}>
-                                    <ThumbsUp className="h-4 w-4" />
-                                </Button>
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'bad')} disabled={feedbackSent.has(message.id)}>
-                                    <ThumbsDown className="h-4 w-4" />
-                                </Button>
-                            </div>
-                        </div>
+                return (
+                    <div key={message.id} className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : '')}>
+                    {message.role === 'model' && (
+                        <Avatar className="h-8 w-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
                     )}
+                    <div className="flex flex-col gap-2 max-w-prose">
+                        <div className={cn(
+                            'rounded-lg p-3 text-sm',
+                            message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                        )}>
+                            {message.image && (
+                                <Image src={message.image} alt="User upload" width={300} height={200} className="rounded-md mb-2" />
+                            )}
+                            <p className="whitespace-pre-wrap">{message.content}</p>
+                        </div>
+                        {message.role === 'model' && message.content && (!isLoading || messages[messages.length-1].id !== message.id) && (
+                            <div className="flex items-center gap-2">
+                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handlePlayAudio(message)} disabled={audioState.status === 'loading'}>
+                                    {isThisMessageLoadingAudio ? <Loader2 className="h-4 w-4 animate-spin" /> : (isThisMessagePlayingAudio ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />)}
+                                </Button>
+                                <div className="flex items-center gap-1">
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'good')} disabled={feedbackSent.has(message.id)}>
+                                        <ThumbsUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'bad')} disabled={feedbackSent.has(message.id)}>
+                                        <ThumbsDown className="h-4 w-4" />
+                                    </Button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                    {message.role === 'user' && (
+                        <Avatar className="h-8 w-8"><AvatarFallback><User /></AvatarFallback></Avatar>
+                    )}
+                    </div>
+                )
+            })}
+            {isLoading && messages[messages.length-1]?.role === 'user' && (
+                <div className="flex items-start gap-4">
+                <Avatar className="h-8 w-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
+                <div className="max-w-md rounded-lg p-3 text-sm bg-muted">
+                    <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
-                {message.role === 'user' && (
-                    <Avatar className="h-8 w-8"><AvatarFallback><User /></AvatarFallback></Avatar>
-                )}
                 </div>
-            )
-        })}
-          {isLoading && messages[messages.length-1]?.role === 'user' && (
-            <div className="flex items-start gap-4">
-              <Avatar className="h-8 w-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
-              <div className="max-w-md rounded-lg p-3 text-sm bg-muted">
-                <Loader2 className="h-5 w-5 animate-spin" />
-              </div>
+            )}
             </div>
-          )}
-        </div>
+        )}
       </ScrollArea>
       <div className="mt-4">
         {imagePreview && (
