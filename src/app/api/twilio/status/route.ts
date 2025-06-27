@@ -1,4 +1,5 @@
 
+
 import { NextRequest, NextResponse } from 'next/server';
 import { databases } from '@/lib/appwrite-server';
 import { Query } from 'node-appwrite';
@@ -33,17 +34,25 @@ export async function POST(request: NextRequest) {
 
         if (logEntries.documents.length === 0) {
             console.warn(`No call log found for SID: ${callSid}`);
-            return new NextResponse('Call log not found', { status: 404 });
+            // Still return 200 OK so Twilio doesn't retry a webhook for a call we don't care about.
+            return new NextResponse('Call log not found, but acknowledged.', { status: 200 });
         }
         
         const logEntry = logEntries.documents[0];
         
-        const updateData: any = {
+        const updateData: {
+            status: string;
+            duration?: number;
+            recordingUrl?: string;
+        } = {
             status: callStatus,
         };
+        
         if (duration) {
             updateData.duration = parseInt(duration, 10);
         }
+        // A recording is created if the <Record> verb is used, or if call recording is enabled on the trunk.
+        // We are using <Gather> which can also create recordings of the gathered speech. Let's add the URL if present.
         if (recordingUrl) {
             updateData.recordingUrl = recordingUrl;
         }

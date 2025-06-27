@@ -43,14 +43,17 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - They can delete a user from the system.
 - They can trigger a password reset email to be sent to a user.
 
-### 2. Automated AI Calling
+### 2. Automated AI Calling & Speech Recognition
 - An agent clicks "Start Automated Call" on a lead card.
-- The `initiateCall` server action triggers Twilio to place an outbound call to the lead's phone number.
-- Simultaneously, `initiateCall` creates a new log entry in the `call_logs` collection with the status "initiated".
+- The `initiateCall` server action triggers Twilio to place an outbound call.
+- `initiateCall` creates a log entry in the `call_logs` collection with status "initiated".
 - Twilio makes a webhook request to `/api/twilio/call?leadId=<ID>`.
-- The `call` API route fetches the lead's data, generates a personalized script using the `generateCallScript` flow, and returns TwiML instructions.
-- The TwiML instructs Twilio's AI voice to read the script aloud to the lead and to record the call.
-- As the call progresses (ringing, answered, completed), Twilio sends status updates to the `/api/twilio/status` webhook, which updates the `call_logs` document in Appwrite.
+- The `call` API route generates a personalized script and returns TwiML instructions.
+- The TwiML instructs Twilio's AI voice to read the script, then asks a question (e.g., "Are you interested?").
+- The TwiML's `<Gather>` verb listens for the lead's spoken response.
+- Twilio transcribes the speech and sends the result to a second webhook: `/api/twilio/handle-response`.
+- This second webhook saves the transcribed text to the `call_logs` document and returns a final TwiML message based on the response (e.g., "Great, a specialist will call you back.") before hanging up.
+- As the call progresses, Twilio sends status updates to the `/api/twilio/status` webhook, which updates the `call_logs` document.
 
 ### 3. Lead Management & Follow-ups
 - The `/leads` page has two views: a visual Kanban pipeline and a "Follow-ups" list.
@@ -114,7 +117,7 @@ To make the application fully functional, you need to configure your Appwrite pr
     *   **`faqs`**: Stores admin-curated question-and-answer pairs.
         - Attributes: `question` (string), `answer` (string).
     *   **`call_logs`**: Stores logs of outbound Twilio calls.
-        - Attributes: `leadId` (string), `userId` (string), `callSid` (string), `status` (string), `duration` (integer, optional), `recordingUrl` (string, optional).
+        - Attributes: `leadId` (string), `userId` (string), `callSid` (string), `status` (string), `duration` (integer, optional), `recordingUrl` (string, optional), `leadResponse` (string, optional), `speechConfidence` (float, optional).
 
 **Permissions are critical for security.** In general:
 - Users should only have CRUD access to their own documents (`Permission.read(Role.user(userId))`).
