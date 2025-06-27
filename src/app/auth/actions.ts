@@ -59,7 +59,6 @@ export async function signup(prevState: any, formData: FormData) {
                 // Fail silently so it doesn't interrupt the user experience.
             }
         }
-        // TODO: For direct Slack/Google Sheets integration, add logic here.
     }
     
     const session = await account.createEmailPasswordSession(email, password);

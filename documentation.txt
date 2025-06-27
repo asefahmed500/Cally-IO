@@ -13,7 +13,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/api`: API routes for server-side logic (chat, history, TTS, Twilio).
   - `/auth`: Server actions for authentication (signup, login, etc.).
   - `/dashboard`: The main page for authenticated users, featuring the chat panel and personal stats.
-  - `/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
+  - `/settings`: The admin-only page for analytics, user management, system settings, AI agent configuration, and integrations.
   - `/leads`: The lead management dashboard with a visual Kanban pipeline, accessible to all users but with role-specific data views.
   - `/knowledge`: A page for users to manage their documents and for admins to manage the entire knowledge base (documents and FAQs).
 - `/src/ai`: Contains all Genkit-related code for AI functionality.
@@ -23,8 +23,8 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/chat`: Components for the chat interface, including conversation starters and audio playback.
   - `/layout`: Components for the application layout (sidebar, header, theme toggle).
   - `/leads`: Components for the leads dashboard (Kanban board, lead cards, profile view, forms).
-  - `/knowledge`: Components for knowledge management (document list, FAQ manager).
-  - `/settings`: Components for the settings page (configuration forms, analytics chart).
+  - `/knowledge`: Components for knowledge management (document list, FAQ manager, content suggestions).
+  - `/settings`: Components for the settings page (configuration forms, analytics chart, user management, usage statistics).
   - `/ui`: ShadCN UI components (Button, Card, etc.).
 - `/src/hooks`: Custom React hooks (`useToast`, `useIsMobile`).
 - `/src/lib`: Library functions, configurations, and utilities.
@@ -35,23 +35,34 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 ## Core Workflows
 
-### 1. Automated AI Calling
-- An agent clicks "Start Automated Call" on a lead card.
-- The `initiateCall` server action triggers Twilio to place an outbound call to the lead's phone number.
-- Simultaneously, `initiateCall` creates a new log entry in the `call_logs` collection with the status "initiated".
-- Twilio makes a webhook request to `/api/twilio/call?leadId=<ID>`.
-- The `call` API route fetches the lead's data, generates a personalized script using the `generateCallScript` flow, and returns TwiML instructions.
-- The TwiML instructs Twilio's AI voice to read the script aloud to the lead and to record the call.
-- As the call progresses (ringing, answered, completed), Twilio sends status updates to the `/api/twilio/status` webhook, which updates the `call_logs` document in Appwrite.
+### 1. In-App User Management
+- An admin navigates to the Settings page.
+- They can view a list of all users in the system.
+- They can create a new user by providing a name, email, and password.
+- They can promote a regular user to an admin or revoke admin privileges.
+- They can delete a user from the system.
+- They can trigger a password reset email to be sent to a user.
 
-### 2. Lead Management & Call Script Generation
-- The `/leads` page is a visual Kanban pipeline.
+### 2. Automated AI Calling & Speech Recognition
+- An agent clicks "Start Automated Call" on a lead card.
+- The `initiateCall` server action triggers Twilio to place an outbound call.
+- `initiateCall` creates a log entry in the `call_logs` collection with status "initiated".
+- Twilio makes a webhook request to `/api/twilio/call?leadId=<ID>`.
+- The `call` API route generates a personalized script and returns TwiML instructions.
+- The TwiML instructs Twilio's AI voice to read the script, then asks a question (e.g., "Are you interested?").
+- The TwiML's `<Gather>` verb listens for the lead's spoken response.
+- Twilio transcribes the speech and sends the result to a second webhook: `/api/twilio/handle-response`.
+- This second webhook saves the transcribed text to the `call_logs` document and returns a final TwiML message based on the response (e.g., "Great, a specialist will call you back.") before hanging up.
+- As the call progresses, Twilio sends status updates to the `/api/twilio/status` webhook, which updates the `call_logs` document.
+
+### 3. Lead Management & Follow-ups
+- The `/leads` page has two views: a visual Kanban pipeline and a "Follow-ups" list.
 - **Admins** see all leads. **Agents** see leads they have created or claimed.
 - **Lead Claiming**: When an agent moves an unassigned lead from the "New" column, the lead is automatically assigned to them.
-- **Lead CRUD**: Agents can create, update, and delete their own leads.
-- Any user can trigger the AI calling workflow.
+- **Lead CRUD & Scheduling**: Agents can create, update, and delete their own leads. They can also schedule a `followUpDate` and add `followUpNotes`.
+- **Follow-up Reminders**: The "Follow-ups" tab lists all leads with a scheduled follow-up, sorted by date. Overdue follow-ups are highlighted on lead cards.
 
-### 3. Conversational Chat & History Persistence
+### 4. Conversational Chat & History Persistence
 - A user submits a question. The backend API finds or creates a conversation document.
 - The `conversationalRagChat` flow is triggered. It fetches FAQs and performs a vector search on the user's documents.
 - If needed, the AI uses the `webSearch` tool for real-time information.
@@ -95,9 +106,9 @@ To make the application fully functional, you need to configure your Appwrite pr
     *   **`embeddings`**: Stores document chunks and their vector embeddings.
         - Attributes: `documentId` (string), `fileName` (string), `chunkText` (string), `embedding` (float[], size 768), `userId` (string).
     *   **`metrics`**: Stores user feedback on AI responses.
-        - Attributes: `userId` (string), `messageId` (string), `feedback` (string).
+        - Attributes: `userId` (string), `messageId` (string), `feedback` (string), `prompt` (string, size 8192, optional).
     *   **`leads`**: Stores information about leads.
-        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `phone` (string, optional), `company` (string, optional), `jobTitle` (string, optional), `notes` (string, optional), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**).
+        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `phone` (string, optional), `company` (string, optional), `jobTitle` (string, optional), `notes` (string, optional), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**), `followUpDate` (datetime, optional), `followUpNotes` (string, optional).
     *   **`settings`**: A singleton collection for AI and business configuration.
         - Create **one** document with the ID `default_config`.
         - Attributes: `ai_personality` (string), `ai_style` (string), `ai_instructions` (string), `business_hours_enabled` (boolean), `business_hours_start` (string), `business_hours_end` (string), `business_hours_timezone` (string), `away_message` (string), `call_script_template` (string).
@@ -106,7 +117,9 @@ To make the application fully functional, you need to configure your Appwrite pr
     *   **`faqs`**: Stores admin-curated question-and-answer pairs.
         - Attributes: `question` (string), `answer` (string).
     *   **`call_logs`**: Stores logs of outbound Twilio calls.
-        - Attributes: `leadId` (string), `userId` (string), `callSid` (string), `status` (string), `duration` (integer, optional), `recordingUrl` (string, optional).
+        - Attributes: `leadId` (string), `userId` (string), `callSid` (string), `status` (string), `duration` (integer, optional), `recordingUrl` (string, optional), `leadResponse` (string, optional), `speechConfidence` (float, optional).
+    *   **`analytics_logs`**: Stores events for advanced analytics.
+        - Attributes: `eventType` (string), `eventData` (string, size 10000), `userId` (string).
 
 **Permissions are critical for security.** In general:
 - Users should only have CRUD access to their own documents (`Permission.read(Role.user(userId))`).

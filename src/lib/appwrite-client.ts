@@ -28,5 +28,3 @@ export const account = new Account(client);
 export const storage = new Storage(client);
 export const databases = new Databases(client);
 export const appwriteDatabases = databases; // alias for clarity
-
-    

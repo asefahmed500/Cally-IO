@@ -15,8 +15,10 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 
 - [x] **Secure Authentication**: User signup, login, and password recovery.
 - [x] **Role-Based Access Control**: `user` and `admin` roles with protected routes.
+- [x] **In-App User Management**: Admins can add, remove, and manage user roles directly within the application.
 - [x] **Lead Management Pipeline**: Visual Kanban board for all users, with role-based data visibility and lead-claiming for agents.
 - [x] **Full Lead CRUD**: Agents can create, read, update, and delete their own leads with detailed profiles (phone, company, notes).
+- [x] **Follow-up Scheduling**: Agents can schedule follow-up dates and add notes for each lead, with visual reminders for overdue tasks.
 - [x] **Knowledge Base Management**: Admins can manage all documents and a company-wide FAQ.
 - [x] **Persistent Chat History**: Conversations are saved, supporting multi-session and multi-device use.
 - [x] **Configurable AI Agent**: Admins control the AI's personality, response style, and business instructions.
@@ -76,8 +78,3 @@ ngrok http 9002
 Copy the public HTTPS URL provided by ngrok and set it as the value for `NEXT_PUBLIC_BASE_URL` in your `.env` file.
 
 Open [http://localhost:9002](http://localhost:9002) with your browser to see the result. To create your admin account, sign up using the email you specified in the `ADMIN_EMAIL` environment variable.
-
-```
-- `src/components/knowledge/content-suggestions.tsx` (New Component)
-- `src/components/settings/usage-statistics.tsx` (New Component)
-- `src/app/settings/analytics_actions.ts` (New File)
