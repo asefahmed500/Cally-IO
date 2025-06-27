@@ -23,8 +23,8 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/chat`: Components for the chat interface, including conversation starters and audio playback.
   - `/layout`: Components for the application layout (sidebar, header, theme toggle).
   - `/leads`: Components for the leads dashboard (Kanban board, lead cards, profile view, forms).
-  - `/knowledge`: Components for knowledge management (document list, FAQ manager).
-  - `/settings`: Components for the settings page (configuration forms, analytics chart, user management).
+  - `/knowledge`: Components for knowledge management (document list, FAQ manager, content suggestions).
+  - `/settings`: Components for the settings page (configuration forms, analytics chart, user management, usage statistics).
   - `/ui`: ShadCN UI components (Button, Card, etc.).
 - `/src/hooks`: Custom React hooks (`useToast`, `useIsMobile`).
 - `/src/lib`: Library functions, configurations, and utilities.
@@ -106,7 +106,7 @@ To make the application fully functional, you need to configure your Appwrite pr
     *   **`embeddings`**: Stores document chunks and their vector embeddings.
         - Attributes: `documentId` (string), `fileName` (string), `chunkText` (string), `embedding` (float[], size 768), `userId` (string).
     *   **`metrics`**: Stores user feedback on AI responses.
-        - Attributes: `userId` (string), `messageId` (string), `feedback` (string).
+        - Attributes: `userId` (string), `messageId` (string), `feedback` (string), `prompt` (string, size 8192, optional).
     *   **`leads`**: Stores information about leads.
         - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `phone` (string, optional), `company` (string, optional), `jobTitle` (string, optional), `notes` (string, optional), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**), `followUpDate` (datetime, optional), `followUpNotes` (string, optional).
     *   **`settings`**: A singleton collection for AI and business configuration.
@@ -118,6 +118,8 @@ To make the application fully functional, you need to configure your Appwrite pr
         - Attributes: `question` (string), `answer` (string).
     *   **`call_logs`**: Stores logs of outbound Twilio calls.
         - Attributes: `leadId` (string), `userId` (string), `callSid` (string), `status` (string), `duration` (integer, optional), `recordingUrl` (string, optional), `leadResponse` (string, optional), `speechConfidence` (float, optional).
+    *   **`analytics_logs`**: Stores events for advanced analytics.
+        - Attributes: `eventType` (string), `eventData` (string, size 10000), `userId` (string).
 
 **Permissions are critical for security.** In general:
 - Users should only have CRUD access to their own documents (`Permission.read(Role.user(userId))`).

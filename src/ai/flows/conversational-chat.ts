@@ -18,6 +18,7 @@ import {
 import { Query } from 'appwrite';
 import { getLoggedInUser } from '@/lib/auth';
 import { getAISettings } from '@/lib/settings';
+import { logDocumentUsage } from '@/app/settings/analytics_actions';
 
 const MessageSchema = z.object({
   role: z.enum(['user', 'model']),
@@ -79,15 +80,16 @@ async function getFaqs(): Promise<string> {
 async function searchEmbeddings(
   query: string,
   userId: string
-): Promise<string> {
+): Promise<{ context: string; sources: { documentId: string; fileName: string; }[] }> {
   const dbId = appwriteDatabaseId;
   const collectionId = appwriteEmbeddingsCollectionId;
+  const defaultResponse = { context: '', sources: [] };
 
   if (!dbId || !collectionId) {
     console.warn(
       'Appwrite database/collection not configured. Skipping search.'
     );
-    return '';
+    return defaultResponse;
   }
 
   const queryEmbedding = await embed({
@@ -103,7 +105,7 @@ async function searchEmbeddings(
     );
 
     if (response.documents.length === 0) {
-      return '';
+      return defaultResponse;
     }
 
     const documentsWithSimilarity = response.documents.map((doc) => ({
@@ -117,17 +119,22 @@ async function searchEmbeddings(
     const topResults = documentsWithSimilarity.filter(d => d.similarity > 0.7).slice(0, 5);
 
     if (topResults.length === 0) {
-        return '';
+        return defaultResponse;
     }
 
     const context = topResults
       .map((doc) => `File: ${doc.fileName}\nContent: ${doc.chunkText}`)
       .join('\n\n---\n\n');
+      
+    const sources = topResults.map((doc) => ({
+      documentId: doc.documentId,
+      fileName: doc.fileName,
+    }));
 
-    return context;
+    return { context, sources };
   } catch (error) {
     console.error('Error searching embeddings in Appwrite:', error);
-    return ''; // Return empty string on error
+    return defaultResponse;
   }
 }
 
@@ -169,13 +176,18 @@ export const conversationalRagChat = ai.defineFlow(
     const { history, prompt, image } = input;
 
     // 1. Get AI settings, FAQs, and Document Context concurrently
-    const [aiSettings, faqContext, docContext] = await Promise.all([
+    const [aiSettings, faqContext, { context: docContext, sources: docSources }] = await Promise.all([
         getAISettings(),
         getFaqs(),
         searchEmbeddings(prompt, user.$id),
     ]);
     
-    // 2. Construct the system prompt dynamically with advanced instructions
+    // 2. Log document usage for analytics (fire-and-forget)
+    if (docSources.length > 0) {
+        logDocumentUsage(user.$id, docSources);
+    }
+    
+    // 3. Construct the system prompt dynamically with advanced instructions
     const systemPromptText = `You are Cally-IO, an advanced AI assistant designed for an exceptional customer support and sales experience. Your primary goal is to act as a consultative partner, understanding the user's needs and guiding them to the right solutions.
 
 Your personality should be: ${aiSettings.personality}.
@@ -228,14 +240,14 @@ Your main purpose is to guide the user through a natural sales conversation. Do 
 8.  **Do Not Hallucinate**: Never make up facts. It is better to be wrong than to be wrong.
 `;
     
-    // 3. Define the prompt dynamically inside the flow
+    // 4. Define the prompt dynamically inside the flow
     const chatPrompt = ai.definePrompt({
       name: 'conversationalRagChatPrompt',
       system: systemPromptText,
       tools: [webSearch],
     });
 
-    // 4. Construct the user message, now only including document context and the question
+    // 5. Construct the user message, now only including document context and the question
     const userMessageText = `DOCUMENT CONTEXT:
 ${docContext || 'No context found in your documents for this query.'}
 

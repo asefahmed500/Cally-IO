@@ -2,7 +2,7 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, MessageSquare, Star, Users, Cog, PieChart, UserPlus, Link as LinkIcon, CheckCircle, XCircle } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog, UserPlus, Link as LinkIcon, CheckCircle, XCircle } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -12,6 +12,7 @@ import { AnalyticsChart } from "@/components/settings/analytics-chart";
 import { Button } from "@/components/ui/button";
 import { listUsers } from "./users_actions";
 import { UserManagement } from "@/components/settings/user-management";
+import { UsageStatistics } from "@/components/settings/usage-statistics";
 
 function StatCard({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) {
     return (
@@ -115,6 +116,7 @@ export default async function SettingsPage() {
   const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
   const isTwilioConfigured = !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN && !!process.env.TWILIO_PHONE_NUMBER;
   const isWebhookConfigured = !!process.env.WEBHOOK_URL_NEW_LEAD;
+  const isAnalyticsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_ANALYTICS_LOGS_COLLECTION_ID;
   const timezones = Intl.supportedValuesOf('timeZone');
 
   return (
@@ -138,18 +140,24 @@ export default async function SettingsPage() {
             </div>
             <div className="grid gap-8 md:grid-cols-2">
                 <AnalyticsChart data={feedbackChartData} />
-                <Card>
-                    <CardHeader>
-                        <CardTitle className="flex items-center gap-2"><PieChart /> Usage Statistics</CardTitle>
-                        <CardDescription>Insights into how your knowledge base is being used by the AI and your team.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="p-4 text-center border-2 border-dashed rounded-lg flex flex-col items-center justify-center h-full">
-                            <p className="text-sm text-muted-foreground">This feature is coming soon.</p>
-                            <p className="text-xs text-muted-foreground mt-1">Analytics on document and FAQ usage will appear here to help you understand what content is most valuable.</p>
-                        </div>
-                    </CardContent>
-                </Card>
+                {isAnalyticsConfigured ? (
+                    <UsageStatistics />
+                ) : (
+                    <Card>
+                         <CardHeader>
+                            <CardTitle className="flex items-center gap-2"><AlertTriangle /> Analytics Not Configured</CardTitle>
+                            <CardDescription>Please configure the analytics collection to see usage statistics.</CardDescription>
+                        </CardHeader>
+                         <CardContent>
+                            <Alert variant="destructive">
+                                <AlertTitle>Analytics Logs Collection Not Set</AlertTitle>
+                                <AlertDescription>
+                                    Please set the `NEXT_PUBLIC_APPWRITE_ANALYTICS_LOGS_COLLECTION_ID` environment variable to enable document usage statistics.
+                                </AlertDescription>
+                            </Alert>
+                        </CardContent>
+                    </Card>
+                )}
             </div>
         </CardContent>
       </Card>

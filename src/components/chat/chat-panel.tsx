@@ -205,9 +205,20 @@ export function ChatPanel({
         title: 'Feedback Received',
         description: "Thank you! We'll use your feedback to improve."
     });
+
+    let prompt: string | undefined = undefined;
+    if (feedback === 'bad') {
+        const messageIndex = messages.findIndex(m => m.id === message.id);
+        if (messageIndex > 0) {
+            const potentialUserMessage = messages[messageIndex - 1];
+            if (potentialUserMessage?.role === 'user') {
+                prompt = potentialUserMessage.content;
+            }
+        }
+    }
     
     try {
-      await logInteraction({ messageId: message.id, feedback });
+      await logInteraction({ messageId: message.id, feedback, prompt });
     } catch (error) {
       console.error("Failed to log feedback", error);
     }

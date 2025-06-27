@@ -17,6 +17,7 @@ import { ID, Permission, Role } from 'appwrite';
 export const LogInteractionInputSchema = z.object({
   messageId: z.string(),
   feedback: z.enum(['good', 'bad']),
+  prompt: z.string().optional(),
 });
 
 export type LogInteractionInput = z.infer<typeof LogInteractionInputSchema>;
@@ -46,15 +47,26 @@ export const logInteraction = ai.defineFlow(
         Permission.read(Role.label('admin')), // Admins can read all metrics
       ];
 
+      const dataToLog: {
+        userId: string;
+        messageId: string;
+        feedback: 'good' | 'bad';
+        prompt?: string;
+      } = {
+        userId: user.$id,
+        messageId: input.messageId,
+        feedback: input.feedback,
+      };
+
+      if (input.prompt) {
+        dataToLog.prompt = input.prompt;
+      }
+
       await appwriteDatabases.createDocument(
         appwriteDatabaseId,
         appwriteMetricsCollectionId,
         ID.unique(),
-        {
-          userId: user.$id,
-          messageId: input.messageId,
-          feedback: input.feedback,
-        },
+        dataToLog,
         permissions
       );
     } catch (error) {

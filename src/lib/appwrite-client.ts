@@ -12,6 +12,7 @@ export const appwriteSettingsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_SET
 export const appwriteConversationsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID || '';
 export const appwriteFaqsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID || '';
 export const appwriteCallLogsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CALL_LOGS_COLLECTION_ID || '';
+export const appwriteAnalyticsLogsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_ANALYTICS_LOGS_COLLECTION_ID || '';
 
 
 const client = new Client();
