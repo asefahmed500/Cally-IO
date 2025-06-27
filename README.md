@@ -1,4 +1,3 @@
-
 # Cally-IO: AI-Powered Conversational Sales Platform
 
 Cally-IO is a feature-complete, production-ready Next.js application designed to serve as an intelligent sales and support co-pilot. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, manage sales leads through a visual pipeline, and track performance with real-time analytics—all configurable by an administrator.
@@ -23,6 +22,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - [x] **Editable Call Script Templates**: Admins create master call scripts for the AI to use.
 - [x] **Business Hours**: Admins can set operating hours and an away message.
 - [x] **AI-Powered RAG Chat**: The AI uses Retrieval-Augmented Generation to answer questions from documents and FAQs.
+- [x] **Real-Time Web Search**: The AI can search the web for information about competitors or current events.
 - [x] **AI Script Generator**: Dynamically generates personalized call scripts for leads.
 - [x] **Conversation Intelligence**: Escalates to a human when it can't find an answer.
 - [x] **Performance Analytics**: Real-time admin and agent dashboards track key metrics with charts.

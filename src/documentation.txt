@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-Cally-IO is a Next.js web application designed to serve as a feature-rich, AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access, lead management, real-time performance analytics, and an AI-driven call script generator.
+Cally-IO is a feature-complete, production-ready Next.js application designed to serve as an intelligent sales and support co-pilot. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, manage sales leads through a visual pipeline, and track performance with real-time analytics—all configurable by an administrator.
 
 ## Project Structure
 
@@ -13,7 +13,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/auth`: Server actions for authentication (signup, login, etc.).
   - `/dashboard`: The main page for authenticated users, featuring the chat panel and personal stats.
   - `/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
-  - `/leads`: The lead management dashboard with a visual Kanban pipeline, accessible to all users but with role-specific views.
+  - `/leads`: The lead management dashboard with a visual Kanban pipeline, accessible to all users but with role-specific data views.
   - `/knowledge`: A page for users to manage their documents and for admins to manage the entire knowledge base (documents and FAQs).
 - `/src/ai`: Contains all Genkit-related code for AI functionality.
   - `/flows`: Defines the core AI workflows (document processing, chat, script generation, etc.).
@@ -48,7 +48,8 @@ The project follows a standard Next.js App Router structure. Key directories inc
 ### 3. Conversational Chat & History Persistence
 - A user submits a question. The backend API finds or creates a conversation document for that user.
 - The `conversationalRagChat` flow is triggered. It first fetches all FAQs to use as its primary source of truth. If no FAQ matches, it performs a vector search on the user's documents to find relevant context.
-- The AI's personality settings, FAQs, document context, and the user's full conversation history are compiled into a prompt for the Gemini LLM.
+- **Web Search**: If the query is about a competitor or current event, the AI uses a `webSearch` Genkit tool to fetch real-time information.
+- The AI's personality settings, FAQs, document context, web search results, and the user's full conversation history are compiled into a prompt for the Gemini LLM.
 - The AI response is streamed to the UI. The user can rate the response or have it read aloud using Text-to-Speech.
 - Once the stream is complete, the final AI message is appended to the history and saved to the database, ensuring persistence across sessions and devices.
 

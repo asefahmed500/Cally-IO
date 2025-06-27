@@ -131,6 +131,29 @@ async function searchEmbeddings(
   }
 }
 
+const webSearch = ai.defineTool(
+  {
+    name: 'webSearch',
+    description: 'Performs a web search to find current information, news, or details about competitors not available in local documents.',
+    inputSchema: z.object({
+      query: z.string().describe('The search query.'),
+    }),
+    outputSchema: z.string(),
+  },
+  async (input) => {
+    console.log(`[Web Search Tool] Simulating search for: ${input.query}`);
+    // In a real application, you would replace this with a call to a search API like Tavily, Google Search, etc.
+    if (input.query.toLowerCase().includes('competitorx')) {
+        return `CompetitorX is a leading provider of cloud-based CRM solutions, known for its strong enterprise features. Recent reports indicate they are focusing on expanding into the SMB market. Their pricing is generally considered higher than ours, but they offer extensive customization options.`;
+    }
+    if (input.query.toLowerCase().includes('market trends')) {
+        return `According to recent industry reports from TechCrunch and Forrester, the key market trend in AI-powered sales platforms is the move towards hyper-personalization and proactive engagement. Companies are leveraging generative AI to not just answer questions, but to guide customers through the sales funnel intelligently. There is also a strong emphasis on seamless CRM integration.`;
+    }
+    return `No specific real-time information was found for "${input.query}". Please try a more general query about market trends or a specific competitor name.`;
+  }
+);
+
+
 export const conversationalRagChat = ai.defineFlow(
   {
     name: 'conversationalRagChatFlow',
@@ -193,12 +216,12 @@ Your main purpose is to guide the user through a natural sales conversation. Do 
 3.  **Secondary Source (Documents)**: The "DOCUMENT CONTEXT" provided is your source of truth for your own product's features and details not covered in the FAQs.
 
 4.  **Knowledge Hierarchy & Competitive Intelligence**:
-    *   **Primary Source**: The "DOCUMENT CONTEXT" provided is your absolute source of truth for your own product's features and details.
-    *   **Secondary Source (Simulated Web Search)**: For general knowledge or questions about competitors ("How do you compare to [Competitor]?"), act as if you are accessing real-time web data. Preface these answers with "Based on current market information..." to build trust.
+    *   **Internal Knowledge**: The "DOCUMENT CONTEXT" and "FREQUENTLY ASKED QUESTIONS" are your absolute source of truth for your own product's features and details.
+    *   **External Knowledge (Web Search)**: For general knowledge, current events, or questions about competitors ("How do you compare to CompetitorX?"), you MUST use the \`webSearch\` tool to find real-time information. Preface these answers with "Based on current market information..." or "A quick search shows that..." to build trust. Never invent information about competitors.
 
 5.  **Preference Learning (In-session)**: Adapt to the user's language. If they're technical, you get technical. If they're simple, you keep it high-level.
 
-6.  **Acknowledge Limitations & Escalate Intelligently**: If you don't know the answer and it's not in the documents or plausible general knowledge, **DO NOT invent an answer**. Gracefully escalate: "That's an excellent question. To get you the most accurate details, I can connect you with a product specialist. Would that be helpful?"
+6.  **Acknowledge Limitations & Escalate Intelligently**: If you don't know the answer from your internal knowledge and a web search doesn't help, **DO NOT invent an answer**. Gracefully escalate: "That's an excellent question. To get you the most accurate details, I can connect you with a product specialist. Would that be helpful?"
 
 7.  **Source Attribution**: When using knowledge from user documents, mention the source file. For simulated web search, cite a plausible source (e.g., "according to recent industry reports...").
 
@@ -209,7 +232,7 @@ Your main purpose is to guide the user through a natural sales conversation. Do 
     const chatPrompt = ai.definePrompt({
       name: 'conversationalRagChatPrompt',
       system: systemPromptText,
-      tools: [],
+      tools: [webSearch],
     });
 
     // 4. Construct the user message, now only including document context and the question
