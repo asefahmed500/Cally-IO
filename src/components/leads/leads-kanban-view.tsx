@@ -4,14 +4,15 @@
 import * as React from 'react';
 import type { Lead } from '@/app/leads/page';
 import { LeadCard } from './lead-card';
-import { createLead, updateLeadStatus } from '@/app/leads/actions';
+import { updateLeadStatus, deleteLead } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Download, Search, PlusCircle, Loader2 } from 'lucide-react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { useActionState } from 'react';
-import { Label } from '../ui/label';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
+import { LeadForm } from './lead-form';
+import type { Models } from 'appwrite';
 
 
 const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
@@ -23,45 +24,13 @@ const statusStyles = {
     Converted: { title: 'Converted', color: 'bg-green-500' },
 };
 
-function CreateLeadForm({ onFormSuccess }: { onFormSuccess: () => void }) {
-    const [state, formAction, isPending] = useActionState(createLead, null);
-    const { toast } = useToast();
-
-    React.useEffect(() => {
-        if (state?.status === 'success') {
-            toast({ title: 'Success', description: state.message });
-            onFormSuccess();
-        } else if (state?.status === 'error' && typeof state.message === 'string') {
-            toast({ variant: 'destructive', title: 'Error', description: state.message });
-        }
-    }, [state, toast, onFormSuccess]);
-
-    return (
-        <form action={formAction} className="space-y-4">
-            <div className="space-y-2">
-                <Label htmlFor="name">Lead Name</Label>
-                <Input id="name" name="name" placeholder="e.g., Jane Doe" required />
-                {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
-            </div>
-            <div className="space-y-2">
-                <Label htmlFor="email">Lead Email</Label>
-                <Input id="email" name="email" type="email" placeholder="e.g., jane.doe@example.com" required />
-                {state?.errors?.email && <p className="text-sm text-destructive">{state.errors.email[0]}</p>}
-            </div>
-            <DialogFooter>
-                 <Button type="submit" disabled={isPending}>
-                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
-                    Create Lead
-                </Button>
-            </DialogFooter>
-        </form>
-    );
-}
-
-export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
+export function LeadsKanbanView({ initialLeads, currentUser }: { initialLeads: Lead[], currentUser: Models.User<Models.Preferences> }) {
     const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
     const [searchTerm, setSearchTerm] = React.useState('');
-    const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
+    const [isFormOpen, setIsFormOpen] = React.useState(false);
+    const [editingLead, setEditingLead] = React.useState<Lead | null>(null);
+    const [deletingLead, setDeletingLead] = React.useState<Lead | null>(null);
+    const [isDeleting, startDeleteTransition] = React.useTransition();
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -70,42 +39,65 @@ export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
 
     const handleStatusChange = async (leadId: string, newStatus: Lead['status']) => {
         const originalLeads = [...leads];
-        // Optimistically update the UI
         setLeads(prevLeads =>
             prevLeads.map(lead =>
-                lead.$id === leadId ? { ...lead, status: newStatus } : lead
+                lead.$id === leadId ? { ...lead, status: newStatus, agentId: lead.agentId || currentUser.$id } : lead
             )
         );
 
         const result = await updateLeadStatus(leadId, newStatus);
         if (result.error) {
-            toast({
-                variant: 'destructive',
-                title: 'Error updating status',
-                description: result.error,
-            });
-            // Revert on error
+            toast({ variant: 'destructive', title: 'Error updating status', description: result.error });
             setLeads(originalLeads);
         } else {
-            toast({
-                title: 'Status Updated',
-                description: 'The lead status has been successfully updated.',
-            });
+            toast({ title: 'Status Updated', description: 'The lead has been updated.' });
         }
     };
     
+    const handleEdit = (lead: Lead) => {
+        setEditingLead(lead);
+        setIsFormOpen(true);
+    };
+
+    const handleCreate = () => {
+        setEditingLead(null);
+        setIsFormOpen(true);
+    };
+
+    const handleDelete = (lead: Lead) => {
+        setDeletingLead(lead);
+    };
+
+    const confirmDelete = () => {
+        if (!deletingLead) return;
+        startDeleteTransition(async () => {
+            const result = await deleteLead(deletingLead.$id);
+            if (result.error) {
+                toast({ variant: 'destructive', title: 'Error', description: result.error });
+            } else {
+                toast({ title: 'Lead Deleted', description: `"${deletingLead.name}" has been removed.` });
+                setLeads(prev => prev.filter(l => l.$id !== deletingLead.$id));
+            }
+            setDeletingLead(null);
+        });
+    }
+
     const handleExport = () => {
         if (leads.length === 0) {
             toast({ title: "No leads to export.", variant: "default" });
             return;
         }
-        const headers = ['Name', 'Email', 'Status', 'Score', 'Last Activity', 'Created At', 'Agent ID'];
+        const headers = ['Name', 'Email', 'Phone', 'Company', 'Job Title', 'Notes', 'Status', 'Score', 'Last Activity', 'Created At', 'Agent ID'];
         const csvRows = [
           headers.join(','),
           ...leads.map((lead) =>
             [
               `"${lead.name.replace(/"/g, '""')}"`,
               `"${lead.email}"`,
+              `"${lead.phone || ''}"`,
+              `"${lead.company || ''}"`,
+              `"${lead.jobTitle || ''}"`,
+              `"${(lead.notes || '').replace(/"/g, '""').replace(/\n/g, ' ')}"`,
               `"${lead.status}"`,
               lead.score,
               `"${new Date(lead.lastActivity).toLocaleString()}"`,
@@ -153,7 +145,7 @@ export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
                     />
                 </div>
                 <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(true)}>
+                    <Button variant="outline" onClick={handleCreate}>
                         <PlusCircle className="mr-2 h-4 w-4" />
                         Create Lead
                     </Button>
@@ -182,6 +174,8 @@ export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
                                         key={lead.$id}
                                         lead={lead}
                                         onStatusChange={handleStatusChange}
+                                        onEdit={handleEdit}
+                                        onDelete={handleDelete}
                                     />
                                 ))
                             ) : (
@@ -193,17 +187,40 @@ export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
                     </div>
                 ))}
             </div>
-            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+
+            <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>Create a New Lead</DialogTitle>
+                        <DialogTitle>{editingLead ? 'Edit Lead' : 'Create New Lead'}</DialogTitle>
                         <DialogDescription>
-                            Manually add a new lead to your pipeline. This lead will be assigned to you.
+                            {editingLead ? "Update the details for this lead." : "Manually add a new lead to your pipeline. It will be assigned to you."}
                         </DialogDescription>
                     </DialogHeader>
-                    <CreateLeadForm onFormSuccess={() => setIsCreateDialogOpen(false)} />
+                    <LeadForm lead={editingLead} onFormSuccess={() => setIsFormOpen(false)} />
                 </DialogContent>
             </Dialog>
+
+            <AlertDialog open={!!deletingLead} onOpenChange={(open) => !open && setDeletingLead(null)}>
+                <AlertDialogContent>
+                    <AlertDialogHeader>
+                        <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                            This will permanently delete the lead for <span className="font-semibold">"{deletingLead?.name}"</span>. This action cannot be undone.
+                        </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                        <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                            className="bg-destructive hover:bg-destructive/90"
+                            onClick={confirmDelete}
+                            disabled={isDeleting}
+                        >
+                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            Yes, delete lead
+                        </AlertDialogAction>
+                    </AlertDialogFooter>
+                </AlertDialogContent>
+            </AlertDialog>
         </div>
     );
 }

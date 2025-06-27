@@ -21,7 +21,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - `/src/components`: Reusable React components.
   - `/chat`: Components for the chat interface, including conversation starters and audio playback.
   - `/layout`: Components for the application layout (sidebar, header, theme toggle).
-  - `/leads`: Components for the leads dashboard (Kanban board, lead cards, profile view).
+  - `/leads`: Components for the leads dashboard (Kanban board, lead cards, profile view, forms).
   - `/knowledge`: Components for knowledge management (document list, FAQ manager).
   - `/settings`: Components for the settings page (configuration forms, analytics chart).
   - `/ui`: ShadCN UI components (Button, Card, etc.).
@@ -57,6 +57,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - **Admins** see all leads in the system.
 - **Regular Users (Agents)** see leads they have manually created, plus any unassigned leads from new signups.
 - **Lead Claiming**: When an agent moves an unassigned lead from the "New" column, the lead is automatically assigned to them (`agentId` is set to their user ID).
+- **Lead CRUD**: Agents can create, update, and delete their own leads. Admins can manage all leads.
 - Any user can click "Generate Script & Call" on a lead card to trigger the `initiateCall` server action.
 - This action calls the `generateCallScript` Genkit flow, which combines the master template (from admin settings) with the lead's specific data to create a personalized script.
 
@@ -77,7 +78,7 @@ To make the application fully functional, you need to configure your Appwrite pr
     *   **`metrics`**: Stores user feedback on AI responses.
         - Attributes: `userId` (string), `messageId` (string), `feedback` (string).
     *   **`leads`**: Stores information about leads.
-        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**).
+        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `phone` (string, optional), `company` (string, optional), `jobTitle` (string, optional), `notes` (string, optional), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**).
     *   **`settings`**: A singleton collection for AI and business configuration.
         - Create **one** document with the ID `default_config`.
         - Attributes: `ai_personality` (string), `ai_style` (string), `ai_instructions` (string), `business_hours_enabled` (boolean), `business_hours_start` (string), `business_hours_end` (string), `business_hours_timezone` (string), `away_message` (string), `call_script_template` (string).

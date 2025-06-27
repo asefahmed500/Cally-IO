@@ -12,6 +12,10 @@ export interface Lead extends Models.Document {
     userId: string | null; // Can be null for manually created leads
     name: string;
     email: string;
+    phone?: string;
+    company?: string;
+    jobTitle?: string;
+    notes?: string;
     status: 'New' | 'Qualified' | 'Called' | 'Converted';
     score: number;
     lastActivity: string;
@@ -93,7 +97,7 @@ export default async function LeadsPage() {
             </CardContent>
           </Card>
       ) : (
-          <LeadsKanbanView initialLeads={leads} />
+          <LeadsKanbanView initialLeads={leads} currentUser={user} />
       )}
     </div>
   )

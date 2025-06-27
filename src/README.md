@@ -15,6 +15,7 @@ This is a Next.js application that provides a feature-rich, AI-powered conversat
 - [x] **Secure Authentication**: User signup, login, and password recovery.
 - [x] **Role-Based Access Control**: `user` and `admin` roles with protected routes.
 - [x] **Lead Management Pipeline**: Visual Kanban board to track leads, with lead-claiming for agents.
+- [x] **Full Lead CRUD**: Agents can create, read, update, and delete their own leads with detailed profiles (phone, company, notes).
 - [x] **Knowledge Base Management**: Admins can manage all documents and a company-wide FAQ.
 - [x] **Persistent Chat History**: Conversations are saved, supporting multi-session and multi-device use.
 - [x] **Configurable AI Agent**: Admins control the AI's personality, response style, and business instructions.
@@ -26,6 +27,7 @@ This is a Next.js application that provides a feature-rich, AI-powered conversat
 - [x] **Performance Analytics**: Real-time admin and agent dashboards track key metrics with charts.
 - [x] **CRM & Integration Hub**: UI placeholders for connecting to external services like Slack or Google Sheets.
 - [x] **Responsive Design**: The UI works seamlessly on both desktop and mobile devices.
+- [x] **Multi-Modal Chat**: Users can upload images and play back AI responses as audio (Text-to-Speech).
 
 ## Getting Started
 
@@ -52,7 +54,7 @@ Create a `.env` file in the root of your project and add the necessary environme
 
 ### 4. Appwrite Setup
 
-To make the application fully functional, you must configure your Appwrite project with the required database collections and storage buckets. For a detailed, step-by-step guide on setting up the necessary attributes and permissions, please refer to the **Appwrite Setup** section in `documentation.txt`.
+To make the application fully functional, you must configure your Appwrite project with the required database collections and storage buckets. For a detailed, step-by-step guide on setting up the necessary attributes and permissions, please refer to the **Appwrite Setup** section in `/documentation.txt`.
 
 ### 5. Running the Development Server
 

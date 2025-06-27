@@ -12,18 +12,29 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-  DropdownMenuPortal
+  DropdownMenuPortal,
+  DropdownMenuSeparator
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Loader2, Phone, User, Star } from 'lucide-react';
+import { MoreHorizontal, Loader2, Phone, User, Star, Edit, Trash2 } from 'lucide-react';
 import { initiateCall } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { LeadProfileCard } from './lead-profile-card';
 
 const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
 
-export function LeadCard({ lead, onStatusChange }: { lead: Lead; onStatusChange: (leadId: string, newStatus: Lead['status']) => void; }) {
+export function LeadCard({ 
+    lead, 
+    onStatusChange,
+    onEdit,
+    onDelete,
+}: { 
+    lead: Lead; 
+    onStatusChange: (leadId: string, newStatus: Lead['status']) => void;
+    onEdit: (lead: Lead) => void;
+    onDelete: (lead: Lead) => void;
+}) {
     const { toast } = useToast();
     const [isPending, startTransition] = React.useTransition();
     const [isProfileOpen, setProfileOpen] = React.useState(false);
@@ -34,11 +45,7 @@ export function LeadCard({ lead, onStatusChange }: { lead: Lead; onStatusChange:
               title: 'Generating Script...',
               description: `AI is creating a script for ${lead.name}.`,
             });
-            const result = await initiateCall({
-                leadName: lead.name,
-                leadStatus: lead.status,
-                leadScore: lead.score,
-            });
+            const result = await initiateCall(lead);
             if (result.error) {
                 toast({
                     variant: 'destructive',
@@ -99,6 +106,15 @@ export function LeadCard({ lead, onStatusChange }: { lead: Lead; onStatusChange:
                                         </DropdownMenuSubContent>
                                     </DropdownMenuPortal>
                                 </DropdownMenuSub>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => onEdit(lead)}>
+                                    <Edit className="mr-2 h-4 w-4" />
+                                    Edit Lead
+                                </DropdownMenuItem>
+                                <DropdownMenuItem className="text-destructive" onSelect={() => onDelete(lead)}>
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Lead
+                                </DropdownMenuItem>
                             </DropdownMenuContent>
                         </DropdownMenu>
                     </div>
@@ -114,9 +130,9 @@ export function LeadCard({ lead, onStatusChange }: { lead: Lead; onStatusChange:
                 </CardContent>
             </Card>
              <Dialog open={isProfileOpen} onOpenChange={setProfileOpen}>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
-                        <DialogTitle>Customer Profile</DialogTitle>
+                        <DialogTitle>Lead Profile</DialogTitle>
                         <DialogDescription>
                             Detailed information for this lead.
                         </DialogDescription>

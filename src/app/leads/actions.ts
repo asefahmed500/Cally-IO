@@ -8,24 +8,36 @@ import { twilio } from 'twilio';
 import { getAISettings } from '@/lib/settings';
 import { ID, Permission, Role, Query } from 'node-appwrite';
 import { z } from 'zod';
+import type { Lead } from './page';
 
 const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
 
-const CreateLeadSchema = z.object({
+const LeadSchema = z.object({
+    id: z.string().optional(),
     name: z.string().min(2, 'Name must be at least 2 characters.'),
     email: z.string().email('Please enter a valid email address.'),
+    phone: z.string().optional(),
+    company: z.string().optional(),
+    jobTitle: z.string().optional(),
+    notes: z.string().optional(),
 });
 
-export async function createLead(prevState: any, formData: FormData) {
+export async function saveLead(prevState: any, formData: FormData) {
     const user = await getLoggedInUser();
     if (!user) {
         return { status: 'error', message: 'Unauthorized. Please log in.' };
     }
+    const isAdmin = user.labels.includes('admin');
 
-    const validatedFields = CreateLeadSchema.safeParse({
+    const validatedFields = LeadSchema.safeParse({
+        id: formData.get('id'),
         name: formData.get('name'),
         email: formData.get('email'),
+        phone: formData.get('phone'),
+        company: formData.get('company'),
+        jobTitle: formData.get('jobTitle'),
+        notes: formData.get('notes'),
     });
 
     if (!validatedFields.success) {
@@ -36,41 +48,70 @@ export async function createLead(prevState: any, formData: FormData) {
         };
     }
     
-    const { name, email } = validatedFields.data;
+    const { id, ...leadData } = validatedFields.data;
 
     try {
-        const leadData = {
-            userId: null, // This is a manually created lead, not a registered user
-            name,
-            email,
-            status: 'New',
-            score: Math.floor(Math.random() * 21) + 10,
-            lastActivity: new Date().toISOString(),
-            agentId: user.$id, // Associate this lead with the agent creating it
-        };
-
-        await databases.createDocument(
-            dbId,
-            leadsCollectionId,
-            ID.unique(),
-            leadData,
-            [
-                Permission.read(Role.user(user.$id)), // The agent can read
-                Permission.update(Role.user(user.$id)), // The agent can update
-                Permission.delete(Role.user(user.$id)), // The agent can delete
-                Permission.read(Role.label('admin')), // Admins can read all
-                Permission.update(Role.label('admin')),
-                Permission.delete(Role.label('admin')),
-            ]
-        );
+        if (id) {
+            // Updating an existing lead
+            const existingLead = await databases.getDocument(dbId, leadsCollectionId, id);
+            if (!isAdmin && existingLead.agentId !== user.$id) {
+                return { status: 'error', message: "You don't have permission to edit this lead." };
+            }
+            await databases.updateDocument(dbId, leadsCollectionId, id, leadData);
+        } else {
+            // Creating a new lead
+            const newLeadData = {
+                ...leadData,
+                status: 'New',
+                score: Math.floor(Math.random() * 21) + 10,
+                lastActivity: new Date().toISOString(),
+                agentId: user.$id, // Associate this lead with the agent creating it
+            };
+            await databases.createDocument(
+                dbId,
+                leadsCollectionId,
+                ID.unique(),
+                newLeadData,
+                [
+                    Permission.read(Role.user(user.$id)),
+                    Permission.update(Role.user(user.$id)),
+                    Permission.delete(Role.user(user.$id)),
+                    Permission.read(Role.label('admin')),
+                    Permission.update(Role.label('admin')),
+                    Permission.delete(Role.label('admin')),
+                ]
+            );
+        }
 
         revalidatePath('/leads');
         revalidatePath('/dashboard');
-        return { status: 'success', message: 'Lead created successfully.' };
+        return { status: 'success', message: `Lead ${id ? 'updated' : 'created'} successfully.` };
 
     } catch (e: any) {
-        console.error('Failed to create lead:', e);
+        console.error('Failed to save lead:', e);
         return { status: 'error', message: `Database error: ${e.message}` };
+    }
+}
+
+export async function deleteLead(leadId: string) {
+    const user = await getLoggedInUser();
+    if (!user) {
+        return { error: 'Unauthorized. Please log in.' };
+    }
+    const isAdmin = user.labels.includes('admin');
+
+    try {
+        const lead = await databases.getDocument(dbId, leadsCollectionId, leadId);
+        if (!isAdmin && lead.agentId !== user.$id) {
+            return { error: "You don't have permission to delete this lead." };
+        }
+        await databases.deleteDocument(dbId, leadsCollectionId, leadId);
+        revalidatePath('/leads');
+        revalidatePath('/dashboard');
+        return { success: true };
+    } catch(e: any) {
+        console.error("Failed to delete lead:", e);
+        return { error: `Database error: ${e.message}` };
     }
 }
 
@@ -105,10 +146,7 @@ export async function updateLeadStatus(leadId: string, status: string) {
   }
 }
 
-// The input type is simplified as the template is fetched server-side.
-type InitiateCallInput = Omit<GenerateCallScriptInput, 'scriptTemplate'>;
-
-export async function initiateCall(leadData: InitiateCallInput) {
+export async function initiateCall(leadData: Lead) {
     const user = await getLoggedInUser();
     if (!user) {
         return { error: 'Unauthorized access.' };
@@ -117,25 +155,25 @@ export async function initiateCall(leadData: InitiateCallInput) {
     const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
 
     try {
-        // 1. Fetch the saved script template from settings
         const settings = await getAISettings();
         const scriptTemplate = settings.scriptTemplate;
         
-        // 2. Combine lead data with the fetched template
         const scriptInput: GenerateCallScriptInput = {
-            ...leadData,
+            leadName: leadData.name,
+            leadStatus: leadData.status,
+            leadScore: leadData.score,
+            company: leadData.company,
+            jobTitle: leadData.jobTitle,
             scriptTemplate,
         };
 
-        // 3. Generate the script
         const script = await generateScript(scriptInput);
 
-        // 4. (Simulate) Twilio Call
         if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_PHONE_NUMBER) {
             console.log("--- SIMULATING TWILIO CALL ---");
             console.log(`From: ${TWILIO_PHONE_NUMBER}`);
-            // In a real app, you would fetch the lead's phone number from the database
-            console.log(`To: [Lead's Phone Number] for ${leadData.leadName}`);
+            console.log(`To: ${leadData.phone || '[No Phone Number]'}`);
+            console.log(`Lead: ${leadData.name}`);
             console.log("Generated Script to be used for Text-to-Speech:");
             console.log(script);
             console.log("-----------------------------");
