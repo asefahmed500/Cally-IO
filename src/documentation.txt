@@ -23,14 +23,14 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/src/ai/genkit.ts`: Configures and initializes the Genkit AI instance.
 
 - `/src/components`: Contains reusable React components.
-  - `/src/components/chat`: Components specific to the chat interface.
-  - `/src/components/layout`: Components for the overall application layout (sidebar, header).
+  - `/src/components/chat`: Components specific to the chat interface, including conversation starters.
+  - `/src/components/layout`: Components for the overall application layout (sidebar, header, theme toggle).
   - `/src/components/leads`: Components for the leads dashboard, including the Kanban board, lead cards, and profile view.
   - `/src/components/knowledge`: Components for the knowledge management page, including the interactive FAQ manager.
   - `/src/components/settings`: Components for the settings page forms.
   - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
 
-- `/src/hooks`: Custom React hooks, such as `useToast` for notifications.
+- `/src/hooks`: Custom React hooks, such as `useToast` for notifications and `useIsMobile` for responsive logic.
 
 - `/src/lib`: Contains library functions, configurations, and utilities.
   - `/src/lib/appwrite-client.ts`: Appwrite client-side SDK configuration.
@@ -42,8 +42,8 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 ## Core Workflows
 
-### User Authentication (`/src/app/auth/actions.ts` and `/src/app/(auth)`)
-1. A user can sign up, log in, or request a password reset.
+### User Authentication (`/src/app/auth/actions.ts` and associated pages)
+1. A user can sign up, log in, or request a password reset from dedicated pages.
 2. The `signup` server action creates a new user in Appwrite and assigns them the 'user' label (and 'admin' if their email matches `ADMIN_EMAIL`).
 3. The `forgotPassword` action sends a recovery email, and `resetPassword` securely updates their credentials.
 4. **Integration Hooks**: Placeholder comments in the signup action show where to trigger notifications to Slack, Google Sheets, or other webhooks.
@@ -61,6 +61,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 4. The AI's personality settings, the FAQs, the document context, and the user's full history are all compiled into a prompt for the Gemini LLM.
 5. The AI response is streamed to the UI.
 6. Once the stream is complete, the final AI message is appended to the history and saved to the database.
+7. Users can clear their conversation history from the chat panel, which calls a dedicated API to reset their record.
 
 ### Call Script Generation (`/src/app/leads/actions.ts`)
 1. An admin user configures the master call script template in the Admin Control Panel.
@@ -71,13 +72,14 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 ### Admin Dashboards (`/src/app/settings/page.tsx` & `/src/app/leads/page.tsx`)
 1. An admin user navigates to the `/settings` or `/leads` pages.
-2. The pages fetch data from "metrics", "leads", and "settings" collections.
+2. The pages fetch real-time data from "metrics", "leads", and "settings" collections.
 3. The data is displayed in performance cards, a visual lead pipeline, customer profiles, and configuration forms.
 4. The Settings page also includes UI for managing integrations (Slack, Google Sheets, etc.), which are currently placeholders ready for backend logic.
 
 ## Customization
 
 - **Branding & Colors**: Primary colors and themes can be adjusted in `/src/app/globals.css`.
+- **UI Theme**: Users can toggle between light and dark modes from the sidebar.
 - **AI Behavior**: Use the Admin Settings UI to configure the AI's personality and instructions. The core prompt template is in `/src/ai/flows/conversational-chat.ts`.
 - **Call Script Template**: The master template for generating call scripts can be modified in the Admin Control Panel.
 - **Integrations**: Add your custom logic for Slack, Google Sheets, and other webhooks in `/src/app/auth/actions.ts` where the `// TODO` comments are placed.

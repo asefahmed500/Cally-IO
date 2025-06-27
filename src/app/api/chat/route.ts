@@ -11,11 +11,13 @@ const ChatRequestSchema = z.object({
   image: z.string().optional(),
 });
 
+type ChatMessageWithId = Message & { id: string, image?:string };
+
 // A custom ReadableStream that wraps the Genkit stream and handles database updates.
-function createChatStream(flowPromise: Promise<any>, userId: string, fullHistory: Message[]) {
+function createChatStream(flowPromise: Promise<any>, userId: string, fullHistory: ChatMessageWithId[]) {
   const textEncoder = new TextEncoder();
   let fullResponse = '';
-  let finalHistory: Message[] = [];
+  let finalHistory: ChatMessageWithId[] = [];
 
   return new ReadableStream({
     async start(controller) {
@@ -27,7 +29,7 @@ function createChatStream(flowPromise: Promise<any>, userId: string, fullHistory
           controller.enqueue(textEncoder.encode(chunk));
         }
 
-        const modelMessage: Message = { role: 'model', content: fullResponse, id: uuidv4() };
+        const modelMessage: ChatMessageWithId = { role: 'model', content: fullResponse, id: uuidv4() };
         finalHistory = [...fullHistory, modelMessage];
       
         const conversation = await getConversation(userId);
@@ -71,7 +73,7 @@ export async function POST(req: Request) {
   }
 
   // 2. Construct the user's message and add it to the history.
-  const userMessage: Message = {
+  const userMessage: ChatMessageWithId = {
     role: 'user',
     content: prompt,
     id: uuidv4(),
@@ -86,26 +88,13 @@ export async function POST(req: Request) {
 
   // 4. Prepare the input for the AI flow.
   // The AI needs a slightly different format for multi-modal prompts.
-  const aiInputHistory = conversation.history.map(msg => ({
-      role: msg.role,
-      content: msg.content
+  // We also remove the 'id' and 'image' from the history sent to the AI.
+  const aiInputHistory = conversation.history.map(({ id, image, ...rest }) => ({
+      ...rest
   }));
 
-  const userPromptContent: Part[] = [{ text: prompt }];
-    if (image) {
-      userPromptContent.unshift({ media: { url: image } });
-    }
-
-  const aiInputWithUserMessage = [
-      ...aiInputHistory,
-      {
-        role: 'user',
-        content: userPromptContent as any,
-      },
-  ];
-
   const flowPromise = conversationalRagChat({
-    history: aiInputWithUserMessage, // Pass the formatted history
+    history: aiInputHistory,
     prompt: prompt, // Pass the raw prompt for RAG
     image: image,
   });

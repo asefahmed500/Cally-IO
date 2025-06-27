@@ -12,16 +12,20 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 
 ## Core Features
 
-- **Secure Authentication**: User signup and login functionality powered by Appwrite.
+- **Secure Authentication**: User signup, login, and password recovery functionality powered by Appwrite.
 - **Role-Based Access Control**: Differentiates between `user` and `admin` roles, ensuring data privacy and proper access levels.
 - **Lead Management Pipeline**: An admin-only dashboard with a visual Kanban board to view, manage, track, and export leads through the sales funnel.
-- **Intelligent Document Management**: Users can upload PDF, DOCX, and TXT files. Data is isolated so users can only access their own documents, while admins have read-access for oversight.
-- **Persistent Chat History**: Conversations are saved and synced across devices for a seamless user experience.
-- **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
+- **Advanced Knowledge Management**: An admin-only hub to view and manage all documents in the knowledge base, including secure deletion.
 - **Curated FAQ Knowledge Base**: Admins can create and manage a set of Frequently Asked Questions that the AI will prioritize as its primary source of truth.
-- **AI Script Generator**: Admins can edit a master call script template, and the AI will use it to dynamically generate personalized call scripts for leads.
+- **Persistent Chat History**: Conversations are saved to a database, allowing users to resume their chat across different sessions and devices.
+- **Configurable AI Agent**: Admins can configure the AI's personality, response style, and add custom business instructions.
+- **Editable Call Script Templates**: Admins can create and edit a master call script template in the Admin Control Panel that the AI uses for lead outreach.
+- **Business Hours**: Admins can set operating hours, disabling the chat and showing an "away" message during off-hours.
+- **AI-Powered RAG Chat**: The AI assistant uses Retrieval-Augmented Generation (RAG) to find information within the uploaded documents and provide context-aware answers.
+- **AI Script Generator**: The AI can dynamically generate personalized call scripts for leads based on their profile.
 - **Conversation Intelligence**: The AI can recognize when it doesn't have an answer and suggest escalating to a human expert.
 - **Performance Analytics**: A dedicated, admin-only dashboard tracks key metrics like user satisfaction and resolution rates, powered by real user feedback.
+- **CRM & Integration Hub**: A centralized place for admins to manage integrations with tools like Slack, Google Sheets, and other webhooks (UI placeholders).
 - **Responsive Design**: The UI is designed to work seamlessly on both desktop and mobile devices.
 
 ## Getting Started
@@ -62,9 +66,9 @@ NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID=your_storage_bucket_id
 NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID=your_embeddings_collection_id
 NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID=your_metrics_collection_id
 NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID=your_leads_collection_id
+NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID=your_settings_collection_id
 NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID=your_conversations_collection_id
 NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID=your_faqs_collection_id
-NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID=your_settings_collection_id
 
 # Admin User
 # The email address for the first admin user. When a user signs up with this email,
@@ -94,10 +98,10 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `chunkText` (string, size: 4096, required)
         *   `embedding` (float, required, **array** enabled with size 768)
         *   `userId` (string, size: 255, required)
-    *   In the **Indexes** tab, create an index on `userId`.
+    *   In the **Indexes** tab, create an index on `userId` and `documentId`.
     *   In the **Settings** tab, update the **Permissions**. This is a critical security step. Set the permissions as follows:
         *   **Create Access**: Add `All Users (role:member)`. This allows any logged-in user to create documents.
-        *   **Read Access, Update Access, Delete Access**: Leave these **empty**. Access for these operations will be controlled by secure, document-level permissions set by the application, ensuring users can only access their own data.
+        *   **Read Access, Update Access, Delete Access**: Only add `Team (admin)` to these permissions. This ensures users can't access each other's data, but admins can manage it.
 4.  **Metrics Collection**:
     *   Inside the same database, create another new collection for metrics. Copy its **Collection ID** to your `.env` file.
     *   In the **Attributes** tab, add the following:
@@ -105,7 +109,7 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `messageId` (string, size: 255, required)
         *   `feedback` (string, size: 255, required)
     *   In the **Indexes** tab, create an index on `userId`.
-    *   In the **Settings** tab, update the **Permissions** similar to the embeddings collection.
+    *   In the **Settings** tab, set permissions similar to the embeddings collection.
 5.  **Leads Collection**:
     *   Inside the same database, create a third collection for leads. Copy its **Collection ID** to your `.env` file.
     *   In the **Attributes** tab, add the following:
@@ -116,25 +120,8 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `score` (integer, required)
         *   `lastActivity` (datetime, required)
     *   In the **Indexes** tab, create an index on `userId` and `email`.
-    *   In the **Settings** tab, update the **Permissions**. This collection is managed by the server, so you should only grant permissions to the **`admin`** role for all CRUD operations. Leave the user-facing permissions empty.
-6.  **Conversations Collection**:
-    * Inside the same database, create a new collection for chat history. Copy its **Collection ID** to your `.env` file.
-    * In the **Attributes** tab, add the following:
-        * `userId` (string, size: 255, required)
-        * `history` (string, size: 1000000, required, default: `[]`)
-    * In the **Indexes** tab, create an index on `userId`.
-    * In the **Settings** tab, update the **Permissions** so users can manage their own history.
-        * **Create Access**: `All Users (role:member)`
-        * **Read, Update, Delete Access**: Set these on a per-document basis using `Role.user(userId)`. The application handles this automatically. Grant `Team (admin)` read access for support.
-7.  **FAQs Collection**:
-    *   Inside the same database, create a new collection for FAQs. Copy its **Collection ID** to your `.env` file.
-    *   In the **Attributes** tab, add the following:
-        *   `question` (string, size: 255, required)
-        *   `answer` (string, size: 8192, required)
-    *   In the **Settings** tab, update the **Permissions** as follows:
-        *   **Read Access**: `Any (role:all)`. This is important so the AI can read the FAQs.
-        *   **Create, Update, Delete Access**: `Team (admin)`. This ensures only admins can manage the FAQs.
-8.  **Settings Collection**:
+    *   In the **Settings** tab, update the **Permissions**. This collection is managed by the server, so you should only grant permissions to the **`Team (admin)`** role for all CRUD operations.
+6.  **Settings Collection**:
     *   Inside the same database, create a fourth collection for AI settings. Copy its **Collection ID** to your `.env` file.
     *   In the **Attributes** tab, add the following:
         *   `ai_personality` (string, size: 255, required)
@@ -145,9 +132,26 @@ To make the application fully functional, you need to configure your Appwrite pr
         *   `business_hours_end` (string, size: 5, required, default `17:00`)
         *   `business_hours_timezone` (string, size: 255, required, default `UTC`)
         *   `away_message` (string, size: 1024, required, default `We are currently away...`)
-        *   `call_script_template` (string, size: 8192, optional)
+        *   `call_script_template` (string, size: 8192, optional, default: `(your default script)`)
     *   In the **Settings** tab, update the **Permissions** to be `Team (admin)`-only for all operations.
-    *   Go to the **Documents** tab and create a single document. Enter `default_config` as the Document ID. Fill in initial values for the attributes. The application will use this document to configure the AI.
+    *   Go to the **Documents** tab and create a single document. Enter `default_config` as the Document ID. Fill in initial values for the attributes (e.g., Personality: "Professional", Style: "Conversational", Instructions: "Your company name is Cally-IO."). The application will use this document to configure the AI.
+7.  **Conversations Collection**:
+    *   Inside the same database, create a new collection for chat history. Copy its **Collection ID** to your `.env` file.
+    *   In the **Attributes** tab, add the following:
+        *   `userId` (string, size: 255, required)
+        *   `history` (string, size: 1000000, required, default: `[]`)
+    *   In the **Indexes** tab, create an index on `userId`.
+    *   In the **Settings** tab, update the **Permissions** so users can manage their own history.
+        *   **Create Access**: Add `All Users (role:member)`.
+        *   **Read Access, Update Access**: Add `Team (admin)`. The application uses document-level permissions to ensure users can only access their own conversation.
+8.  **FAQs Collection**:
+    *   Inside the same database, create a new collection for FAQs. Copy its **Collection ID** to your `.env` file (`NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID`).
+    *   In the **Attributes** tab, add the following:
+        *   `question` (string, size: 255, required)
+        *   `answer` (string, size: 8192, required)
+    *   In the **Settings** tab, update the **Permissions** as follows:
+        *   **Read Access**: `Any (role:all)`. This is important so the AI can read the FAQs from the client-side flow.
+        *   **Create, Update, Delete Access**: `Team (admin)`. This ensures only admins can manage the FAQs.
 
 ### 5. Running the Development Server
 
@@ -166,9 +170,11 @@ To create your admin account, sign up using the email you specified in the `ADMI
 2.  **Lead Creation**: When a new user signs up, a corresponding document is created in the `leads` collection, accessible only by admins.
 3.  **Document Upload**: In the chat panel, users upload documents. These are sent to Appwrite Storage with permissions allowing access only for that user and read access for admins.
 4.  **Processing Flow**: A Genkit flow (`processDocument`) is triggered. It extracts text, generates embeddings, and stores them in the Appwrite database with the same secure, document-level permissions.
-5.  **Chat Interaction & History**: When a user asks a question, the backend fetches their past conversation history from the `user_conversations` collection.
-6.  **Response Generation**: The AI first fetches all curated FAQs from the database. These FAQs, along with relevant document chunks, the full conversation history, and the user's question, are passed as context to the Gemini model to generate a helpful answer.
-7. **History Persistence**: The new user question and the AI's final response are saved back to the database, ensuring the conversation can be resumed on any device.
-8.  **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
-9.  **Script Generation**: From the leads dashboard, an admin can trigger the `initiateCall` flow. The flow fetches the master script template (editable in the Admin Control Panel) and combines it with lead data to create a personalized script.
-10. **Analytics & Leads**: Admin dashboards query the `metrics` and `leads` collections to provide live data on user satisfaction and to manage the customer lifecycle in a visual pipeline.
+5.  **AI & Business Configuration**: Admins can go to the Settings page to define the AI's personality, set business hours, and write a custom away message. These settings are saved to a `settings` collection in Appwrite.
+6.  **FAQ Management**: Admins can use the Knowledge page to create, edit, and delete company-wide FAQs.
+7.  **Chat Interaction & History**: When a user submits a question, the backend API first fetches their entire past conversation from the `user_conversations` collection. It then adds the new question to the history before sending it to the AI.
+8.  **Response Generation**: The AI first fetches all curated FAQs. These, along with relevant document chunks, the AI configuration, the full conversation history, and the user's question, are compiled into a dynamic prompt. This is sent to the Gemini model to generate a helpful, context-aware, and personality-aligned response, which is streamed back to the UI.
+9.  **History Persistence**: After the AI response is complete, the API saves the AI's message to the user's conversation history in the database, ensuring it's available for the next session.
+10. **Feedback Loop**: Users can rate AI responses. This feedback is logged to a `metrics` collection in Appwrite via the `logInteraction` flow.
+11. **Script Generation**: From the leads dashboard, an admin can trigger the `generateCallScript` flow, which fetches the master script template (editable in the admin settings) and creates a personalized script for a specific lead.
+12. **Admin Dashboards**: Admin dashboards query the `metrics`, `leads`, and `embeddings` collections to provide live data on user satisfaction, to manage the customer lifecycle in a visual pipeline, and to oversee the knowledge base.

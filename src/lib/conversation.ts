@@ -2,14 +2,14 @@
 
 import { databases } from '@/lib/appwrite-server';
 import { ID, Permission, Query, Role } from 'node-appwrite';
-import type { Message } from '@/ai/flows/conversational-chat';
+import type { ChatMessage } from '@/components/chat/chat-panel';
 
 const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const collectionId = process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID!;
 
 export type ConversationDocument = {
   docId: string;
-  history: Message[];
+  history: ChatMessage[];
 };
 
 /**
@@ -47,7 +47,7 @@ export async function getConversation(userId: string): Promise<ConversationDocum
  * @param userId The ID of the user.
  * @returns The newly created conversation document.
  */
-export async function createConversation(userId: string, initialHistory: Message[] = []): Promise<ConversationDocument> {
+export async function createConversation(userId: string, initialHistory: ChatMessage[] = []): Promise<ConversationDocument> {
   if (!dbId || !collectionId) {
     throw new Error('Conversation database not configured.');
   }
@@ -85,7 +85,7 @@ export async function createConversation(userId: string, initialHistory: Message
  * @param docId The ID of the document to update.
  * @param newHistory The new conversation history array.
  */
-export async function updateConversation(docId: string, newHistory: Message[]): Promise<void> {
+export async function updateConversation(docId: string, newHistory: ChatMessage[]): Promise<void> {
   if (!dbId || !collectionId) {
     throw new Error('Conversation database not configured.');
   }

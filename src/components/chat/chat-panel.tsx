@@ -37,8 +37,8 @@ async function fileToDataUri(file: File): Promise<string> {
   });
 }
 
-// Extend the Message type to include optional image data
-export type ChatMessage = Message & { image?: string };
+// Extend the Message type to include an ID and optional image data
+export type ChatMessage = Message & { id: string, image?: string };
 
 type AudioPlaybackState = {
   messageId: string | null;
