@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -20,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BrainCircuit, Clock, TestTube2, AlertCircle, Phone, Link as LinkIcon, Webhook, Sheet as SheetIcon, FileText } from 'lucide-react';
+import { BrainCircuit, Clock, TestTube2, AlertCircle, Phone, FileText } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
@@ -185,52 +186,6 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                         <Textarea id="away-message" name="away_message" placeholder="We are currently away. Please leave a message..." className="min-h-24" defaultValue={settings.awayMessage} />
                         <p className="text-xs text-muted-foreground">This message will be shown to users who visit outside of business hours.</p>
                     </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <LinkIcon className="h-6 w-6" />
-                        <CardTitle>CRM &amp; Integrations</CardTitle>
-                    </div>
-                <CardDescription>Connect Cally-IO to your other business tools to automate your workflows.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                    <div className="grid md:grid-cols-2 gap-6">
-                        <div className="p-4 border rounded-lg space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Webhook className="h-5 h-5" />
-                                <h4 className="font-semibold">Slack Notifications</h4>
-                            </div>
-                            <p className="text-sm text-muted-foreground">Get notified in a Slack channel when a new lead signs up.</p>
-                            <Label htmlFor="slack-webhook">Slack Webhook URL</Label>
-                            <Input id="slack-webhook" placeholder="https://hooks.slack.com/services/..." />
-                            <Button disabled>Save Slack Webhook</Button>
-                            <p className="text-xs text-muted-foreground pt-1">Note: Integration logic is not yet implemented. This is a UI placeholder.</p>
-                        </div>
-
-                        <div className="p-4 border rounded-lg space-y-2">
-                            <div className="flex items-center gap-2">
-                                <SheetIcon className="h-5 w-5" />
-                                <h4 className="font-semibold">Google Sheets Sync</h4>
-                            </div>
-                            <p className="text-sm text-muted-foreground">Automatically export new lead data to a Google Sheet in real-time.</p>
-                            <Button disabled className="w-full">Connect to Google Sheets</Button>
-                            <p className="text-xs text-muted-foreground pt-1">Note: OAuth flow for Google Sheets is a placeholder and not yet functional.</p>
-                        </div>
-                    </div>
-                    <div className="p-4 border rounded-lg space-y-2">
-                            <div className="flex items-center gap-2">
-                                <Webhook className="h-5 w-5" />
-                                <h4 className="font-semibold">Generic Webhooks</h4>
-                            </div>
-                            <p className="text-sm text-muted-foreground">Send new lead data to any system that accepts webhooks (e.g., Zapier, Make).</p>
-                            <Label htmlFor="generic-webhook">Webhook URL</Label>
-                            <Input id="generic-webhook" placeholder="https://yourapi.com/webhook" />
-                            <Button disabled>Save Webhook</Button>
-                            <p className="text-xs text-muted-foreground pt-1">Note: Integration logic is not yet implemented. This is a UI placeholder.</p>
-                        </div>
                 </CardContent>
             </Card>
 

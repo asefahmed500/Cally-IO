@@ -2,13 +2,14 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, MessageSquare, Star, Users, Cog, PieChart } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog, PieChart, UserPlus, Link as LinkIcon } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getAISettings } from "@/lib/settings";
 import { SettingsForm } from "@/components/settings/settings-form";
 import { AnalyticsChart } from "@/components/settings/analytics-chart";
+import { Button } from "@/components/ui/button";
 
 function StatCard({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) {
     return (
@@ -103,6 +104,8 @@ export default async function SettingsPage() {
   const aiSettings = await getAISettings();
   const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
   const timezones = Intl.supportedValuesOf('timeZone');
+  const appwriteProjectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
+  const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT?.replace('/v1', '');
 
   return (
     <div className="space-y-8">
@@ -128,18 +131,67 @@ export default async function SettingsPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="flex items-center gap-2"><PieChart /> Usage Statistics</CardTitle>
-                        <CardDescription>Insights into how your knowledge base is being used.</CardDescription>
+                        <CardDescription>Insights into how your knowledge base is being used by the AI and your team.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <div className="p-4 text-center border-2 border-dashed rounded-lg flex flex-col items-center justify-center h-full">
                             <p className="text-sm text-muted-foreground">This feature is coming soon.</p>
-                            <p className="text-xs text-muted-foreground mt-1">Metrics on document and FAQ usage will appear here.</p>
+                            <p className="text-xs text-muted-foreground mt-1">Analytics on document and FAQ usage will appear here to help you understand what content is most valuable.</p>
                         </div>
                     </CardContent>
                 </Card>
             </div>
         </CardContent>
       </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <Card className="lg:col-span-2">
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><LinkIcon /> Integration Hub</CardTitle>
+                <CardDescription>Connect Cally-IO to your other business tools. These are currently placeholders and require backend implementation.</CardDescription>
+            </CardHeader>
+            <CardContent>
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <h4 className="font-semibold">Slack Notifications</h4>
+                            <p className="text-sm text-muted-foreground">Get notified when a new lead signs up.</p>
+                        </div>
+                        <Button variant="outline" disabled>Configure</Button>
+                    </div>
+                     <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <h4 className="font-semibold">Google Sheets Sync</h4>
+                            <p className="text-sm text-muted-foreground">Export new lead data to a Google Sheet.</p>
+                        </div>
+                        <Button variant="outline" disabled>Connect</Button>
+                    </div>
+                     <div className="flex items-center justify-between p-4 border rounded-lg">
+                        <div>
+                            <h4 className="font-semibold">Generic Webhooks</h4>
+                            <p className="text-sm text-muted-foreground">Send lead data to any system (e.g., Zapier).</p>
+                        </div>
+                        <Button variant="outline" disabled>Add Webhook</Button>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
+
+        <Card>
+            <CardHeader>
+                <CardTitle className="flex items-center gap-2"><UserPlus /> User Management</CardTitle>
+                <CardDescription>Add or remove team members and manage roles directly in your Appwrite console.</CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col items-center justify-center text-center space-y-4 h-full">
+                 <p className="text-sm text-muted-foreground">User roles and permissions are managed in your Appwrite project.</p>
+                 <a href={`${appwriteEndpoint}/project-${appwriteProjectId}/auth/users`} target="_blank" rel="noopener noreferrer">
+                    <Button variant="outline">
+                        Manage Users in Appwrite
+                    </Button>
+                 </a>
+            </CardContent>
+        </Card>
+      </div>
 
       {!isSettingsConfigured ? (
          <Alert variant="destructive">

@@ -1,3 +1,4 @@
+
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { databases } from "@/lib/appwrite-server";
@@ -62,7 +63,7 @@ export default async function KnowledgePage() {
     return (
         <div className="space-y-8">
             <header>
-                <h1 className="text-3xl font-bold tracking-tight">{isAdmin ? 'Advanced Knowledge Management' : 'My Documents'}</h1>
+                <h1 className="text-3xl font-bold tracking-tight">{isAdmin ? 'Knowledge Hub' : 'My Documents'}</h1>
                 <p className="text-muted-foreground">{isAdmin ? "Oversee, manage, and analyze your AI's knowledge base." : "Manage the documents you've uploaded to the AI."}</p>
             </header>
 
@@ -91,7 +92,7 @@ export default async function KnowledgePage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><MessageSquarePlus /> FAQ Management</CardTitle>
-                            <CardDescription>Create and manage a library of frequently asked questions for the AI to use.</CardDescription>
+                            <CardDescription>Create and manage a library of frequently asked questions for the AI to use as its primary source of truth.</CardDescription>
                         </CardHeader>
                         <CardContent>
                              {!isFaqsConfigured ? (
@@ -111,12 +112,12 @@ export default async function KnowledgePage() {
                     <Card>
                         <CardHeader>
                             <CardTitle className="flex items-center gap-2"><FileQuestion /> Content Suggestions</CardTitle>
-                            <CardDescription>Get AI-powered suggestions for new knowledge base content based on unanswered questions.</CardDescription>
+                            <CardDescription>Get AI-powered suggestions for new knowledge base content based on unanswered user questions.</CardDescription>
                         </CardHeader>
                         <CardContent>
                             <div className="p-4 text-center border-2 border-dashed rounded-lg flex flex-col items-center justify-center h-full">
                                 <p className="text-sm text-muted-foreground">This feature is coming soon.</p>
-                                <p className="text-xs text-muted-foreground mt-1">The AI will analyze user queries to suggest new articles and FAQs.</p>
+                                <p className="text-xs text-muted-foreground mt-1">The AI will analyze user queries that received low ratings or resulted in an escalation to suggest new articles and FAQs.</p>
                             </div>
                         </CardContent>
                     </Card>

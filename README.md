@@ -1,6 +1,7 @@
-# Cally-IO: AI-Powered Conversational Assistant
 
-This is a Next.js application that provides a feature-rich, AI-powered conversational assistant. Built with a modern tech stack, "Cally-IO" can answer questions from a dynamic knowledge base, manage sales leads through a visual pipeline, and provide detailed analytics—all configurable by an administrator.
+# Cally-IO: AI-Powered Conversational Sales Platform
+
+Cally-IO is a feature-complete, production-ready Next.js application designed to serve as an intelligent sales and support co-pilot. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, manage sales leads through a visual pipeline, and track performance with real-time analytics—all configurable by an administrator.
 
 ## Tech Stack
 
@@ -14,7 +15,8 @@ This is a Next.js application that provides a feature-rich, AI-powered conversat
 
 - [x] **Secure Authentication**: User signup, login, and password recovery.
 - [x] **Role-Based Access Control**: `user` and `admin` roles with protected routes.
-- [x] **Lead Management Pipeline**: Visual Kanban board to track leads, with lead-claiming for agents.
+- [x] **Lead Management Pipeline**: Visual Kanban board for all users, with role-based data visibility and lead-claiming for agents.
+- [x] **Full Lead CRUD**: Agents can create, read, update, and delete their own leads with detailed profiles (phone, company, notes).
 - [x] **Knowledge Base Management**: Admins can manage all documents and a company-wide FAQ.
 - [x] **Persistent Chat History**: Conversations are saved, supporting multi-session and multi-device use.
 - [x] **Configurable AI Agent**: Admins control the AI's personality, response style, and business instructions.
@@ -26,6 +28,7 @@ This is a Next.js application that provides a feature-rich, AI-powered conversat
 - [x] **Performance Analytics**: Real-time admin and agent dashboards track key metrics with charts.
 - [x] **CRM & Integration Hub**: UI placeholders for connecting to external services like Slack or Google Sheets.
 - [x] **Responsive Design**: The UI works seamlessly on both desktop and mobile devices.
+- [x] **Multi-Modal Chat**: Users can upload images and play back AI responses as audio (Text-to-Speech).
 
 ## Getting Started
 

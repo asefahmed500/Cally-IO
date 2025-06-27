@@ -1,88 +1,95 @@
+
 # Cally-IO Application Documentation
 
 ## Project Overview
 
-Cally-IO is a Next.js web application designed to serve as an AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access, lead management, performance analytics, and a call script generator.
+Cally-IO is a Next.js web application designed to serve as a feature-rich, AI-powered conversational assistant. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, with role-based access, lead management, real-time performance analytics, and an AI-driven call script generator.
 
 ## Project Structure
 
 The project follows a standard Next.js App Router structure. Key directories include:
 
-- `/src/app`: Contains the main application routes, pages, and layouts.
-  - `/src/app/api`: API routes for server-side logic, like handling chat requests.
-  - `/src/app/dashboard`: The main page for authenticated users, featuring the chat panel.
-  - `/src/app/settings`: The admin-only page for analytics and system settings (like Twilio).
-  - `/src/app/leads`: The admin-only lead management dashboard.
-  - `layout.tsx`: The root layout for the application.
-  - `page.tsx`: The public-facing landing page.
-
+- `/src/app`: Contains the main application routes and pages.
+  - `/api`: API routes for server-side logic (chat, history, TTS).
+  - `/auth`: Server actions for authentication (signup, login, etc.).
+  - `/dashboard`: The main page for authenticated users, featuring the chat panel and personal stats.
+  - `/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
+  - `/leads`: The lead management dashboard with a visual Kanban pipeline, accessible to all users but with role-specific data views.
+  - `/knowledge`: A page for users to manage their documents and for admins to manage the entire knowledge base (documents and FAQs).
 - `/src/ai`: Contains all Genkit-related code for AI functionality.
-  - `/src/ai/flows`: Defines the core AI workflows, such as document processing, conversational chat, script generation, and metrics logging.
-  - `/src/ai/genkit.ts`: Configures and initializes the Genkit AI instance.
-
-- `/src/components`: Contains reusable React components.
-  - `/src/components/chat`: Components specific to the chat interface.
-  - `/src/components/layout`: Components for the overall application layout (sidebar, header).
-  - `/src/components/leads`: Components specific to the leads dashboard.
-  - `/src/components/ui`: ShadCN UI components (Button, Card, Input, etc.).
-
-- `/src/hooks`: Custom React hooks, such as `useToast` for notifications.
-
-- `/src/lib`: Contains library functions, configurations, and utilities.
-  - `/src/lib/appwrite-client.ts`: Appwrite client-side SDK configuration.
-  - `/src/lib/appwrite-server.ts`: Appwrite server-side (Node) SDK configuration.
-  - `/src/lib/auth.ts`: Authentication helper functions for managing sessions.
-  - `/src/lib/utils.ts`: General utility functions.
+  - `/flows`: Defines the core AI workflows (document processing, chat, script generation, etc.).
+  - `/genkit.ts`: Configures and initializes the Genkit AI instance.
+- `/src/components`: Reusable React components.
+  - `/chat`: Components for the chat interface, including conversation starters and audio playback.
+  - `/layout`: Components for the application layout (sidebar, header, theme toggle).
+  - `/leads`: Components for the leads dashboard (Kanban board, lead cards, profile view, forms).
+  - `/knowledge`: Components for knowledge management (document list, FAQ manager).
+  - `/settings`: Components for the settings page (configuration forms, analytics chart).
+  - `/ui`: ShadCN UI components (Button, Card, etc.).
+- `/src/hooks`: Custom React hooks (`useToast`, `useIsMobile`).
+- `/src/lib`: Library functions, configurations, and utilities.
+  - `/appwrite-client.ts` & `appwrite-server.ts`: Appwrite SDK configurations.
+  - `/auth.ts`: Authentication helpers for managing sessions.
+  - `/conversation.ts`: Server-side helpers for managing chat history.
+  - `/settings.ts`: Helpers for managing AI configuration.
 
 ## Core Workflows
 
-### User Signup & Lead Creation (`/src/app/auth/actions.ts`)
-1. A user signs up with their name, email, and password.
-2. The `signup` server action creates a new user in Appwrite and assigns them the 'user' label (and 'admin' if their email matches `ADMIN_EMAIL`).
-3. Simultaneously, a new document is created in the `leads` collection with the user's details, visible only to admins.
+### 1. User Authentication & Lead Creation
+- A user signs up, logs in, or requests a password reset.
+- The `signup` server action creates a user in Appwrite, assigns a `user` or `admin` role, and simultaneously creates a corresponding document in the `leads` collection with the `agentId` set to `null`.
+- **Manual Lead Creation**: Any logged-in user (acting as an agent) can manually create new leads from the `/leads` page. These leads are automatically assigned to them via the `agentId` field.
 
-### Document Processing (`/src/ai/flows/process-document.ts`)
+### 2. Knowledge Management & Document Processing
+- A user uploads a document (PDF, DOCX, TXT) or an image (PNG, JPG) via the chat panel.
+- The file is sent to Appwrite Storage with user-specific permissions.
+- The `processDocument` Genkit flow extracts text, splits it into chunks, generates embeddings, and saves them to the `embeddings` collection with secure, role-based permissions.
+- Admins can use the `/knowledge` page to manage all documents and create/update/delete company-wide FAQs.
 
-1. A file is uploaded via the chat panel (`/src/components/chat/chat-panel.tsx`).
-2. The file is sent to Appwrite Storage with user-specific and admin-readable permissions.
-3. The `processDocument` Genkit flow is invoked with the file's data.
-4. The flow extracts text from the file (handles PDF, DOCX, TXT).
-5. The text is split into smaller, manageable chunks.
-6. Embeddings are generated for each chunk.
-7. Each chunk and its embedding are saved to the Appwrite "embeddings" collection with role-based permissions.
+### 3. Conversational Chat & History Persistence
+- A user submits a question. The backend API finds or creates a conversation document for that user.
+- The `conversationalRagChat` flow is triggered. It first fetches all FAQs to use as its primary source of truth. If no FAQ matches, it performs a vector search on the user's documents to find relevant context.
+- The AI's personality settings, FAQs, document context, and the user's full conversation history are compiled into a prompt for the Gemini LLM.
+- The AI response is streamed to the UI. The user can rate the response or have it read aloud using Text-to-Speech.
+- Once the stream is complete, the final AI message is appended to the history and saved to the database, ensuring persistence across sessions and devices.
 
-### Conversational Chat (`/src/ai/flows/conversational-chat.ts`)
+### 4. Lead Management & Call Script Generation
+- The `/leads` page is a visual Kanban pipeline.
+- **Admins** see all leads in the system.
+- **Regular Users (Agents)** see leads they have manually created, plus any unassigned leads from new signups.
+- **Lead Claiming**: When an agent moves an unassigned lead from the "New" column, the lead is automatically assigned to them (`agentId` is set to their user ID).
+- **Lead CRUD**: Agents can create, update, and delete their own leads. Admins can manage all leads.
+- Any user can click "Generate Script & Call" on a lead card to trigger the `initiateCall` server action.
+- This action calls the `generateCallScript` Genkit flow, which combines the master template (from admin settings) with the lead's specific data to create a personalized script.
 
-1. The user submits a question through the chat panel.
-2. An API request is sent to `/api/chat/route.ts`.
-3. The `conversationalRagChat` flow is triggered.
-4. An embedding is generated for the user's question.
-5. A similarity search finds the most relevant document chunks for the *current user*.
-6. The relevant chunks, conversation history, and the user's question are compiled into a prompt.
-7. The prompt is sent to the Gemini LLM to generate a context-aware response, which is streamed back to the UI.
+### 5. Admin & Agent Dashboards
+- The `/dashboard` page provides a personalized view. All users see their chat panel. 
+- **Agents** see personal performance stats (total assigned leads, conversion rate, avg. score) based *only* on leads assigned to them.
+- The `/settings` page is admin-only and provides a global performance dashboard and system configuration.
 
-### Analytics Logging (`/src/ai/flows/log-metrics.ts`)
+## Appwrite Setup
 
-1. A user provides feedback (thumbs up/down) on an AI response in the chat panel.
-2. The `logInteraction` Genkit flow is triggered with the message ID and feedback type.
-3. The flow saves a new document to the Appwrite "metrics" collection, containing the user's ID, the message ID, and the feedback provided.
+To make the application fully functional, you need to configure your Appwrite project. The following collections are required:
 
-### Call Script Generation (`/src/ai/flows/generate-call-script.ts`)
-1. An admin user clicks the "Generate Script & Call" button on the leads dashboard.
-2. A server action (`initiateCall`) is invoked.
-3. The action calls the `generateCallScript` Genkit flow, passing the lead's details.
-4. The AI generates a personalized call script based on a pre-defined template and the lead's data.
-5. The script is returned to the UI and displayed in a notification.
+1.  **Storage Bucket**: For storing uploaded documents.
+2.  **Database**: Create one database to hold all the following collections.
+3.  **Collections**:
+    *   **`embeddings`**: Stores document chunks and their vector embeddings.
+        - Attributes: `documentId` (string), `fileName` (string), `chunkText` (string), `embedding` (float[], size 768), `userId` (string).
+    *   **`metrics`**: Stores user feedback on AI responses.
+        - Attributes: `userId` (string), `messageId` (string), `feedback` (string).
+    *   **`leads`**: Stores information about leads.
+        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `phone` (string, optional), `company` (string, optional), `jobTitle` (string, optional), `notes` (string, optional), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**).
+    *   **`settings`**: A singleton collection for AI and business configuration.
+        - Create **one** document with the ID `default_config`.
+        - Attributes: `ai_personality` (string), `ai_style` (string), `ai_instructions` (string), `business_hours_enabled` (boolean), `business_hours_start` (string), `business_hours_end` (string), `business_hours_timezone` (string), `away_message` (string), `call_script_template` (string).
+    *   **`conversations`**: Stores persistent chat history for each user.
+        - Attributes: `userId` (string), `history` (string, size 1000000).
+    *   **`faqs`**: Stores admin-curated question-and-answer pairs.
+        - Attributes: `question` (string), `answer` (string).
 
-### Admin Dashboards (`/src/app/settings/page.tsx` & `/src/app/leads/page.tsx`)
-1. An admin user navigates to the `/settings` or `/leads` page.
-2. The page component (running on the server) fetches all documents from the corresponding "metrics" or "leads" collection.
-3. It calculates statistics or displays lead data in an interactive table.
-4. The live data is displayed in the dashboard cards and tables.
-
-## Customization
-
-- **Styling**: Colors and themes can be adjusted in `/src/app/globals.css`.
-- **AI Behavior**: The core AI prompt and instructions can be modified in `/src/ai/flows/conversational-chat.ts`.
-- **Call Script Template**: The template for generating call scripts can be modified in `/src/ai/flows/generate-call-script.ts`.
-- **UI Components**: UI components can be found and modified in `/src/components`.
+**Permissions are critical for security.** In general:
+- Users should only have CRUD access to their own documents (`Permission.read(Role.user(userId))`).
+- Admins (`Role.label('admin')`) should have read access to most data for support and management purposes.
+- Public data (like FAQs) can use `Permission.read(Role.any())`.
+- Server-managed collections (like `leads`) should use document-level permissions to grant access to the assigned agent and admins.
