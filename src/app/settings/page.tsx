@@ -2,7 +2,7 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, MessageSquare, Star, Users, Cog, PieChart, UserPlus, Link as LinkIcon } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog, PieChart, UserPlus, Link as LinkIcon, CheckCircle, XCircle } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -104,6 +104,7 @@ export default async function SettingsPage() {
   const aiSettings = await getAISettings();
   const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
   const isTwilioConfigured = !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN && !!process.env.TWILIO_PHONE_NUMBER;
+  const isWebhookConfigured = !!process.env.WEBHOOK_URL_NEW_LEAD;
   const timezones = Intl.supportedValuesOf('timeZone');
   const appwriteProjectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT?.replace('/v1', '');
@@ -149,7 +150,7 @@ export default async function SettingsPage() {
         <Card className="lg:col-span-2">
             <CardHeader>
                 <CardTitle className="flex items-center gap-2"><LinkIcon /> Integration Hub</CardTitle>
-                <CardDescription>Connect Cally-IO to your other business tools. These are currently placeholders and require backend implementation.</CardDescription>
+                <CardDescription>Connect Cally-IO to your other business tools. See documentation for setup instructions.</CardDescription>
             </CardHeader>
             <CardContent>
                 <div className="space-y-4">
@@ -170,9 +171,16 @@ export default async function SettingsPage() {
                      <div className="flex items-center justify-between p-4 border rounded-lg">
                         <div>
                             <h4 className="font-semibold">Generic Webhooks</h4>
-                            <p className="text-sm text-muted-foreground">Send lead data to any system (e.g., Zapier).</p>
+                            <p className="text-sm text-muted-foreground">Send new lead data to any system (e.g., Zapier).</p>
+                             {isWebhookConfigured ? (
+                                <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Active: URL configured in .env file.</p>
+                            ) : (
+                                <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1"><XCircle className="h-3 w-3" /> Inactive: Set WEBHOOK_URL_NEW_LEAD in .env file.</p>
+                            )}
                         </div>
-                        <Button variant="outline" disabled>Add Webhook</Button>
+                         <Button variant={isWebhookConfigured ? "secondary" : "outline"} disabled className="cursor-not-allowed">
+                            {isWebhookConfigured ? 'Active' : 'Inactive'}
+                        </Button>
                     </div>
                 </div>
             </CardContent>

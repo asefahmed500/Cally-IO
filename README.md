@@ -28,7 +28,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - [x] **Automated AI Calling**: The system can place automated outbound calls using Twilio, where an AI voice reads the generated script.
 - [x] **Conversation Intelligence**: Escalates to a human when it can't find an answer.
 - [x] **Performance Analytics**: Real-time admin and agent dashboards track key metrics with charts.
-- [x] **CRM & Integration Hub**: UI placeholders for connecting to external services like Slack or Google Sheets.
+- [x] **CRM & Integration Hub**: UI placeholders and a functional webhook for connecting to external services like Slack or Google Sheets.
 - [x] **Responsive Design**: The UI works seamlessly on both desktop and mobile devices.
 - [x] **Multi-Modal Chat**: Users can upload images and play back AI responses as audio (Text-to-Speech).
 

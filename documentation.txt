@@ -58,6 +58,33 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - The response is streamed to the UI. The user can play back the response as audio.
 - The conversation is saved to the database.
 
+## Integrations
+
+The application supports sending real-time notifications for new leads to external systems via webhooks.
+
+### New Lead Webhook
+- **Trigger**: A new user signs up in the application.
+- **Action**: A `POST` request with the new lead's data (name, email, status, etc.) is sent to the configured webhook URL.
+- **Setup**: To enable this, add the following environment variable to your `.env` file:
+  ```
+  WEBHOOK_URL_NEW_LEAD=https://your-webhook-url.com/new-lead
+  ```
+  You can use a service like [Zapier](https://zapier.com/) or [Make](https://www.make.com/) to receive this webhook and connect it to other tools like Slack or Google Sheets.
+
+### Developer Notes for Direct Integration
+For developers who want to build direct integrations without a middle-man service like Zapier, you can modify the signup action in `/src/app/auth/actions.ts`.
+
+- **Slack**:
+  - Install the Slack SDK: `npm install @slack/web-api`
+  - Add `SLACK_BOT_TOKEN` and `SLACK_CHANNEL_ID` to your `.env`.
+  - Use the `chat.postMessage` method to send a formatted message to your desired channel.
+
+- **Google Sheets**:
+  - Install the Google APIs client: `npm install googleapis`
+  - Set up a Google Cloud service account and download the JSON credentials file.
+  - Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of your credentials file.
+  - Use the `sheets.spreadsheets.values.append` method to add a new row with the lead data.
+
 ## Appwrite Setup
 
 To make the application fully functional, you need to configure your Appwrite project. The following collections are required:
