@@ -40,7 +40,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - **Manual Lead Creation**: Any logged-in user (acting as an agent) can manually create new leads from the `/leads` page. These leads are automatically assigned to them via the `agentId` field.
 
 ### 2. Knowledge Management & Document Processing
-- A user uploads a document (PDF, DOCX, TXT) via the chat panel.
+- A user uploads a document (PDF, DOCX, TXT) or an image (PNG, JPG) via the chat panel.
 - The file is sent to Appwrite Storage with user-specific permissions.
 - The `processDocument` Genkit flow extracts text, splits it into chunks, generates embeddings, and saves them to the `embeddings` collection with secure, role-based permissions.
 - Admins can use the `/knowledge` page to manage all documents and create/update/delete company-wide FAQs.
