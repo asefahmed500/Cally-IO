@@ -1,4 +1,3 @@
-
 # Cally-IO: AI-Powered Conversational Assistant
 
 This is a Next.js application that provides a feature-rich, AI-powered conversational assistant. Built with a modern tech stack, "Cally-IO" can answer questions from a dynamic knowledge base, manage sales leads through a visual pipeline, and provide detailed analytics—all configurable by an administrator.
@@ -49,11 +48,11 @@ npm install
 
 ### 3. Environment Variables
 
-Create a `.env` file in the root of your project and add the necessary environment variables. See `.env.example` or `documentation.txt` for a complete list of required variables and their descriptions.
+Create a `.env` file in the root of your project and add the necessary environment variables. See `documentation.txt` for a complete list of required variables and their descriptions.
 
 ### 4. Appwrite Setup
 
-To make the application fully functional, you must configure your Appwrite project with the required database collections and storage buckets. For a detailed, step-by-step guide on setting up the necessary attributes and permissions, please refer to the **Appwrite Setup** section in `/src/documentation.txt`.
+To make the application fully functional, you must configure your Appwrite project with the required database collections and storage buckets. For a detailed, step-by-step guide on setting up the necessary attributes and permissions, please refer to the **Appwrite Setup** section in `/documentation.txt`.
 
 ### 5. Running the Development Server
 

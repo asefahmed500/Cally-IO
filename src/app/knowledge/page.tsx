@@ -114,7 +114,7 @@ export default async function KnowledgePage() {
                             <CardDescription>Get AI-powered suggestions for new knowledge base content based on unanswered questions.</CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="p-4 text-center border-2 border-dashed rounded-lg">
+                            <div className="p-4 text-center border-2 border-dashed rounded-lg flex flex-col items-center justify-center h-full">
                                 <p className="text-sm text-muted-foreground">This feature is coming soon.</p>
                                 <p className="text-xs text-muted-foreground mt-1">The AI will analyze user queries to suggest new articles and FAQs.</p>
                             </div>
@@ -125,5 +125,3 @@ export default async function KnowledgePage() {
         </div>
     )
 }
-
-    

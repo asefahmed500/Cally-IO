@@ -1,4 +1,3 @@
-
 # Cally-IO Application Documentation
 
 ## Project Overview
