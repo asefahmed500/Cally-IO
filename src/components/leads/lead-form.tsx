@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -10,12 +11,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { DialogFooter } from '@/components/ui/dialog';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, CalendarIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 export function LeadForm({ lead, onFormSuccess }: { lead?: Lead | null, onFormSuccess: () => void }) {
     const [state, formAction, isPending] = useActionState(saveLead, null);
     const { toast } = useToast();
     const formRef = React.useRef<HTMLFormElement>(null);
+    const [followUpDate, setFollowUpDate] = React.useState<Date | undefined>(
+        lead?.followUpDate ? new Date(lead.followUpDate) : undefined
+    );
 
     React.useEffect(() => {
         if (state?.status === 'success') {
@@ -29,6 +37,8 @@ export function LeadForm({ lead, onFormSuccess }: { lead?: Lead | null, onFormSu
     return (
         <form ref={formRef} action={formAction} className="space-y-4">
             <input type="hidden" name="id" value={lead?.$id || ''} />
+            <input type="hidden" name="followUpDate" value={followUpDate ? followUpDate.toISOString() : ''} />
+            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                     <Label htmlFor="name">Lead Name</Label>
@@ -61,6 +71,37 @@ export function LeadForm({ lead, onFormSuccess }: { lead?: Lead | null, onFormSu
                 <Textarea id="notes" name="notes" placeholder="e.g., Met at the conference. Interested in AI features." defaultValue={lead?.notes} className="min-h-24" />
                 {state?.errors?.notes && <p className="text-sm text-destructive">{state.errors.notes[0]}</p>}
             </div>
+
+            <div className="space-y-2 pt-4 border-t">
+                <Label>Follow-up</Label>
+                <div className="grid md:grid-cols-2 gap-4">
+                     <Popover>
+                        <PopoverTrigger asChild>
+                            <Button
+                                variant={"outline"}
+                                className={cn(
+                                    "w-full justify-start text-left font-normal",
+                                    !followUpDate && "text-muted-foreground"
+                                )}
+                            >
+                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                {followUpDate ? format(followUpDate, "PPP") : <span>Pick a date</span>}
+                            </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0">
+                            <Calendar
+                                mode="single"
+                                selected={followUpDate}
+                                onSelect={setFollowUpDate}
+                                initialFocus
+                            />
+                        </PopoverContent>
+                    </Popover>
+                    <Textarea name="followUpNotes" placeholder="Follow-up notes..." defaultValue={lead?.followUpNotes} />
+                </div>
+                {state?.errors?.followUpDate && <p className="text-sm text-destructive">{state.errors.followUpDate[0]}</p>}
+            </div>
+            
             <DialogFooter>
                  <Button type="submit" disabled={isPending}>
                     {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}

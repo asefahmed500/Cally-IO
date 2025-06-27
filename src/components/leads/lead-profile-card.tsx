@@ -1,10 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import type { Lead } from "@/app/leads/page";
-import { User, Star, Activity, Calendar, ClipboardList, Phone, Building, Briefcase, StickyNote } from 'lucide-react';
+import { User, Star, Activity, Calendar, ClipboardList, Phone, Building, Briefcase, StickyNote, CalendarClock } from 'lucide-react';
 import { Separator } from "../ui/separator";
 
 function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType, label: string, value: React.ReactNode }) {
-    if (!value) return null;
+    if (!value && typeof value !== 'number') return null;
     return (
         <div className="flex items-start gap-4">
             <Icon className="h-5 w-5 text-muted-foreground mt-1 shrink-0" />
@@ -56,8 +56,19 @@ export function LeadProfileCard({ lead }: { lead: Lead }) {
         <Separator />
          <InfoRow 
             icon={StickyNote}
-            label="Notes"
+            label="General Notes"
             value={lead.notes ? <p className="whitespace-pre-wrap">{lead.notes}</p> : 'No notes'}
+        />
+        <Separator />
+         <InfoRow 
+            icon={CalendarClock}
+            label="Follow-up Date"
+            value={lead.followUpDate ? new Date(lead.followUpDate).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not set'}
+        />
+         <InfoRow 
+            icon={StickyNote}
+            label="Follow-up Notes"
+            value={lead.followUpNotes ? <p className="whitespace-pre-wrap">{lead.followUpNotes}</p> : 'No notes'}
         />
         <Separator />
         <div className="grid grid-cols-2 gap-4 text-sm">

@@ -52,12 +52,12 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - The TwiML instructs Twilio's AI voice to read the script aloud to the lead and to record the call.
 - As the call progresses (ringing, answered, completed), Twilio sends status updates to the `/api/twilio/status` webhook, which updates the `call_logs` document in Appwrite.
 
-### 3. Lead Management & Call Script Generation
-- The `/leads` page is a visual Kanban pipeline.
+### 3. Lead Management & Follow-ups
+- The `/leads` page has two views: a visual Kanban pipeline and a "Follow-ups" list.
 - **Admins** see all leads. **Agents** see leads they have created or claimed.
 - **Lead Claiming**: When an agent moves an unassigned lead from the "New" column, the lead is automatically assigned to them.
-- **Lead CRUD**: Agents can create, update, and delete their own leads.
-- Any user can trigger the AI calling workflow.
+- **Lead CRUD & Scheduling**: Agents can create, update, and delete their own leads. They can also schedule a `followUpDate` and add `followUpNotes`.
+- **Follow-up Reminders**: The "Follow-ups" tab lists all leads with a scheduled follow-up, sorted by date. Overdue follow-ups are highlighted on lead cards.
 
 ### 4. Conversational Chat & History Persistence
 - A user submits a question. The backend API finds or creates a conversation document.
@@ -105,7 +105,7 @@ To make the application fully functional, you need to configure your Appwrite pr
     *   **`metrics`**: Stores user feedback on AI responses.
         - Attributes: `userId` (string), `messageId` (string), `feedback` (string).
     *   **`leads`**: Stores information about leads.
-        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `phone` (string, optional), `company` (string, optional), `jobTitle` (string, optional), `notes` (string, optional), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**).
+        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `phone` (string, optional), `company` (string, optional), `jobTitle` (string, optional), `notes` (string, optional), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**), `followUpDate` (datetime, optional), `followUpNotes` (string, optional).
     *   **`settings`**: A singleton collection for AI and business configuration.
         - Create **one** document with the ID `default_config`.
         - Attributes: `ai_personality` (string), `ai_style` (string), `ai_instructions` (string), `business_hours_enabled` (boolean), `business_hours_start` (string), `business_hours_end` (string), `business_hours_timezone` (string), `away_message` (string), `call_script_template` (string).

@@ -22,6 +22,8 @@ const LeadSchema = z.object({
     company: z.string().optional(),
     jobTitle: z.string().optional(),
     notes: z.string().optional(),
+    followUpDate: z.string().optional(),
+    followUpNotes: z.string().optional(),
 });
 
 export async function saveLead(prevState: any, formData: FormData) {
@@ -39,6 +41,8 @@ export async function saveLead(prevState: any, formData: FormData) {
         company: formData.get('company'),
         jobTitle: formData.get('jobTitle'),
         notes: formData.get('notes'),
+        followUpDate: formData.get('followUpDate'),
+        followUpNotes: formData.get('followUpNotes'),
     });
 
     if (!validatedFields.success) {
@@ -49,7 +53,14 @@ export async function saveLead(prevState: any, formData: FormData) {
         };
     }
     
-    const { id, ...leadData } = validatedFields.data;
+    const { id, ...leadDataFromForm } = validatedFields.data;
+
+    const leadPayload = {
+        ...leadDataFromForm,
+        followUpDate: leadDataFromForm.followUpDate || null,
+        followUpNotes: leadDataFromForm.followUpNotes || null,
+        lastActivity: new Date().toISOString(),
+    };
 
     try {
         if (id) {
@@ -58,14 +69,13 @@ export async function saveLead(prevState: any, formData: FormData) {
             if (!isAdmin && existingLead.agentId !== user.$id) {
                 return { status: 'error', message: "You don't have permission to edit this lead." };
             }
-            await databases.updateDocument(dbId, leadsCollectionId, id, leadData);
+            await databases.updateDocument(dbId, leadsCollectionId, id, leadPayload);
         } else {
             // Creating a new lead
             const newLeadData = {
-                ...leadData,
+                ...leadPayload,
                 status: 'New',
                 score: Math.floor(Math.random() * 21) + 10,
-                lastActivity: new Date().toISOString(),
                 agentId: user.$id, // Associate this lead with the agent creating it
             };
             await databases.createDocument(

@@ -17,10 +17,11 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { MoreHorizontal, Loader2, Phone, User, Star, Edit, Trash2 } from 'lucide-react';
+import { MoreHorizontal, Loader2, Phone, User, Star, Edit, Trash2, CalendarDays } from 'lucide-react';
 import { initiateCall } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { LeadProfileCard } from './lead-profile-card';
+import { cn } from '@/lib/utils';
 
 const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
 
@@ -61,6 +62,8 @@ export function LeadCard({
             }
         });
     };
+
+    const isFollowUpDue = lead.followUpDate && new Date(lead.followUpDate) < new Date();
 
     return (
         <>
@@ -121,7 +124,12 @@ export function LeadCard({
                             <Star className="h-3 w-3 text-yellow-500" />
                             <span>{lead.score}</span>
                         </div>
-                        <span>{new Date(lead.lastActivity).toLocaleDateString()}</span>
+                         {lead.followUpDate && (
+                            <div className={cn("flex items-center gap-1", isFollowUpDue && "text-destructive font-semibold")}>
+                                <CalendarDays className="h-3 w-3" />
+                                <span>{new Date(lead.followUpDate).toLocaleDateString()}</span>
+                            </div>
+                        )}
                     </div>
                 </CardContent>
             </Card>

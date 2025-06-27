@@ -20,6 +20,8 @@ export interface Lead extends Models.Document {
     score: number;
     lastActivity: string;
     agentId: string | null; // The agent who owns this lead
+    followUpDate?: string;
+    followUpNotes?: string;
 }
 
 export async function getLeads(user: Models.User<Models.Preferences>): Promise<Lead[]> {
