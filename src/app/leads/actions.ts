@@ -6,7 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { generateScript, type GenerateCallScriptInput } from '@/ai/flows/generate-call-script';
 import { twilio } from 'twilio';
 import { getAISettings } from '@/lib/settings';
-import { ID, Permission, Role } from 'node-appwrite';
+import { ID, Permission, Role, Query } from 'node-appwrite';
 import { z } from 'zod';
 
 const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
@@ -82,11 +82,20 @@ export async function updateLeadStatus(leadId: string, status: string) {
   }
 
   try {
-    // Security check: In a real app, you'd verify the user has permission for this leadId
-    await databases.updateDocument(dbId, leadsCollectionId, leadId, { 
+    const lead = await databases.getDocument(dbId, leadsCollectionId, leadId);
+    
+    const updateData: { status: string; lastActivity: string; agentId?: string } = {
         status,
-        lastActivity: new Date().toISOString() 
-    });
+        lastActivity: new Date().toISOString(),
+    };
+
+    // If the lead is unassigned, assign it to the current user ("claim" it).
+    if (!lead.agentId) {
+        updateData.agentId = user.$id;
+    }
+
+    await databases.updateDocument(dbId, leadsCollectionId, leadId, updateData);
+    
     revalidatePath('/leads');
     revalidatePath('/dashboard'); // To update agent stats
     return { success: true };

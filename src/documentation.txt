@@ -56,11 +56,13 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - The `/leads` page is a visual Kanban pipeline.
 - **Admins** see all leads in the system.
 - **Regular Users (Agents)** see leads they have manually created, plus any unassigned leads from new signups.
+- **Lead Claiming**: When an agent moves an unassigned lead from the "New" column, the lead is automatically assigned to them (`agentId` is set to their user ID).
 - Any user can click "Generate Script & Call" on a lead card to trigger the `initiateCall` server action.
 - This action calls the `generateCallScript` Genkit flow, which combines the master template (from admin settings) with the lead's specific data to create a personalized script.
 
 ### 5. Admin & Agent Dashboards
-- The `/dashboard` page provides a personalized view. All users see their chat panel. Agents also see personal performance stats (total leads, conversion rate).
+- The `/dashboard` page provides a personalized view. All users see their chat panel. 
+- **Agents** see personal performance stats (total assigned leads, conversion rate, avg. score) based *only* on leads assigned to them.
 - The `/settings` page is admin-only and provides a global performance dashboard and system configuration.
 
 ## Appwrite Setup

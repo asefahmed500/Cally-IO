@@ -30,6 +30,7 @@ export async function signup(prevState: any, formData: FormData) {
             status: 'New',
             score: Math.floor(Math.random() * 21) + 10, // Random score between 10-30
             lastActivity: new Date().toISOString(),
+            agentId: null, // This lead is unassigned
         };
         await databases.createDocument(
             dbId,
@@ -37,9 +38,9 @@ export async function signup(prevState: any, formData: FormData) {
             ID.unique(),
             leadData,
             [
-                Permission.read(Role.label('admin')),
-                Permission.update(Role.label('admin')),
-                Permission.delete(Role.label('admin')),
+                Permission.read(Role.users()), // Any authenticated user can see it
+                Permission.update(Role.users()), // Any authenticated user can claim it
+                Permission.delete(Role.label('admin')), // Only admins can delete
             ]
         );
 

@@ -73,12 +73,15 @@ export default async function DashboardPage() {
     !!process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID &&
     !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
 
-  const [settings, leads] = await Promise.all([
+  const [settings, allVisibleLeads] = await Promise.all([
     getAISettings(),
     getLeads(user)
   ]);
   const isChatActive = isWithinBusinessHours(settings);
-  const agentStats = getAgentStats(leads);
+  
+  // For the personal dashboard, statistics should only be calculated on leads *assigned* to this agent.
+  const agentLeadsForStats = allVisibleLeads.filter(lead => lead.agentId === user.$id);
+  const agentStats = getAgentStats(agentLeadsForStats);
 
   return (
     <div className="flex flex-col h-full gap-4">
@@ -91,7 +94,7 @@ export default async function DashboardPage() {
 
       {/* Agent-specific stats */}
       <div className="grid gap-4 md:grid-cols-3">
-        <StatCard title="Your Active Leads" value={agentStats.totalLeads} icon={Users} />
+        <StatCard title="Your Assigned Leads" value={agentStats.totalLeads} icon={Users} />
         <StatCard title="Your Conversion Rate" value={`${agentStats.conversionRate}%`} icon={BarChart2} />
         <StatCard title="Avg. Lead Score" value={agentStats.averageScore} icon={Star} />
       </div>

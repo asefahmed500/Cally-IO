@@ -14,7 +14,7 @@ This is a Next.js application that provides a feature-rich, AI-powered conversat
 
 - [x] **Secure Authentication**: User signup, login, and password recovery.
 - [x] **Role-Based Access Control**: `user` and `admin` roles with protected routes.
-- [x] **Lead Management Pipeline**: Visual Kanban board to track leads.
+- [x] **Lead Management Pipeline**: Visual Kanban board to track leads, with lead-claiming for agents.
 - [x] **Knowledge Base Management**: Admins can manage all documents and a company-wide FAQ.
 - [x] **Persistent Chat History**: Conversations are saved, supporting multi-session and multi-device use.
 - [x] **Configurable AI Agent**: Admins control the AI's personality, response style, and business instructions.
@@ -23,7 +23,7 @@ This is a Next.js application that provides a feature-rich, AI-powered conversat
 - [x] **AI-Powered RAG Chat**: The AI uses Retrieval-Augmented Generation to answer questions from documents and FAQs.
 - [x] **AI Script Generator**: Dynamically generates personalized call scripts for leads.
 - [x] **Conversation Intelligence**: Escalates to a human when it can't find an answer.
-- [x] **Performance Analytics**: A real-time, admin-only dashboard tracks key metrics with charts.
+- [x] **Performance Analytics**: Real-time admin and agent dashboards track key metrics with charts.
 - [x] **CRM & Integration Hub**: UI placeholders for connecting to external services like Slack or Google Sheets.
 - [x] **Responsive Design**: The UI works seamlessly on both desktop and mobile devices.
 
