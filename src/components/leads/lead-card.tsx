@@ -21,7 +21,7 @@ import { initiateCall } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { LeadProfileCard } from './lead-profile-card';
 
-const statuses: Lead['status'][] = ['New', 'Qualified', 'Contacted', 'Converted'];
+const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
 
 export function LeadCard({ lead, onStatusChange }: { lead: Lead; onStatusChange: (leadId: string, newStatus: Lead['status']) => void; }) {
     const { toast } = useToast();

@@ -12,7 +12,7 @@ export interface Lead extends Models.Document {
     userId: string;
     name: string;
     email: string;
-    status: 'New' | 'Qualified' | 'Contacted' | 'Converted';
+    status: 'New' | 'Qualified' | 'Called' | 'Converted';
     score: number;
     lastActivity: string;
 }

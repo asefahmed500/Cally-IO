@@ -10,12 +10,12 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Download, Search } from 'lucide-react';
 
-const statuses: Lead['status'][] = ['New', 'Qualified', 'Contacted', 'Converted'];
+const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
 
 const statusStyles = {
     New: { title: 'New Leads', color: 'bg-blue-500' },
     Qualified: { title: 'Qualified', color: 'bg-yellow-500' },
-    Contacted: { title: 'Contacted', color: 'bg-purple-500' },
+    Called: { title: 'Called', color: 'bg-purple-500' },
     Converted: { title: 'Converted', color: 'bg-green-500' },
 };
 
