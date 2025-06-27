@@ -241,5 +241,3 @@ ${prompt}`;
     return llmResponse.output.content;
   }
 );
-
-    
