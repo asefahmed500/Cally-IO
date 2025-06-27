@@ -15,6 +15,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 
 - [x] **Secure Authentication**: User signup, login, and password recovery.
 - [x] **Role-Based Access Control**: `user` and `admin` roles with protected routes.
+- [x] **In-App User Management**: Admins can add, remove, and manage user roles directly within the application.
 - [x] **Lead Management Pipeline**: Visual Kanban board for all users, with role-based data visibility and lead-claiming for agents.
 - [x] **Full Lead CRUD**: Agents can create, read, update, and delete their own leads with detailed profiles (phone, company, notes).
 - [x] **Knowledge Base Management**: Admins can manage all documents and a company-wide FAQ.
@@ -28,7 +29,8 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - [x] **Automated AI Calling**: The system can place automated outbound calls using Twilio, where an AI voice reads the generated script.
 - [x] **Conversation Intelligence**: Escalates to a human when it can't find an answer.
 - [x] **Performance Analytics**: Real-time admin and agent dashboards track key metrics with charts.
-- [x] **CRM & Integration Hub**: UI placeholders for connecting to external services like Slack or Google Sheets.
+- [x] **Advanced Analytics**: Provides "Content Suggestions" based on unanswered questions and "Usage Statistics" for documents.
+- [x] **CRM & Integration Hub**: A functional webhook for connecting to external services like Slack or Google Sheets.
 - [x] **Responsive Design**: The UI works seamlessly on both desktop and mobile devices.
 - [x] **Multi-Modal Chat**: Users can upload images and play back AI responses as audio (Text-to-Speech).
 
@@ -75,3 +77,12 @@ ngrok http 9002
 Copy the public HTTPS URL provided by ngrok and set it as the value for `NEXT_PUBLIC_BASE_URL` in your `.env` file.
 
 Open [http://localhost:9002](http://localhost:9002) with your browser to see the result. To create your admin account, sign up using the email you specified in the `ADMIN_EMAIL` environment variable.
+
+```
+- `src/components/knowledge/content-suggestions.tsx` (New Component)
+- `src/components/settings/usage-statistics.tsx` (New Component)
+- `src/app/settings/analytics_actions.ts` (New File)
+- `src/components/settings/user-management.tsx` (New Component)
+- `src/app/settings/users_actions.ts` (New File)
+
+```
