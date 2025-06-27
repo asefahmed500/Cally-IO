@@ -2,12 +2,13 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, MessageSquare, Star, Users, Cog } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog, PieChart } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { getAISettings } from "@/lib/settings";
 import { SettingsForm } from "@/components/settings/settings-form";
+import { AnalyticsChart } from "@/components/settings/analytics-chart";
 
 function StatCard({ title, value, icon: Icon }: { title: string, value: string, icon: React.ElementType }) {
     return (
@@ -27,20 +28,24 @@ async function getAnalyticsData() {
     const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
     const metricsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID;
     const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
+    const conversationsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID;
 
     // Default values
     let satisfactionRate = 0;
-    let totalFeedback = 0;
+    let goodFeedbackCount = 0;
+    let badFeedbackCount = 0;
     let totalLeads = 0;
     let conversionRate = 0;
+    let totalConversations = 0;
 
     // Fetch metrics data
     if (dbId && metricsCollectionId) {
         try {
             const metrics = await databases.listDocuments(dbId, metricsCollectionId, [Query.limit(5000)]);
-            totalFeedback = metrics.total;
+            const totalFeedback = metrics.total;
             if (totalFeedback > 0) {
-                const goodFeedbackCount = metrics.documents.filter(d => d.feedback === 'good').length;
+                goodFeedbackCount = metrics.documents.filter(d => d.feedback === 'good').length;
+                badFeedbackCount = totalFeedback - goodFeedbackCount;
                 satisfactionRate = Math.round((goodFeedbackCount / totalFeedback) * 100);
             }
         } catch (e) {
@@ -61,8 +66,25 @@ async function getAnalyticsData() {
             console.error("Failed to fetch leads analytics:", e);
         }
     }
+    
+    // Fetch conversations data
+    if (dbId && conversationsCollectionId) {
+        try {
+            // Using limit(0) is an efficient way to get only the total count
+            const conversations = await databases.listDocuments(dbId, conversationsCollectionId, [Query.limit(0)]);
+            totalConversations = conversations.total;
+        } catch(e) {
+            console.error("Failed to fetch conversations analytics:", e);
+        }
+    }
 
-    return { satisfactionRate, totalFeedback, totalLeads, conversionRate };
+    const feedbackChartData = [{
+        name: 'Feedback',
+        good: goodFeedbackCount,
+        bad: badFeedbackCount,
+    }];
+
+    return { satisfactionRate, totalLeads, conversionRate, totalConversations, feedbackChartData };
 }
 
 
@@ -77,7 +99,7 @@ export default async function SettingsPage() {
     redirect('/dashboard');
   }
 
-  const { satisfactionRate, totalFeedback, totalLeads, conversionRate } = await getAnalyticsData();
+  const { satisfactionRate, totalLeads, conversionRate, totalConversations, feedbackChartData } = await getAnalyticsData();
   const aiSettings = await getAISettings();
   const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
   const timezones = Intl.supportedValuesOf('timeZone');
@@ -95,11 +117,26 @@ export default async function SettingsPage() {
           <CardDescription>An overview of your AI assistant's performance based on real-time user feedback and lead data.</CardDescription>
         </CardHeader>
         <CardContent>
-             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 mb-8">
                 <StatCard title="Avg. Satisfaction" value={`${satisfactionRate}%`} icon={Star} />
                 <StatCard title="Total Leads" value={totalLeads.toLocaleString()} icon={Users} />
+                <StatCard title="Total Conversations" value={totalConversations.toLocaleString()} icon={MessageSquare} />
                 <StatCard title="Conversion Rate" value={`${conversionRate}%`} icon={BarChart2} />
-                <StatCard title="Total Feedback Received" value={totalFeedback.toLocaleString()} icon={MessageSquare} />
+            </div>
+            <div className="grid gap-8 md:grid-cols-2">
+                <AnalyticsChart data={feedbackChartData} />
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="flex items-center gap-2"><PieChart /> Usage Statistics</CardTitle>
+                        <CardDescription>Insights into how your knowledge base is being used.</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="p-4 text-center border-2 border-dashed rounded-lg flex flex-col items-center justify-center h-full">
+                            <p className="text-sm text-muted-foreground">This feature is coming soon.</p>
+                            <p className="text-xs text-muted-foreground mt-1">Metrics on document and FAQ usage will appear here.</p>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
         </CardContent>
       </Card>
