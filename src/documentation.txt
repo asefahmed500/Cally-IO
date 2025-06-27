@@ -1,3 +1,4 @@
+
 # Cally-IO Application Documentation
 
 ## Project Overview
@@ -9,7 +10,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 The project follows a standard Next.js App Router structure. Key directories include:
 
 - `/src/app`: Contains the main application routes and pages.
-  - `/api`: API routes for server-side logic (chat, history, TTS).
+  - `/api`: API routes for server-side logic (chat, history, TTS, Twilio).
   - `/auth`: Server actions for authentication (signup, login, etc.).
   - `/dashboard`: The main page for authenticated users, featuring the chat panel and personal stats.
   - `/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
@@ -34,38 +35,28 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 ## Core Workflows
 
-### 1. User Authentication & Lead Creation
-- A user signs up, logs in, or requests a password reset.
-- The `signup` server action creates a user in Appwrite, assigns a `user` or `admin` role, and simultaneously creates a corresponding document in the `leads` collection with the `agentId` set to `null`.
-- **Manual Lead Creation**: Any logged-in user (acting as an agent) can manually create new leads from the `/leads` page. These leads are automatically assigned to them via the `agentId` field.
+### 1. Automated AI Calling
+- An agent clicks "Start Automated Call" on a lead card.
+- The `initiateCall` server action triggers Twilio to place an outbound call to the lead's phone number.
+- Simultaneously, `initiateCall` creates a new log entry in the `call_logs` collection with the status "initiated".
+- Twilio makes a webhook request to `/api/twilio/call?leadId=<ID>`.
+- The `call` API route fetches the lead's data, generates a personalized script using the `generateCallScript` flow, and returns TwiML instructions.
+- The TwiML instructs Twilio's AI voice to read the script aloud to the lead and to record the call.
+- As the call progresses (ringing, answered, completed), Twilio sends status updates to the `/api/twilio/status` webhook, which updates the `call_logs` document in Appwrite.
 
-### 2. Knowledge Management & Document Processing
-- A user uploads a document (PDF, DOCX, TXT) or an image (PNG, JPG) via the chat panel.
-- The file is sent to Appwrite Storage with user-specific permissions.
-- The `processDocument` Genkit flow extracts text, splits it into chunks, generates embeddings, and saves them to the `embeddings` collection with secure, role-based permissions.
-- Admins can use the `/knowledge` page to manage all documents and create/update/delete company-wide FAQs.
+### 2. Lead Management & Call Script Generation
+- The `/leads` page is a visual Kanban pipeline.
+- **Admins** see all leads. **Agents** see leads they have created or claimed.
+- **Lead Claiming**: When an agent moves an unassigned lead from the "New" column, the lead is automatically assigned to them.
+- **Lead CRUD**: Agents can create, update, and delete their own leads.
+- Any user can trigger the AI calling workflow.
 
 ### 3. Conversational Chat & History Persistence
-- A user submits a question. The backend API finds or creates a conversation document for that user.
-- The `conversationalRagChat` flow is triggered. It first fetches all FAQs to use as its primary source of truth. If no FAQ matches, it performs a vector search on the user's documents to find relevant context.
-- **Web Search**: If the query is about a competitor or current event, the AI uses a `webSearch` Genkit tool to fetch real-time information.
-- The AI's personality settings, FAQs, document context, web search results, and the user's full conversation history are compiled into a prompt for the Gemini LLM.
-- The AI response is streamed to the UI. The user can rate the response or have it read aloud using Text-to-Speech.
-- Once the stream is complete, the final AI message is appended to the history and saved to the database, ensuring persistence across sessions and devices.
-
-### 4. Lead Management & Call Script Generation
-- The `/leads` page is a visual Kanban pipeline.
-- **Admins** see all leads in the system.
-- **Regular Users (Agents)** see leads they have manually created, plus any unassigned leads from new signups.
-- **Lead Claiming**: When an agent moves an unassigned lead from the "New" column, the lead is automatically assigned to them (`agentId` is set to their user ID).
-- **Lead CRUD**: Agents can create, update, and delete their own leads. Admins can manage all leads.
-- Any user can click "Generate Script & Call" on a lead card to trigger the `initiateCall` server action.
-- This action calls the `generateCallScript` Genkit flow, which combines the master template (from admin settings) with the lead's specific data to create a personalized script.
-
-### 5. Admin & Agent Dashboards
-- The `/dashboard` page provides a personalized view. All users see their chat panel. 
-- **Agents** see personal performance stats (total assigned leads, conversion rate, avg. score) based *only* on leads assigned to them.
-- The `/settings` page is admin-only and provides a global performance dashboard and system configuration.
+- A user submits a question. The backend API finds or creates a conversation document.
+- The `conversationalRagChat` flow is triggered. It fetches FAQs and performs a vector search on the user's documents.
+- If needed, the AI uses the `webSearch` tool for real-time information.
+- The response is streamed to the UI. The user can play back the response as audio.
+- The conversation is saved to the database.
 
 ## Appwrite Setup
 
@@ -87,9 +78,11 @@ To make the application fully functional, you need to configure your Appwrite pr
         - Attributes: `userId` (string), `history` (string, size 1000000).
     *   **`faqs`**: Stores admin-curated question-and-answer pairs.
         - Attributes: `question` (string), `answer` (string).
+    *   **`call_logs`**: Stores logs of outbound Twilio calls.
+        - Attributes: `leadId` (string), `userId` (string), `callSid` (string), `status` (string), `duration` (integer, optional), `recordingUrl` (string, optional).
 
 **Permissions are critical for security.** In general:
 - Users should only have CRUD access to their own documents (`Permission.read(Role.user(userId))`).
 - Admins (`Role.label('admin')`) should have read access to most data for support and management purposes.
 - Public data (like FAQs) can use `Permission.read(Role.any())`.
-- Server-managed collections (like `leads`) should use document-level permissions to grant access to the assigned agent and admins.
+- Server-managed collections (like `leads`, `call_logs`) should use document-level permissions to grant access to the assigned agent and admins.

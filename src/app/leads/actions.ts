@@ -4,7 +4,6 @@
 import { databases } from '@/lib/appwrite-server';
 import { getLoggedInUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
-import { generateScript } from '@/ai/flows/generate-call-script';
 import twilio from 'twilio';
 import { ID, Permission, Role, Query } from 'node-appwrite';
 import { z } from 'zod';

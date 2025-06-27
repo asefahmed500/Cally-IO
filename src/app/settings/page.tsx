@@ -103,6 +103,7 @@ export default async function SettingsPage() {
   const { satisfactionRate, totalLeads, conversionRate, totalConversations, feedbackChartData } = await getAnalyticsData();
   const aiSettings = await getAISettings();
   const isSettingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID;
+  const isTwilioConfigured = !!process.env.TWILIO_ACCOUNT_SID && !!process.env.TWILIO_AUTH_TOKEN && !!process.env.TWILIO_PHONE_NUMBER;
   const timezones = Intl.supportedValuesOf('timeZone');
   const appwriteProjectId = process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID;
   const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT?.replace('/v1', '');
@@ -202,7 +203,7 @@ export default async function SettingsPage() {
             </AlertDescription>
         </Alert>
       ) : (
-        <SettingsForm settings={aiSettings} timezones={timezones} />
+        <SettingsForm settings={aiSettings} timezones={timezones} isTwilioConfigured={isTwilioConfigured} />
       )}
     </div>
   )

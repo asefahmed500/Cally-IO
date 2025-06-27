@@ -45,6 +45,9 @@ export async function POST(request: NextRequest) {
         voiceResponse.say({ voice: 'alice' }, "Thank you for your time. Goodbye.");
         voiceResponse.hangup();
 
+        // Instruct Twilio to record the entire call
+        voiceResponse.record();
+
         // Return the TwiML as an XML response
         return new NextResponse(voiceResponse.toString(), {
             headers: { 'Content-Type': 'application/xml' },
