@@ -197,9 +197,10 @@ export function ChatPanel({
   };
 
   const handleFeedback = async (message: ChatMessage, feedback: 'good' | 'bad') => {
+    if (!message.id) return;
     if (feedbackSent.has(message.id)) return;
 
-    setFeedbackSent(prev => new Set(prev).add(message.id));
+    setFeedbackSent(prev => new Set(prev).add(message.id!));
     toast({
         title: 'Feedback Received',
         description: "Thank you! We'll use your feedback to improve."
@@ -292,6 +293,7 @@ export function ChatPanel({
         return;
     }
 
+    if (!message.id) return;
     setAudioState({ messageId: message.id, status: 'loading' });
 
     try {
@@ -371,8 +373,8 @@ export function ChatPanel({
         modelResponse += decoder.decode(value, { stream: true });
         setMessages((prev) => {
           const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage.id === modelMessageId) {
+          const lastMessage = newMessages.length > 0 ? newMessages[newMessages.length - 1] : undefined;
+          if (lastMessage && lastMessage.id === modelMessageId) {
              lastMessage.content = modelResponse;
           }
           return newMessages;
@@ -383,8 +385,8 @@ export function ChatPanel({
       const errorMessage = "I'm sorry, but I encountered an error. Please try again.";
       setMessages((prev) => {
           const newMessages = [...prev];
-          const lastMessage = newMessages[newMessages.length - 1];
-          if (lastMessage.id === modelMessageId) {
+          const lastMessage = newMessages.length > 0 ? newMessages[newMessages.length - 1] : undefined;
+          if (lastMessage && lastMessage.id === modelMessageId) {
              lastMessage.content = errorMessage;
           }
           return newMessages;
@@ -467,7 +469,8 @@ export function ChatPanel({
                 const isThisMessageLoadingAudio = audioState.status === 'loading' && audioState.messageId === message.id;
                 const isThisMessagePlayingAudio = audioState.status === 'playing' && audioState.messageId === message.id;
 
-                const isLastMessage = messages[messages.length-1].id === message.id;
+                const lastMessage = messages[messages.length-1];
+                const isLastMessage = lastMessage && lastMessage.id === message.id;
                 const isModelTyping = isLoading && isLastMessage && message.role === 'model';
 
                 return (
@@ -494,10 +497,10 @@ export function ChatPanel({
                                     {isThisMessageLoadingAudio ? <Loader2 className="h-4 w-4 animate-spin" /> : (isThisMessagePlayingAudio ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />)}
                                 </Button>
                                 <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'good')} disabled={feedbackSent.has(message.id)}>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'good')} disabled={!!message.id && feedbackSent.has(message.id)}>
                                         <ThumbsUp className="h-4 w-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'bad')} disabled={feedbackSent.has(message.id)}>
+                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'bad')} disabled={!!message.id && feedbackSent.has(message.id)}>
                                         <ThumbsDown className="h-4 w-4" />
                                     </Button>
                                 </div>
