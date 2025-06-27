@@ -42,25 +42,21 @@ export function LeadCard({
     const handleInitiateCall = (lead: Lead) => {
         startTransition(async () => {
             toast({
-              title: 'Generating Script...',
-              description: `AI is creating a script for ${lead.name}.`,
+              title: 'Initiating Automated Call...',
+              description: `The system is placing a call to ${lead.name}.`,
             });
             const result = await initiateCall(lead);
             if (result.error) {
                 toast({
                     variant: 'destructive',
-                    title: 'Error',
+                    title: 'Call Failed',
                     description: result.error,
                 });
             } else {
                 toast({
-                    title: result.message || 'Script Generated!',
-                    description: (
-                        <pre className="mt-2 w-[340px] rounded-md bg-slate-950 p-4">
-                            <code className="text-white text-xs whitespace-pre-wrap">{result.script}</code>
-                        </pre>
-                    ),
-                    duration: 20000,
+                    title: 'Call Successfully Initiated!',
+                    description: `The call SID is ${result.callSid}. You can track its status in your Twilio console.`,
+                    duration: 10000,
                 });
             }
         });
@@ -88,7 +84,7 @@ export function LeadCard({
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleInitiateCall(lead)}>
                                     <Phone className="mr-2 h-4 w-4" />
-                                    Generate Script & Call
+                                    Start Automated Call
                                 </DropdownMenuItem>
                                 <DropdownMenuSub>
                                     <DropdownMenuSubTrigger>Move to</DropdownMenuSubTrigger>

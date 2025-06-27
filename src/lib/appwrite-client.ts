@@ -1,3 +1,4 @@
+
 import { Client, Account, Storage, Databases } from 'appwrite';
 
 export const appwriteEndpoint = process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT || '';
@@ -10,6 +11,7 @@ export const appwriteLeadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_
 export const appwriteSettingsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_SETTINGS_COLLECTION_ID || '';
 export const appwriteConversationsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID || '';
 export const appwriteFaqsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID || '';
+export const appwriteCallLogsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CALL_LOGS_COLLECTION_ID || '';
 
 
 const client = new Client();

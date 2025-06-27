@@ -1,17 +1,19 @@
+
 'use server';
 
 import { databases } from '@/lib/appwrite-server';
 import { getLoggedInUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
-import { generateScript, type GenerateCallScriptInput } from '@/ai/flows/generate-call-script';
-import { twilio } from 'twilio';
-import { getAISettings } from '@/lib/settings';
+import { generateScript } from '@/ai/flows/generate-call-script';
+import twilio from 'twilio';
 import { ID, Permission, Role, Query } from 'node-appwrite';
 import { z } from 'zod';
 import type { Lead } from './page';
 
 const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
+const callLogsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CALL_LOGS_COLLECTION_ID!;
+
 
 const LeadSchema = z.object({
     id: z.string().optional(),
@@ -153,40 +155,74 @@ export async function initiateCall(leadData: Lead) {
     }
 
     const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+        return { error: "Twilio is not configured on the server. Please contact an administrator." };
+    }
+    if (!baseUrl) {
+        return { error: "The application's public URL (NEXT_PUBLIC_BASE_URL) is not configured. Please contact an administrator." };
+    }
+    if (!leadData.phone) {
+        return { error: "This lead does not have a phone number." };
+    }
+    if (!callLogsCollectionId || !dbId) {
+        return { error: "Call logs collection is not configured on the server." };
+    }
 
     try {
-        const settings = await getAISettings();
-        const scriptTemplate = settings.scriptTemplate;
+        const twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
         
-        const scriptInput: GenerateCallScriptInput = {
-            leadName: leadData.name,
-            leadStatus: leadData.status,
-            leadScore: leadData.score,
-            company: leadData.company,
-            jobTitle: leadData.jobTitle,
-            scriptTemplate,
-        };
+        const webhookUrl = new URL(`/api/twilio/call?leadId=${leadData.$id}`, baseUrl);
+        const statusCallbackUrl = new URL('/api/twilio/status', baseUrl);
 
-        const script = await generateScript(scriptInput);
+        const call = await twilioClient.calls.create({
+            to: leadData.phone,
+            from: TWILIO_PHONE_NUMBER,
+            url: webhookUrl.toString(),
+            statusCallback: statusCallbackUrl.toString(),
+            statusCallbackMethod: 'POST',
+            statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
+            record: true,
+        });
 
-        if (TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_PHONE_NUMBER) {
-            console.log("--- SIMULATING TWILIO CALL ---");
-            console.log(`From: ${TWILIO_PHONE_NUMBER}`);
-            console.log(`To: ${leadData.phone || '[No Phone Number]'}`);
-            console.log(`Lead: ${leadData.name}`);
-            console.log("Generated Script to be used for Text-to-Speech:");
-            console.log(script);
-            console.log("-----------------------------");
+        // Log the call initiation in our database
+        const permissions = [
+            Permission.read(Role.user(user.$id)),
+            Permission.update(Role.user(user.$id)),
+            Permission.delete(Role.user(user.$id)),
+            Permission.read(Role.label('admin')),
+        ];
 
-            return { success: true, script, message: "Call initiated successfully (Simulated)." };
-
-        } else {
-            console.warn("Twilio credentials not set. Skipping call, returning script only.");
-            return { success: true, script, message: "Twilio not configured. Generated script only." };
-        }
+        await databases.createDocument(
+            dbId,
+            callLogsCollectionId,
+            ID.unique(),
+            {
+                leadId: leadData.$id,
+                userId: user.$id,
+                callSid: call.sid,
+                status: 'initiated',
+            },
+            permissions
+        );
+        
+        // Update lead status to 'Called'
+        await databases.updateDocument(dbId, leadsCollectionId, leadData.$id, {
+            status: 'Called',
+            lastActivity: new Date().toISOString(),
+        });
+        
+        revalidatePath('/leads');
+        revalidatePath('/dashboard');
+        
+        return { success: true, callSid: call.sid };
         
     } catch (e: any) {
-        console.error('Failed to initiate call:', e);
-        return { error: `Failed to generate script: ${e.message}` };
+        console.error('Failed to initiate Twilio call:', e);
+        if (e.code === 21211) { // Invalid 'To' phone number
+            return { error: `Invalid phone number for lead: ${leadData.phone}. Please check the format.`};
+        }
+        return { error: `Failed to initiate call: ${e.message}` };
     }
 }

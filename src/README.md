@@ -1,3 +1,4 @@
+
 # Cally-IO: AI-Powered Conversational Sales Platform
 
 Cally-IO is a feature-complete, production-ready Next.js application designed to serve as an intelligent sales and support co-pilot. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, manage sales leads through a visual pipeline, and track performance with real-time analytics—all configurable by an administrator.
@@ -24,6 +25,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - [x] **AI-Powered RAG Chat**: The AI uses Retrieval-Augmented Generation to answer questions from documents and FAQs.
 - [x] **Real-Time Web Search**: The AI can search the web for information about competitors or current events.
 - [x] **AI Script Generator**: Dynamically generates personalized call scripts for leads.
+- [x] **Automated AI Calling**: The system can place automated outbound calls using Twilio, where an AI voice reads the generated script.
 - [x] **Conversation Intelligence**: Escalates to a human when it can't find an answer.
 - [x] **Performance Analytics**: Real-time admin and agent dashboards track key metrics with charts.
 - [x] **CRM & Integration Hub**: UI placeholders for connecting to external services like Slack or Google Sheets.
@@ -35,9 +37,10 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 ### 1. Prerequisites
 
 - Node.js (v18 or later)
+- [ngrok](https://ngrok.com/) or another tunneling service (for testing Twilio webhooks locally)
 - An Appwrite project
 - A Google AI API Key
-- A Twilio account (optional, for calling features)
+- A Twilio account with a purchased phone number
 
 ### 2. Installation
 
@@ -51,7 +54,7 @@ npm install
 
 ### 3. Environment Variables
 
-Create a `.env` file in the root of your project and add the necessary environment variables. See `documentation.txt` for a complete list of required variables and their descriptions.
+Create a `.env` file in the root of your project and add the necessary environment variables. See `documentation.txt` for a complete list of required variables and their descriptions. Crucially, you must set `NEXT_PUBLIC_BASE_URL` to your public-facing URL for Twilio webhooks to work.
 
 ### 4. Appwrite Setup
 
@@ -64,5 +67,11 @@ Start the Next.js development server:
 ```bash
 npm run dev
 ```
+
+If you are testing the Twilio calling feature locally, you must expose your local server to the internet. Open another terminal and run:
+```bash
+ngrok http 9002
+```
+Copy the public HTTPS URL provided by ngrok and set it as the value for `NEXT_PUBLIC_BASE_URL` in your `.env` file.
 
 Open [http://localhost:9002](http://localhost:9002) with your browser to see the result. To create your admin account, sign up using the email you specified in the `ADMIN_EMAIL` environment variable.
