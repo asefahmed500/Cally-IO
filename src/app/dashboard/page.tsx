@@ -2,8 +2,12 @@ import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { KeyRound, Database, Clock } from "lucide-react";
+import { KeyRound, Database, Clock, Users, BarChart2, Star } from "lucide-react";
 import { getAISettings, type AISettings } from "@/lib/settings";
+import { getLeads } from "../leads/page";
+import type { Lead } from "../leads/page";
+import type { Models } from "appwrite";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 function isWithinBusinessHours(settings: AISettings): boolean {
     if (!settings.businessHoursEnabled) {
@@ -30,6 +34,33 @@ function isWithinBusinessHours(settings: AISettings): boolean {
     }
 }
 
+function StatCard({ title, value, icon: Icon }: { title: string, value: string | number, icon: React.ElementType }) {
+    return (
+        <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div className="text-2xl font-bold">{value}</div>
+            </CardContent>
+        </Card>
+    )
+}
+
+function getAgentStats(leads: Lead[]) {
+    const totalLeads = leads.length;
+    const convertedCount = leads.filter(l => l.status === 'Converted').length;
+    const conversionRate = totalLeads > 0 ? Math.round((convertedCount / totalLeads) * 100) : 0;
+    const averageScore = totalLeads > 0 ? Math.round(leads.reduce((acc, l) => acc + l.score, 0) / totalLeads) : 0;
+    
+    return {
+        totalLeads,
+        conversionRate,
+        averageScore
+    }
+}
+
 export default async function DashboardPage() {
   const user = await getLoggedInUser();
   if (!user) {
@@ -42,17 +73,29 @@ export default async function DashboardPage() {
     !!process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID &&
     !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
 
-  const settings = await getAISettings();
+  const [settings, leads] = await Promise.all([
+    getAISettings(),
+    getLeads(user)
+  ]);
   const isChatActive = isWithinBusinessHours(settings);
-  
+  const agentStats = getAgentStats(leads);
+
   return (
     <div className="flex flex-col h-full gap-4">
       <header>
         <h1 className="text-3xl font-bold tracking-tight">Welcome, {user.name.split(' ')[0]}!</h1>
         <p className="text-muted-foreground">
-          How can I help you today? Ask a question or upload a document to get started.
+            How can I help you today? Ask a question, manage your leads, or upload a document to get started.
         </p>
       </header>
+
+      {/* Agent-specific stats */}
+      <div className="grid gap-4 md:grid-cols-3">
+        <StatCard title="Your Active Leads" value={agentStats.totalLeads} icon={Users} />
+        <StatCard title="Your Conversion Rate" value={`${agentStats.conversionRate}%`} icon={BarChart2} />
+        <StatCard title="Avg. Lead Score" value={agentStats.averageScore} icon={Star} />
+      </div>
+
       {!isGoogleConfigured && (
         <Alert variant="destructive">
           <KeyRound className="h-4 w-4" />

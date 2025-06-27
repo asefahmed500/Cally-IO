@@ -11,9 +11,9 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - `/src/app`: Contains the main application routes and pages.
   - `/api`: API routes for server-side logic (chat, history, TTS).
   - `/auth`: Server actions for authentication (signup, login, etc.).
-  - `/dashboard`: The main page for authenticated users, featuring the chat panel.
+  - `/dashboard`: The main page for authenticated users, featuring the chat panel and personal stats.
   - `/settings`: The admin-only page for analytics, system settings, AI agent configuration, and integrations.
-  - `/leads`: The admin-only lead management dashboard with a visual Kanban pipeline.
+  - `/leads`: The lead management dashboard with a visual Kanban pipeline, accessible to all users but with role-specific views.
   - `/knowledge`: A page for users to manage their documents and for admins to manage the entire knowledge base (documents and FAQs).
 - `/src/ai`: Contains all Genkit-related code for AI functionality.
   - `/flows`: Defines the core AI workflows (document processing, chat, script generation, etc.).
@@ -36,8 +36,8 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 ### 1. User Authentication & Lead Creation
 - A user signs up, logs in, or requests a password reset.
-- The `signup` server action creates a user in Appwrite, assigns a `user` or `admin` role, and simultaneously creates a corresponding document in the `leads` collection, visible only to admins.
-- The signup action includes placeholder comments to trigger integration hooks (e.g., Slack notifications).
+- The `signup` server action creates a user in Appwrite, assigns a `user` or `admin` role, and simultaneously creates a corresponding document in the `leads` collection with the `agentId` set to `null`.
+- **Manual Lead Creation**: Any logged-in user (acting as an agent) can manually create new leads from the `/leads` page. These leads are automatically assigned to them via the `agentId` field.
 
 ### 2. Knowledge Management & Document Processing
 - A user uploads a document (PDF, DOCX, TXT) via the chat panel.
@@ -53,16 +53,15 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - Once the stream is complete, the final AI message is appended to the history and saved to the database, ensuring persistence across sessions and devices.
 
 ### 4. Lead Management & Call Script Generation
-- Admins configure a master call script template in the Admin Control Panel.
-- On the `/leads` page, admins view a visual Kanban pipeline of all leads. They can drag-and-drop leads between stages, view profiles, and export data.
-- Clicking the "Generate Script & Call" button on a lead card triggers the `initiateCall` server action.
-- This action calls the `generateCallScript` Genkit flow, which combines the master template with the lead's specific data to create a personalized script. The script is then displayed in a toast notification.
+- The `/leads` page is a visual Kanban pipeline.
+- **Admins** see all leads in the system.
+- **Regular Users (Agents)** see leads they have manually created, plus any unassigned leads from new signups.
+- Any user can click "Generate Script & Call" on a lead card to trigger the `initiateCall` server action.
+- This action calls the `generateCallScript` Genkit flow, which combines the master template (from admin settings) with the lead's specific data to create a personalized script.
 
-### 5. Admin Analytics Dashboard
-- The `/settings` page provides admins with a real-time performance dashboard.
-- It fetches and displays live data from the `metrics`, `leads`, and `conversations` collections.
-- Metrics include Average User Satisfaction, Total Leads, Total Conversations, and Conversion Rate.
-- A bar chart visualizes the breakdown of user feedback (good vs. bad).
+### 5. Admin & Agent Dashboards
+- The `/dashboard` page provides a personalized view. All users see their chat panel. Agents also see personal performance stats (total leads, conversion rate).
+- The `/settings` page is admin-only and provides a global performance dashboard and system configuration.
 
 ## Appwrite Setup
 
@@ -75,8 +74,8 @@ To make the application fully functional, you need to configure your Appwrite pr
         - Attributes: `documentId` (string), `fileName` (string), `chunkText` (string), `embedding` (float[], size 768), `userId` (string).
     *   **`metrics`**: Stores user feedback on AI responses.
         - Attributes: `userId` (string), `messageId` (string), `feedback` (string).
-    *   **`leads`**: Stores information about users who sign up.
-        - Attributes: `userId` (string), `name` (string), `email` (string), `status` (string), `score` (integer), `lastActivity` (datetime).
+    *   **`leads`**: Stores information about leads.
+        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**).
     *   **`settings`**: A singleton collection for AI and business configuration.
         - Create **one** document with the ID `default_config`.
         - Attributes: `ai_personality` (string), `ai_style` (string), `ai_instructions` (string), `business_hours_enabled` (boolean), `business_hours_start` (string), `business_hours_end` (string), `business_hours_timezone` (string), `away_message` (string), `call_script_template` (string).
@@ -89,4 +88,4 @@ To make the application fully functional, you need to configure your Appwrite pr
 - Users should only have CRUD access to their own documents (`Permission.read(Role.user(userId))`).
 - Admins (`Role.label('admin')`) should have read access to most data for support and management purposes.
 - Public data (like FAQs) can use `Permission.read(Role.any())`.
-- Server-managed collections (like `leads`) should only be writable by the server-side API key, not by clients.
+- Server-managed collections (like `leads`) should use document-level permissions to grant access to the assigned agent and admins.

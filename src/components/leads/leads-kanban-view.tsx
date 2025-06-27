@@ -4,11 +4,15 @@
 import * as React from 'react';
 import type { Lead } from '@/app/leads/page';
 import { LeadCard } from './lead-card';
-import { updateLeadStatus } from '@/app/leads/actions';
+import { createLead, updateLeadStatus } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Download, Search } from 'lucide-react';
+import { Download, Search, PlusCircle, Loader2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { useActionState } from 'react';
+import { Label } from '../ui/label';
+
 
 const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
 
@@ -19,9 +23,45 @@ const statusStyles = {
     Converted: { title: 'Converted', color: 'bg-green-500' },
 };
 
+function CreateLeadForm({ onFormSuccess }: { onFormSuccess: () => void }) {
+    const [state, formAction, isPending] = useActionState(createLead, null);
+    const { toast } = useToast();
+
+    React.useEffect(() => {
+        if (state?.status === 'success') {
+            toast({ title: 'Success', description: state.message });
+            onFormSuccess();
+        } else if (state?.status === 'error' && typeof state.message === 'string') {
+            toast({ variant: 'destructive', title: 'Error', description: state.message });
+        }
+    }, [state, toast, onFormSuccess]);
+
+    return (
+        <form action={formAction} className="space-y-4">
+            <div className="space-y-2">
+                <Label htmlFor="name">Lead Name</Label>
+                <Input id="name" name="name" placeholder="e.g., Jane Doe" required />
+                {state?.errors?.name && <p className="text-sm text-destructive">{state.errors.name[0]}</p>}
+            </div>
+            <div className="space-y-2">
+                <Label htmlFor="email">Lead Email</Label>
+                <Input id="email" name="email" type="email" placeholder="e.g., jane.doe@example.com" required />
+                {state?.errors?.email && <p className="text-sm text-destructive">{state.errors.email[0]}</p>}
+            </div>
+            <DialogFooter>
+                 <Button type="submit" disabled={isPending}>
+                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <PlusCircle className="mr-2 h-4 w-4" />}
+                    Create Lead
+                </Button>
+            </DialogFooter>
+        </form>
+    );
+}
+
 export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
     const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
     const [searchTerm, setSearchTerm] = React.useState('');
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = React.useState(false);
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -55,7 +95,11 @@ export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
     };
     
     const handleExport = () => {
-        const headers = ['Name', 'Email', 'Status', 'Score', 'Last Activity', 'Created At'];
+        if (leads.length === 0) {
+            toast({ title: "No leads to export.", variant: "default" });
+            return;
+        }
+        const headers = ['Name', 'Email', 'Status', 'Score', 'Last Activity', 'Created At', 'Agent ID'];
         const csvRows = [
           headers.join(','),
           ...leads.map((lead) =>
@@ -66,6 +110,7 @@ export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
               lead.score,
               `"${new Date(lead.lastActivity).toLocaleString()}"`,
               `"${new Date(lead.$createdAt).toLocaleString()}"`,
+              `"${lead.agentId || 'N/A'}"`
             ].join(',')
           ),
         ];
@@ -107,10 +152,16 @@ export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
                         className="pl-10"
                     />
                 </div>
-                <Button onClick={handleExport} disabled={leads.length === 0}>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export CSV
-                </Button>
+                <div className="flex items-center gap-2">
+                    <Button variant="outline" onClick={() => setIsCreateDialogOpen(true)}>
+                        <PlusCircle className="mr-2 h-4 w-4" />
+                        Create Lead
+                    </Button>
+                    <Button onClick={handleExport}>
+                        <Download className="mr-2 h-4 w-4" />
+                        Export CSV
+                    </Button>
+                </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1 overflow-y-auto">
                 {statuses.map(status => (
@@ -142,6 +193,17 @@ export function LeadsKanbanView({ initialLeads }: { initialLeads: Lead[] }) {
                     </div>
                 ))}
             </div>
+            <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle>Create a New Lead</DialogTitle>
+                        <DialogDescription>
+                            Manually add a new lead to your pipeline. This lead will be assigned to you.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <CreateLeadForm onFormSuccess={() => setIsCreateDialogOpen(false)} />
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }
