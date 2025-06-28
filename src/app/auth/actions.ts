@@ -4,7 +4,6 @@ import { users, account, databases } from '@/lib/appwrite-server';
 import { setSessionCookie, deleteSessionCookie } from '@/lib/auth';
 import { ID, Permission, Role } from 'node-appwrite';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
 
 export async function signup(prevState: any, formData: FormData) {
   const name = formData.get('name') as string;
@@ -90,14 +89,8 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 export async function logout() {
-  const session = headers().get('X-Appwrite-Session');
-  if (session) {
-    try {
-        await account.deleteSession(session);
-    } catch(e) {
-        // session might be invalid, but we want to delete cookie anyway
-    }
-  }
+  // The only action required to log a user out is to delete their session cookie.
+  // The Appwrite session on the server will expire on its own.
   await deleteSessionCookie();
   redirect('/');
 }
