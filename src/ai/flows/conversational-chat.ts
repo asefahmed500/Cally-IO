@@ -9,7 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { embed, type Part } from 'genkit';
-import { googleSearch } from '@genkit-ai/googleai';
+import { webSearch } from '@/ai/tools/tavily';
 import {
   appwriteDatabases,
   appwriteEmbeddingsCollectionId,
@@ -203,7 +203,7 @@ ${docContext || 'No context found in your documents for this query.'}
     const chatPrompt = ai.definePrompt({
       name: 'conversationalRagChatPrompt',
       system: systemPromptText,
-      tools: [googleSearch],
+      tools: [webSearch],
     });
 
     const userMessageContent: Part[] = [{ text: prompt }];

@@ -17,6 +17,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
   - `/knowledge`: A page for users to manage their documents and for admins to manage the entire knowledge base (documents and FAQs).
 - `/src/ai`: Contains all Genkit-related code for AI functionality.
   - `/flows`: Defines the core AI workflows (document processing, chat, script generation, etc.).
+  - `/tools`: Contains custom AI tools, such as the web search tool.
   - `/genkit.ts`: Configures and initializes the Genkit AI instance.
 - `/src/components`: Reusable React components.
   - `/chat`: Components for the chat interface, including conversation starters and audio playback.
@@ -51,7 +52,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - The TwiML instructs Twilio's AI voice to read the script, then asks a question (e.g., "Are you interested?").
 - The TwiML's `<Gather>` verb listens for the lead's spoken response.
 - Twilio transcribes the speech and sends the result to a second webhook: `/api/twilio/handle-response`.
-- This second webhook saves the transcribed text to the `call_logs` document and returns a final TwiML message based on the response (e.g., "Great, a specialist will call you back.") before hanging up.
+- This second webhook uses an AI flow (`interpretSpokenResponse`) to understand the lead's intent. It saves the interpreted summary (e.g., "[POSITIVE] The lead expressed interest") to the `call_logs` document and returns a dynamic, final TwiML message before hanging up.
 - As the call progresses, Twilio sends status updates to the `/api/twilio/status` webhook, which updates the `call_logs` document.
 
 ### 3. Lead Management & Follow-ups
@@ -64,12 +65,13 @@ The project follows a standard Next.js App Router structure. Key directories inc
 ### 4. Conversational Chat & History Persistence
 - A user submits a question. The backend API finds or creates a conversation document.
 - The `conversationalRagChat` flow is triggered. It fetches FAQs from Appwrite, and performs a vector search on user documents.
+- If the AI needs external or real-time information, it uses the `webSearch` tool (powered by Tavily).
 - The response is streamed to the UI. The user can play back the response as audio.
 - The conversation is saved to the database.
 
 ## Integrations
 
-### 1. New Lead Webhook (for CRMs like Superdev.build, HubSpot, etc.)
+### New Lead Webhook (for CRMs like Superdev.build, HubSpot, etc.)
 - **Trigger**: A new user signs up in the application.
 - **Action**: A `POST` request with the new lead's data (name, email, status, etc.) is sent to the configured webhook URL.
 - **Setup**: To enable this, add the following environment variable to your `.env` file:

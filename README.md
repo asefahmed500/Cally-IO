@@ -9,6 +9,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - **AI**: Google Gemini via Genkit
 - **Backend & Database**: Appwrite (for authentication, storage, and database)
 - **Calling**: Twilio (for automated calling features)
+- **Real-Time Search**: Tavily
 
 ## Core Features Checklist
 
@@ -24,6 +25,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - [x] **Editable Call Script Templates**: Admins create master call scripts for the AI to use.
 - [x] **Business Hours**: Admins can set operating hours and an away message.
 - [x] **AI-Powered RAG Chat**: The AI uses Retrieval-Augmented Generation to answer questions from documents and FAQs.
+- [x] **Real-Time Web Search**: The AI can search the web for information about competitors or current events using Tavily.
 - [x] **AI Script Generator**: Dynamically generates personalized call scripts for leads.
 - [x] **Automated AI Calling**: The system can place automated outbound calls using Twilio, where an AI voice reads the generated script.
 - [x] **Conversation Intelligence**: The system uses speech recognition to understand the lead's response and can escalate to a human when it can't find an answer.
@@ -42,6 +44,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - An Appwrite project
 - A Google AI API Key
 - A Twilio account with a purchased phone number
+- A Tavily API Key
 
 ### 2. Installation
 
