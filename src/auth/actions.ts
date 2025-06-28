@@ -4,7 +4,8 @@ import { users, account, databases } from '@/lib/appwrite-server';
 import { setSessionCookie, deleteSessionCookie } from '@/lib/auth';
 import { ID, Permission, Role } from 'node-appwrite';
 import { redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { cookies, headers } from 'next/headers';
+import { Client, Account as UserAccount } from 'appwrite';
 
 export async function signup(prevState: any, formData: FormData) {
   const name = formData.get('name') as string;
@@ -90,14 +91,22 @@ export async function login(prevState: any, formData: FormData) {
 }
 
 export async function logout() {
-  const session = headers().get('X-Appwrite-Session');
-  if (session) {
-    try {
-        await account.deleteSession(session);
-    } catch(e) {
-        // session might be invalid, but we want to delete cookie anyway
+  try {
+    const session = cookies().get('appwrite-session');
+    if (session) {
+        const client = new Client()
+            .setEndpoint(process.env.NEXT_PUBLIC_APPWRITE_ENDPOINT!)
+            .setProject(process.env.NEXT_PUBLIC_APPWRITE_PROJECT_ID!)
+            .setSession(session.value);
+        
+        const userAccount = new UserAccount(client);
+        await userAccount.deleteSession('current');
     }
+  } catch (e: any) {
+    // If the session is invalid or expired, Appwrite throws an error.
+    // We can ignore this and proceed to delete the cookie.
   }
+
   await deleteSessionCookie();
   redirect('/');
 }
