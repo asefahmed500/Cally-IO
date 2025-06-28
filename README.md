@@ -35,6 +35,15 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - [x] **Responsive Design**: The UI works seamlessly on both desktop and mobile devices.
 - [x] **Multi-Modal Chat**: Users can upload images and play back AI responses as audio (Text-to-Speech).
 
+## Partners & Credits
+
+This project is proud to partner with leading companies in the AI and cloud space. As part of these partnerships, you can get access to special credits and features to build and scale your application:
+
+- **Tavily**: Get Tavily credits and exclusive beta access to Tavily Crawl for advanced, real-time web search capabilities.
+- **Appwrite**: Utilize Appwrite Cloud credits for your backend needs, including databases, authentication, storage, and serverless functions.
+- **Keywords AI**: Receive credits for Keywords AI to implement robust LLM monitoring and analytics.
+- **Mem0**: Get access to Mem0 Pro credits to build a persistent and intelligent memory layer for your AI agents.
+
 ## Getting Started
 
 ### 1. Prerequisites
