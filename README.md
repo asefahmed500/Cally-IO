@@ -1,4 +1,3 @@
-
 # Cally-IO: AI-Powered Conversational Sales Platform
 
 Cally-IO is a feature-complete, production-ready Next.js application designed to serve as an intelligent sales and support co-pilot. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, manage sales leads through a visual pipeline, and track performance with real-time analytics—all configurable by an administrator.
@@ -77,5 +76,3 @@ ngrok http 9002
 Copy the public HTTPS URL provided by ngrok and set it as the value for `NEXT_PUBLIC_BASE_URL` in your `.env` file.
 
 Open [http://localhost:9002](http://localhost:9002) with your browser to see the result. To create your admin account, sign up using the email you specified in the `ADMIN_EMAIL` environment variable.
-
-```

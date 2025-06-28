@@ -1,4 +1,3 @@
-
 'use server';
 
 import { databases } from '@/lib/appwrite-server';
@@ -192,7 +191,6 @@ export async function initiateCall(leadData: Lead) {
             statusCallback: statusCallbackUrl.toString(),
             statusCallbackMethod: 'POST',
             statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-            record: true,
         });
 
         // Log the call initiation in our database

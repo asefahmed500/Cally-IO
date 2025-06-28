@@ -5,7 +5,6 @@ import { getConversation, createConversation, updateConversation } from '@/lib/c
 import { z } from 'zod';
 import { type Part } from 'genkit/ai';
 import { v4 as uuidv4 } from 'uuid';
-// import { Mem0Client } from 'mem0-node';
 
 const ChatRequestSchema = z.object({
   prompt: z.string(),
@@ -14,13 +13,11 @@ const ChatRequestSchema = z.object({
 
 type ChatMessageWithId = Message & { id: string, image?:string };
 
-// A custom ReadableStream that wraps the Genkit stream and handles database updates and integrations.
+// A custom ReadableStream that wraps the Genkit stream and handles database updates.
 function createChatStream(
     flowPromise: Promise<any>, 
     userId: string, 
-    fullHistory: ChatMessageWithId[], 
-    prompt: string,
-    userMessageId: string
+    fullHistory: ChatMessageWithId[]
 ) {
   const textEncoder = new TextEncoder();
   let fullResponse = '';
@@ -46,20 +43,6 @@ function createChatStream(
             // This case should ideally not happen if createConversation is called first.
             await createConversation(userId, finalHistory);
         }
-
-        // Fire-and-forget integrations after the response is complete.
-        // (async () => {
-        //     // Log to Mem0 for personalized memory
-        //     if (process.env.MEM0_API_KEY) {
-        //         try {
-        //             const mem0 = new Mem0Client({ apiKey: process.env.MEM0_API_KEY });
-        //             // Add both user and model turns to memory
-        //             await mem0.add(`User: ${prompt}\nAI: ${fullResponse}`, { userId });
-        //         } catch (e) {
-        //             console.error("Failed to save to Mem0:", e);
-        //         }
-        //     }
-        // })();
 
       } catch (e) {
         console.error("Error during chat stream or history update:", e);
@@ -120,13 +103,11 @@ export async function POST(req: Request) {
     image: image,
   });
 
-  // 5. Create and return the custom stream. It will handle saving the AI's response and logging.
+  // 5. Create and return the custom stream. It will handle saving the AI's response.
   const stream = createChatStream(
     flowPromise, 
     user.$id, 
-    historyWithUserMessage, 
-    prompt,
-    userMessage.id
+    historyWithUserMessage
   );
   
   return new Response(stream, {

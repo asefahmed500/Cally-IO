@@ -38,18 +38,27 @@ export async function signup(prevState: any, formData: FormData) {
             ID.unique(),
             leadData,
             [
-                // Any logged-in user can read unassigned leads
-                Permission.read(Role.any()), 
-                // Only admins can update/delete these signup leads initially
-                Permission.update(Role.label('admin')),
-                Permission.delete(Role.label('admin')),
+                Permission.read(Role.users()), // Any authenticated user can see it
+                Permission.update(Role.users()), // Any authenticated user can claim it
+                Permission.delete(Role.label('admin')), // Only admins can delete
             ]
         );
 
         // --- Integration Hooks ---
-        // TODO: Trigger Slack notification with leadData
-        // TODO: Add leadData to Google Sheet
-        // TODO: Send webhook with leadData
+        if (process.env.WEBHOOK_URL_NEW_LEAD) {
+            try {
+                // Fire-and-forget fetch request. We don't `await` this on purpose
+                // so it doesn't block the signup process if the webhook is slow.
+                fetch(process.env.WEBHOOK_URL_NEW_LEAD, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(leadData),
+                });
+            } catch (webhookError) {
+                console.error("Failed to send new lead webhook:", webhookError);
+                // Fail silently so it doesn't interrupt the user experience.
+            }
+        }
     }
     
     const session = await account.createEmailPasswordSession(email, password);
