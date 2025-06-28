@@ -1,3 +1,4 @@
+
 'use server';
 
 import { databases } from '@/lib/appwrite-server';
@@ -23,6 +24,7 @@ const LeadSchema = z.object({
     notes: z.string().optional(),
     followUpDate: z.string().optional(),
     followUpNotes: z.string().optional(),
+    agentId: z.string().optional(),
 });
 
 export async function saveLead(prevState: any, formData: FormData) {
@@ -42,6 +44,7 @@ export async function saveLead(prevState: any, formData: FormData) {
         notes: formData.get('notes'),
         followUpDate: formData.get('followUpDate'),
         followUpNotes: formData.get('followUpNotes'),
+        agentId: formData.get('agentId'),
     });
 
     if (!validatedFields.success) {
@@ -54,12 +57,22 @@ export async function saveLead(prevState: any, formData: FormData) {
     
     const { id, ...leadDataFromForm } = validatedFields.data;
 
-    const leadPayload = {
-        ...leadDataFromForm,
+    const leadPayload: { [key: string]: any } = {
+        name: leadDataFromForm.name,
+        email: leadDataFromForm.email,
+        phone: leadDataFromForm.phone,
+        company: leadDataFromForm.company,
+        jobTitle: leadDataFromForm.jobTitle,
+        notes: leadDataFromForm.notes,
         followUpDate: leadDataFromForm.followUpDate || null,
         followUpNotes: leadDataFromForm.followUpNotes || null,
         lastActivity: new Date().toISOString(),
     };
+
+    if (isAdmin) {
+        leadPayload.agentId = leadDataFromForm.agentId || null;
+    }
+
 
     try {
         if (id) {
@@ -75,21 +88,24 @@ export async function saveLead(prevState: any, formData: FormData) {
                 ...leadPayload,
                 status: 'New',
                 score: Math.floor(Math.random() * 21) + 10,
-                agentId: user.$id, // Associate this lead with the agent creating it
+                // If admin didn't assign, it will be null from the payload. If user created, assign to them.
+                agentId: leadPayload.agentId === undefined ? user.$id : leadPayload.agentId,
             };
+
+            // Use broad permissions and rely on server-side logic for security.
+            // This allows admins to reassign leads without complex permission updates.
+            const permissions = [
+                Permission.read(Role.users()),
+                Permission.update(Role.users()),
+                Permission.delete(Role.label('admin')),
+            ];
+
             await databases.createDocument(
                 dbId,
                 leadsCollectionId,
                 ID.unique(),
                 newLeadData,
-                [
-                    Permission.read(Role.user(user.$id)),
-                    Permission.update(Role.user(user.$id)),
-                    Permission.delete(Role.user(user.$id)),
-                    Permission.read(Role.label('admin')),
-                    Permission.update(Role.label('admin')),
-                    Permission.delete(Role.label('admin')),
-                ]
+                permissions
             );
         }
 
@@ -131,9 +147,15 @@ export async function updateLeadStatus(leadId: string, status: string) {
   if (!user) {
     return { error: 'Unauthorized access.' };
   }
+  const isAdmin = user.labels.includes('admin');
 
   try {
     const lead = await databases.getDocument(dbId, leadsCollectionId, leadId);
+
+    // SECURITY CHECK: Only admin or assigned agent (or anyone if unassigned) can update
+    if (!isAdmin && lead.agentId && lead.agentId !== user.$id) {
+        return { error: 'You do not have permission to update this lead.' };
+    }
     
     const updateData: { status: string; lastActivity: string; agentId?: string } = {
         status,

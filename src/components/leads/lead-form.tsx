@@ -6,6 +6,7 @@ import { useActionState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { saveLead } from '@/app/leads/actions';
 import type { Lead } from '@/app/leads/page';
+import type { UserSummary } from '@/app/settings/users_actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,8 +17,9 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-export function LeadForm({ lead, onFormSuccess }: { lead?: Lead | null, onFormSuccess: () => void }) {
+export function LeadForm({ lead, onFormSuccess, allUsers, isAdmin }: { lead?: Lead | null, onFormSuccess: () => void, allUsers: UserSummary[], isAdmin: boolean }) {
     const [state, formAction, isPending] = useActionState(saveLead, null);
     const { toast } = useToast();
     const formRef = React.useRef<HTMLFormElement>(null);
@@ -66,6 +68,25 @@ export function LeadForm({ lead, onFormSuccess }: { lead?: Lead | null, onFormSu
                 <Input id="jobTitle" name="jobTitle" placeholder="e.g., Director of Marketing" defaultValue={lead?.jobTitle} />
                 {state?.errors?.jobTitle && <p className="text-sm text-destructive">{state.errors.jobTitle[0]}</p>}
             </div>
+            {isAdmin && (
+                <div className="space-y-2">
+                    <Label htmlFor="agentId">Assigned Agent</Label>
+                    <Select name="agentId" defaultValue={lead?.agentId || ''}>
+                        <SelectTrigger id="agentId">
+                            <SelectValue placeholder="Select an agent" />
+                        </SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="">Unassigned</SelectItem>
+                            {allUsers.map(user => (
+                                <SelectItem key={user.$id} value={user.$id}>
+                                    {user.name} ({user.email})
+                                </SelectItem>
+                            ))}
+                        </SelectContent>
+                    </Select>
+                    {state?.errors?.agentId && <p className="text-sm text-destructive">{state.errors.agentId[0]}</p>}
+                </div>
+            )}
              <div className="space-y-2">
                 <Label htmlFor="notes">Notes</Label>
                 <Textarea id="notes" name="notes" placeholder="e.g., Met at the conference. Interested in AI features." defaultValue={lead?.notes} className="min-h-24" />

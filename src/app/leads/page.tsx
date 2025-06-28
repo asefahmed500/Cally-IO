@@ -8,6 +8,8 @@ import type { Models } from "node-appwrite";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table } from "lucide-react";
+import { listUsers } from "../settings/users_actions";
+import type { UserSummary } from "../settings/users_actions";
 
 export interface Lead extends Models.Document {
     userId: string | null; // Can be null for manually created leads
@@ -38,23 +40,14 @@ export async function getLeads(user: Models.User<Models.Preferences>): Promise<L
     try {
         const queries = isAdmin 
             ? [Query.orderDesc('$createdAt'), Query.limit(500)]
-            // If not admin, fetch leads created by this user (agent)
-            : [Query.equal('agentId', user.$id), Query.orderDesc('$createdAt'), Query.limit(500)];
+            // If not admin, fetch leads assigned to this user AND unassigned leads
+            : [Query.equal('agentId', [user.$id, null]), Query.orderDesc('$createdAt'), Query.limit(500)];
 
         const response = await databases.listDocuments(
             dbId,
             leadsCollectionId,
             queries
         );
-        // Include leads from signups that are unassigned (agentId is null)
-        if (!isAdmin) {
-            const unassignedLeads = await databases.listDocuments(
-                dbId,
-                leadsCollectionId,
-                [Query.isNull('agentId'), Query.orderDesc('$createdAt'), Query.limit(500)]
-            );
-            response.documents.push(...unassignedLeads.documents);
-        }
 
         return response.documents as Lead[];
     } catch (e) {
@@ -71,10 +64,13 @@ export default async function LeadsPage() {
     redirect("/login");
   }
 
-  // The page is now accessible to all users, but data is filtered by role in getLeads
-  const isConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
-  const leads = await getLeads(user);
   const isAdmin = user.labels.includes('admin');
+  const isConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
+  
+  const [leads, allUsers] = await Promise.all([
+    getLeads(user),
+    isAdmin ? listUsers() : Promise.resolve([] as UserSummary[])
+  ]);
 
   return (
     <div className="flex flex-col h-full">
@@ -100,7 +96,7 @@ export default async function LeadsPage() {
             </CardContent>
           </Card>
       ) : (
-          <LeadsKanbanView initialLeads={leads} currentUser={user} />
+          <LeadsKanbanView initialLeads={leads} currentUser={user} allUsers={allUsers} />
       )}
     </div>
   )

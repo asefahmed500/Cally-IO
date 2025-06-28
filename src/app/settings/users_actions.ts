@@ -1,3 +1,4 @@
+
 'use server';
 
 import { users, account, databases } from '@/lib/appwrite-server';
@@ -9,6 +10,15 @@ import { z } from 'zod';
 const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
 
+export type UserSummary = {
+    $id: string;
+    name: string;
+    email: string;
+    labels: string[];
+    emailVerification: boolean;
+    createdAt: string;
+};
+
 // Helper to check for admin
 async function isAdmin() {
     const user = await getLoggedInUser();
@@ -18,11 +28,11 @@ async function isAdmin() {
     return user;
 }
 
-export async function listUsers() {
+export async function listUsers(): Promise<UserSummary[]> {
     await isAdmin();
     try {
         const response = await users.list([Query.limit(100)]); // Get up to 100 users
-        return response.users.map(user => ({
+        const usersToReturn: UserSummary[] = response.users.map(user => ({
             $id: user.$id,
             name: user.name,
             email: user.email,
@@ -30,6 +40,7 @@ export async function listUsers() {
             emailVerification: user.emailVerification,
             createdAt: user.$createdAt,
         }));
+        return usersToReturn;
     } catch (e) {
         console.error('Failed to list users:', e);
         return [];
@@ -44,7 +55,7 @@ const CreateUserSchema = z.object({
 });
 
 export async function createUser(prevState: any, formData: FormData) {
-    const adminUser = await isAdmin();
+    await isAdmin();
 
     const validatedFields = CreateUserSchema.safeParse({
         name: formData.get('name'),

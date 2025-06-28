@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -12,6 +13,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { LeadForm } from './lead-form';
 import type { Models } from 'appwrite';
+import type { UserSummary } from '@/app/settings/users_actions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
@@ -80,7 +82,7 @@ function FollowUpList({ leads, onEdit }: { leads: Lead[], onEdit: (lead: Lead) =
     );
 }
 
-export function LeadsKanbanView({ initialLeads, currentUser }: { initialLeads: Lead[], currentUser: Models.User<Models.Preferences> }) {
+export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initialLeads: Lead[], currentUser: Models.User<Models.Preferences>, allUsers: UserSummary[] }) {
     const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -88,6 +90,7 @@ export function LeadsKanbanView({ initialLeads, currentUser }: { initialLeads: L
     const [deletingLead, setDeletingLead] = React.useState<Lead | null>(null);
     const [isDeleting, startDeleteTransition] = React.useTransition();
     const { toast } = useToast();
+    const isAdmin = currentUser.labels.includes('admin');
 
     React.useEffect(() => {
         setLeads(initialLeads);
@@ -274,7 +277,12 @@ export function LeadsKanbanView({ initialLeads, currentUser }: { initialLeads: L
                             {editingLead ? "Update the details for this lead." : "Manually add a new lead to your pipeline. It will be assigned to you."}
                         </DialogDescription>
                     </DialogHeader>
-                    <LeadForm lead={editingLead} onFormSuccess={() => setIsFormOpen(false)} />
+                    <LeadForm 
+                        lead={editingLead} 
+                        onFormSuccess={() => setIsFormOpen(false)} 
+                        allUsers={allUsers}
+                        isAdmin={isAdmin}
+                    />
                 </DialogContent>
             </Dialog>
 

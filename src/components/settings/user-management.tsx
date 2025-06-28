@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -45,9 +46,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Switch } from '../ui/switch';
-import type { Models } from 'node-appwrite';
-
-type User = Awaited<ReturnType<typeof listUsers>>[0];
+import type { UserSummary } from '@/app/settings/users_actions';
 
 function CreateUserForm({ onFormSuccess }: { onFormSuccess: () => void }) {
     const [state, formAction, isPending] = useActionState(createUser, null);
@@ -93,11 +92,11 @@ function CreateUserForm({ onFormSuccess }: { onFormSuccess: () => void }) {
     );
 }
 
-export function UserManagement({ initialUsers, currentUserId }: { initialUsers: User[], currentUserId: string }) {
+export function UserManagement({ initialUsers, currentUserId }: { initialUsers: UserSummary[], currentUserId: string }) {
   const { toast } = useToast();
   const [isPending, startTransition] = useTransition();
   const [isCreateDialogOpen, setCreateDialogOpen] = React.useState(false);
-  const [deleteTarget, setDeleteTarget] = React.useState<User | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<UserSummary | null>(null);
 
   const handleAction = (action: () => Promise<{status: string, message: string}>) => {
       startTransition(async () => {
