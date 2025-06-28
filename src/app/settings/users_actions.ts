@@ -1,10 +1,13 @@
 'use server';
 
-import { users, account } from '@/lib/appwrite-server';
+import { users, account, databases } from '@/lib/appwrite-server';
 import { getLoggedInUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
-import { ID, AppwriteException, Query } from 'node-appwrite';
+import { ID, AppwriteException, Query, Permission, Role } from 'node-appwrite';
 import { z } from 'zod';
+
+const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
 
 // Helper to check for admin
 async function isAdmin() {
@@ -41,7 +44,7 @@ const CreateUserSchema = z.object({
 });
 
 export async function createUser(prevState: any, formData: FormData) {
-    await isAdmin();
+    const adminUser = await isAdmin();
 
     const validatedFields = CreateUserSchema.safeParse({
         name: formData.get('name'),
@@ -60,8 +63,36 @@ export async function createUser(prevState: any, formData: FormData) {
         const newUser = await users.create(ID.unique(), email, undefined, password, name);
         const labels = makeAdmin ? ['user', 'admin'] : ['user'];
         await users.updateLabels(newUser.$id, labels);
+        
+        // Create a corresponding lead document for the new user
+        if (dbId && leadsCollectionId) {
+            const leadData = {
+                userId: newUser.$id,
+                name: name,
+                email: email,
+                status: 'New',
+                score: Math.floor(Math.random() * 21) + 10,
+                lastActivity: new Date().toISOString(),
+                agentId: newUser.$id, // Assign the lead to the user themselves initially
+            };
+            await databases.createDocument(
+                dbId,
+                leadsCollectionId,
+                ID.unique(),
+                leadData,
+                [
+                    Permission.read(Role.user(newUser.$id)),
+                    Permission.update(Role.user(newUser.$id)),
+                    Permission.delete(Role.user(newUser.$id)),
+                    Permission.read(Role.label('admin')),
+                    Permission.update(Role.label('admin')),
+                    Permission.delete(Role.label('admin')),
+                ]
+            );
+        }
 
         revalidatePath('/settings');
+        revalidatePath('/leads');
         return { status: 'success', message: `User "${name}" created successfully.` };
     } catch (e) {
         if (e instanceof AppwriteException && e.code === 409) {
@@ -81,6 +112,7 @@ export async function deleteUser(userId: string) {
     try {
         await users.delete(userId);
         revalidatePath('/settings');
+        revalidatePath('/leads');
         return { status: 'success', message: 'User deleted successfully.' };
     } catch (e) {
         console.error('Failed to delete user:', e);
