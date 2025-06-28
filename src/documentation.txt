@@ -51,7 +51,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 - The TwiML instructs Twilio's AI voice to read the script, then asks a question (e.g., "Are you interested?").
 - The TwiML's `<Gather>` verb listens for the lead's spoken response.
 - Twilio transcribes the speech and sends the result to a second webhook: `/api/twilio/handle-response`.
-- This second webhook saves the transcribed text to the `call_logs` document and returns a final TwiML message based on the response (e.g., "Great, a specialist will call you back.") before hanging up.
+- This second webhook uses an AI flow (`interpretSpokenResponse`) to understand the lead's intent. It saves the interpreted summary (e.g., "[POSITIVE] The lead expressed interest") to the `call_logs` document and returns a dynamic, final TwiML message before hanging up.
 - As the call progresses, Twilio sends status updates to the `/api/twilio/status` webhook, which updates the `call_logs` document.
 
 ### 3. Lead Management & Follow-ups
@@ -64,6 +64,7 @@ The project follows a standard Next.js App Router structure. Key directories inc
 ### 4. Conversational Chat & History Persistence
 - A user submits a question. The backend API finds or creates a conversation document.
 - The `conversationalRagChat` flow is triggered. It fetches FAQs from Appwrite, and performs a vector search on user documents.
+- If the AI needs external or real-time information, it uses the built-in Google Search tool.
 - The response is streamed to the UI. The user can play back the response as audio.
 - The conversation is saved to the database.
 
