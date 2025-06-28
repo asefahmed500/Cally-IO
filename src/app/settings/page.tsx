@@ -2,7 +2,7 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, MessageSquare, Star, Users, Cog, UserPlus, Link as LinkIcon, CheckCircle, XCircle, AlertTriangle, Cpu, SearchCode } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog, UserPlus, Link as LinkIcon, CheckCircle, XCircle, AlertTriangle, Cpu, SearchCode, Globe } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

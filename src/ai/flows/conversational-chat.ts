@@ -19,7 +19,6 @@ import { Query } from 'appwrite';
 import { getLoggedInUser } from '@/lib/auth';
 import { getAISettings } from '@/lib/settings';
 import { logDocumentUsage } from '@/app/settings/analytics_actions';
-// import { Mem0Client } from 'mem0-node';
 
 const MessageSchema = z.object({
   role: z.enum(['user', 'model']),
@@ -35,6 +34,7 @@ export type ConversationalRagChatInput = z.infer<
   typeof ConversationalRagChatInputSchema
 >;
 export type Message = z.infer<typeof MessageSchema>;
+
 
 // Helper function to calculate cosine similarity
 function cosineSimilarity(vecA: number[], vecB: number[]): number {
@@ -204,12 +204,12 @@ Your main purpose is to guide the user through a natural sales conversation. Do 
     ${faqContext || 'No FAQs provided.'}
 
 3.  **Image Analysis**: If a user provides an image, it is the most important piece of context for that turn. Analyze it first before consulting documents.
-
+    
 4.  **Secondary Source (Documents)**: The "DOCUMENT CONTEXT" provided is your source of truth for your own product's features and details not covered in the FAQs.
-
-5.  **Knowledge Hierarchy & Competitive Intelligence**:
-    *   **Internal Knowledge**: The "DOCUMENT CONTEXT" and "FREQUENTLY ASKED QUESTIONS" are your absolute source of truth for your own product's features and details.
-    *   **External Knowledge**: For questions about competitors or general knowledge not found in the provided context, rely on your existing knowledge. Clearly state that this information may not be the most current. Never invent information.
+    
+5.  **Knowledge Hierarchy**:
+    *   **Internal Knowledge**: Your primary sources of truth are the "FREQUENTLY ASKED QUESTIONS" and "DOCUMENT CONTEXT". Use these first.
+    *   **General Knowledge**: For general questions not requiring real-time data, you can use your existing knowledge.
 
 6.  **Preference Learning (In-session)**: Adapt to the user's language. If they're technical, you get technical. If they're simple, you keep it high-level.
 
