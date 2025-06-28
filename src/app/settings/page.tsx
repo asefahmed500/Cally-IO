@@ -2,7 +2,7 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, MessageSquare, Star, Users, Cog, UserPlus, Link as LinkIcon, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog, UserPlus, Link as LinkIcon, CheckCircle, XCircle, AlertTriangle, Cpu, SearchCode } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -177,35 +177,15 @@ export default async function SettingsPage() {
             <CardTitle className="flex items-center gap-2"><LinkIcon /> Integration Hub</CardTitle>
             <CardDescription>Connect Cally-IO to your other business tools. See documentation for setup instructions.</CardDescription>
         </CardHeader>
-        <CardContent>
-            <div className="space-y-4">
-                <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                        <h4 className="font-semibold">Slack Notifications</h4>
-                        <p className="text-sm text-muted-foreground">Get notified when a new lead signs up.</p>
-                    </div>
-                    <Button variant="outline" disabled>Configure</Button>
-                </div>
-                 <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                        <h4 className="font-semibold">Google Sheets Sync</h4>
-                        <p className="text-sm text-muted-foreground">Export new lead data to a Google Sheet.</p>
-                    </div>
-                    <Button variant="outline" disabled>Connect</Button>
-                </div>
-                 <div className="flex items-center justify-between p-4 border rounded-lg">
-                    <div>
-                        <h4 className="font-semibold">Generic Webhooks</h4>
-                        <p className="text-sm text-muted-foreground">Send new lead data to any system (e.g., Zapier).</p>
-                         {isWebhookConfigured ? (
-                            <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Active: URL configured in .env file.</p>
-                        ) : (
-                            <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1"><XCircle className="h-3 w-3" /> Inactive: Set WEBHOOK_URL_NEW_LEAD in .env file.</p>
-                        )}
-                    </div>
-                     <Button variant={isWebhookConfigured ? "secondary" : "outline"} disabled className="cursor-not-allowed">
-                        {isWebhookConfigured ? 'Active' : 'Inactive'}
-                    </Button>
+        <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                    <h4 className="font-semibold flex items-center gap-2"><LinkIcon size={16} /> New Lead Webhook</h4>
+                     {isWebhookConfigured ? (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Active</p>
+                    ) : (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1"><XCircle className="h-3 w-3" /> Inactive: Set WEBHOOK_URL_NEW_LEAD</p>
+                    )}
                 </div>
             </div>
         </CardContent>

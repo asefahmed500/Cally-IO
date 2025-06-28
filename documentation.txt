@@ -64,37 +64,20 @@ The project follows a standard Next.js App Router structure. Key directories inc
 
 ### 4. Conversational Chat & History Persistence
 - A user submits a question. The backend API finds or creates a conversation document.
-- The `conversationalRagChat` flow is triggered. It fetches FAQs and performs a vector search on the user's documents.
-- If needed, the AI uses the `webSearch` tool for real-time information.
+- The `conversationalRagChat` flow is triggered. It fetches FAQs from Appwrite, and performs a vector search on user documents.
 - The response is streamed to the UI. The user can play back the response as audio.
 - The conversation is saved to the database.
 
 ## Integrations
 
-The application supports sending real-time notifications for new leads to external systems via webhooks.
-
-### New Lead Webhook
+### 1. New Lead Webhook (for CRMs like Superdev.build, HubSpot, etc.)
 - **Trigger**: A new user signs up in the application.
 - **Action**: A `POST` request with the new lead's data (name, email, status, etc.) is sent to the configured webhook URL.
 - **Setup**: To enable this, add the following environment variable to your `.env` file:
   ```
   WEBHOOK_URL_NEW_LEAD=https://your-webhook-url.com/new-lead
   ```
-  You can use a service like [Zapier](https://zapier.com/) or [Make](https://www.make.com/) to receive this webhook and connect it to other tools like Slack or Google Sheets.
-
-### Developer Notes for Direct Integration
-For developers who want to build direct integrations without a middle-man service like Zapier, you can modify the signup action in `/src/app/auth/actions.ts`.
-
-- **Slack**:
-  - Install the Slack SDK: `npm install @slack/web-api`
-  - Add `SLACK_BOT_TOKEN` and `SLACK_CHANNEL_ID` to your `.env`.
-  - Use the `chat.postMessage` method to send a formatted message to your desired channel.
-
-- **Google Sheets**:
-  - Install the Google APIs client: `npm install googleapis`
-  - Set up a Google Cloud service account and download the JSON credentials file.
-  - Set the `GOOGLE_APPLICATION_CREDENTIALS` environment variable to the path of your credentials file.
-  - Use the `sheets.spreadsheets.values.append` method to add a new row with the lead data.
+  You can use a service like [Zapier](https://zapier.com/), [Make](https://www.make.com/), or [Superdev.build](https://www.superdev.build/) to receive this webhook and connect it to other tools like Slack or Google Sheets.
 
 ## Appwrite Setup
 

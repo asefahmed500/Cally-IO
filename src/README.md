@@ -10,6 +10,7 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - **AI**: Google Gemini via Genkit
 - **Backend & Database**: Appwrite (for authentication, storage, and database)
 - **Calling**: Twilio (for automated calling features)
+- **Real-Time Search**: Tavily AI
 
 ## Core Features Checklist
 

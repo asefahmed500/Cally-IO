@@ -25,10 +25,9 @@ Cally-IO is a feature-complete, production-ready Next.js application designed to
 - [x] **Editable Call Script Templates**: Admins create master call scripts for the AI to use.
 - [x] **Business Hours**: Admins can set operating hours and an away message.
 - [x] **AI-Powered RAG Chat**: The AI uses Retrieval-Augmented Generation to answer questions from documents and FAQs.
-- [x] **Real-Time Web Search**: The AI can search the web for information about competitors or current events.
 - [x] **AI Script Generator**: Dynamically generates personalized call scripts for leads.
 - [x] **Automated AI Calling**: The system can place automated outbound calls using Twilio, where an AI voice reads the generated script.
-- [x] **Conversation Intelligence**: Escalates to a human when it can't find an answer.
+- [x] **Conversation Intelligence**: The system uses speech recognition to understand the lead's response and can escalate to a human when it can't find an answer.
 - [x] **Performance Analytics**: Real-time admin and agent dashboards track key metrics with charts.
 - [x] **Advanced Analytics**: Provides "Content Suggestions" based on unanswered questions and "Usage Statistics" for documents.
 - [x] **CRM & Integration Hub**: A functional webhook for connecting to external services like Slack or Google Sheets.

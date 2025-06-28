@@ -19,6 +19,7 @@ import { Query } from 'appwrite';
 import { getLoggedInUser } from '@/lib/auth';
 import { getAISettings } from '@/lib/settings';
 import { logDocumentUsage } from '@/app/settings/analytics_actions';
+// import { Mem0Client } from 'mem0-node';
 
 const MessageSchema = z.object({
   role: z.enum(['user', 'model']),
@@ -138,29 +139,6 @@ async function searchEmbeddings(
   }
 }
 
-const webSearch = ai.defineTool(
-  {
-    name: 'webSearch',
-    description: 'Performs a web search to find current information, news, or details about competitors not available in local documents.',
-    inputSchema: z.object({
-      query: z.string().describe('The search query.'),
-    }),
-    outputSchema: z.string(),
-  },
-  async (input) => {
-    console.log(`[Web Search Tool] Simulating search for: ${input.query}`);
-    // In a real application, you would replace this with a call to a search API like Tavily, Google Search, etc.
-    if (input.query.toLowerCase().includes('competitorx')) {
-        return `CompetitorX is a leading provider of cloud-based CRM solutions, known for its strong enterprise features. Recent reports indicate they are focusing on expanding into the SMB market. Their pricing is generally considered higher than ours, but they offer extensive customization options.`;
-    }
-    if (input.query.toLowerCase().includes('market trends')) {
-        return `According to recent industry reports from TechCrunch and Forrester, the key market trend in AI-powered sales platforms is the move towards hyper-personalization and proactive engagement. Companies are leveraging generative AI to not just answer questions, but to guide customers through the sales funnel intelligently. There is also a strong emphasis on seamless CRM integration.`;
-    }
-    return `No specific real-time information was found for "${input.query}". Please try a more general query about market trends or a specific competitor name.`;
-  }
-);
-
-
 export const conversationalRagChat = ai.defineFlow(
   {
     name: 'conversationalRagChatFlow',
@@ -175,7 +153,7 @@ export const conversationalRagChat = ai.defineFlow(
     }
     const { history, prompt, image } = input;
 
-    // 1. Get AI settings, FAQs, and Document Context concurrently
+    // 1. Fetch AI settings, FAQs, and Document Context concurrently
     const [aiSettings, faqContext, { context: docContext, sources: docSources }] = await Promise.all([
         getAISettings(),
         getFaqs(),
@@ -218,33 +196,34 @@ Your main purpose is to guide the user through a natural sales conversation. Do 
 
 **Your Core Behavior Model & Knowledge Sources:**
 
-1.  **Primary Source (FAQs)**: The "FREQUENTLY ASKED QUESTIONS" context is your highest priority source of truth. If a user's question is answered here, use this information first. If this context exists, state that the information comes from the company's FAQ.
+1.  **Contextual Awareness**: Remember previous parts of the current conversation. Do not ask for information you have already been given in this session.
+
+2.  **Primary Source (FAQs)**: The "FREQUENTLY ASKED QUESTIONS" context is your highest priority source of truth. If a user's question is answered here, use this information first. If this context exists, state that the information comes from the company's FAQ.
     
     FREQUENTLY ASKED QUESTIONS:
     ${faqContext || 'No FAQs provided.'}
 
-2.  **Image Analysis**: If a user provides an image, it is the most important piece of context for that turn. Analyze it first before consulting documents.
+3.  **Image Analysis**: If a user provides an image, it is the most important piece of context for that turn. Analyze it first before consulting documents.
 
-3.  **Secondary Source (Documents)**: The "DOCUMENT CONTEXT" provided is your source of truth for your own product's features and details not covered in the FAQs.
+4.  **Secondary Source (Documents)**: The "DOCUMENT CONTEXT" provided is your source of truth for your own product's features and details not covered in the FAQs.
 
-4.  **Knowledge Hierarchy & Competitive Intelligence**:
+5.  **Knowledge Hierarchy & Competitive Intelligence**:
     *   **Internal Knowledge**: The "DOCUMENT CONTEXT" and "FREQUENTLY ASKED QUESTIONS" are your absolute source of truth for your own product's features and details.
-    *   **External Knowledge (Web Search)**: For general knowledge, current events, or questions about competitors ("How do you compare to CompetitorX?"), you MUST use the \`webSearch\` tool to find real-time information. Preface these answers with "Based on current market information..." or "A quick search shows that..." to build trust. Never invent information about competitors.
+    *   **External Knowledge**: For questions about competitors or general knowledge not found in the provided context, rely on your existing knowledge. Clearly state that this information may not be the most current. Never invent information.
 
-5.  **Preference Learning (In-session)**: Adapt to the user's language. If they're technical, you get technical. If they're simple, you keep it high-level.
+6.  **Preference Learning (In-session)**: Adapt to the user's language. If they're technical, you get technical. If they're simple, you keep it high-level.
 
-6.  **Acknowledge Limitations & Escalate Intelligently**: If you don't know the answer from your internal knowledge and a web search doesn't help, **DO NOT invent an answer**. Gracefully escalate: "That's an excellent question. To get you the most accurate details, I can connect you with a product specialist. Would that be helpful?"
+7.  **Acknowledge Limitations & Escalate Intelligently**: If you don't know the answer from your internal knowledge, **DO NOT invent an answer**. Gracefully escalate: "That's an excellent question. To get you the most accurate details, I can connect you with a product specialist. Would that be helpful?"
 
-7.  **Source Attribution**: When using knowledge from user documents, mention the source file. For simulated web search, cite a plausible source (e.g., "according to recent industry reports...").
+8.  **Source Attribution**: When using knowledge from user documents, mention the source file.
 
-8.  **Do Not Hallucinate**: Never make up facts. It is better to be wrong than to be wrong.
+9.  **Do Not Hallucinate**: Never make up facts. It is better to be wrong than to be wrong.
 `;
     
     // 4. Define the prompt dynamically inside the flow
     const chatPrompt = ai.definePrompt({
       name: 'conversationalRagChatPrompt',
       system: systemPromptText,
-      tools: [webSearch],
     });
 
     // 5. Construct the user message, now only including document context and the question

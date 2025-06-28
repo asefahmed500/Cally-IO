@@ -34,7 +34,7 @@ function SubmitButton({ isPending }: { isPending: boolean }) {
   );
 }
 
-export function SettingsForm({ settings, timezones }: { settings: AISettings, timezones: string[] }) {
+export function SettingsForm({ settings, timezones, isTwilioConfigured }: { settings: AISettings, timezones: string[], isTwilioConfigured: boolean }) {
     const { toast } = useToast();
     const [state, formAction, isPending] = useActionState(updateAISettings, null);
 
@@ -198,7 +198,7 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                 <CardDescription>Connect your Twilio account to enable automated calling capabilities. These values should be set in your .env file.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    {!process.env.NEXT_PUBLIC_TWILIO_CONFIGURED && (
+                    {!isTwilioConfigured && (
                         <Alert variant="destructive">
                             <Phone className="h-4 w-4" />
                             <AlertTitle>Twilio Not Configured</AlertTitle>
@@ -209,15 +209,15 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                     )}
                     <div className="space-y-2">
                         <Label htmlFor="twilio-sid">Account SID</Label>
-                        <Input id="twilio-sid" placeholder={process.env.NEXT_PUBLIC_TWILIO_CONFIGURED ? "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" : "Not configured"} readOnly disabled />
+                        <Input id="twilio-sid" placeholder={isTwilioConfigured ? "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" : "Not configured"} readOnly disabled />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="twilio-token">Auth Token</Label>
-                        <Input id="twilio-token" type="password" value={process.env.NEXT_PUBLIC_TWILIO_CONFIGURED ? "••••••••••••••••••••••••••••" : ""} readOnly disabled />
+                        <Input id="twilio-token" type="password" value={isTwilioConfigured ? "••••••••••••••••••••••••••••" : ""} readOnly disabled />
                     </div>
                     <div className="space-y-2">
                         <Label htmlFor="twilio-phone">Twilio Phone Number</Label>
-                        <Input id="twilio-phone" placeholder={process.env.NEXT_PUBLIC_TWILIO_CONFIGURED ? "+15551234567" : "Not configured"} readOnly disabled />
+                        <Input id="twilio-phone" placeholder={isTwilioConfigured ? "+15551234567" : "Not configured"} readOnly disabled />
                     </div>
                 </CardContent>
                  <CardFooter className="bg-muted/50 border-t px-6 py-3 flex justify-end">

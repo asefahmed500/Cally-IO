@@ -9,6 +9,7 @@ This is a Next.js application built with Firebase Studio that provides an AI-pow
 - **AI**: Google Gemini via Genkit
 - **Backend & Database**: Appwrite (for authentication, storage, and database)
 - **Calling**: Twilio (for automated calling features)
+- **Real-Time Search**: Tavily AI
 
 ## Core Features
 
@@ -80,6 +81,9 @@ ADMIN_EMAIL=youradminemail@example.com
 TWILIO_ACCOUNT_SID=your_twilio_account_sid
 TWILIO_AUTH_TOKEN=your_twilio_auth_token
 TWILIO_PHONE_NUMBER=your_twilio_phone_number
+
+# Tavily (for real-time web search)
+TAVILY_API_KEY=your_tavily_api_key
 ```
 
 See the **Appwrite Setup** section below for details on how to get these values.
