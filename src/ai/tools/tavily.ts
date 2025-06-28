@@ -1,6 +1,6 @@
 'use server';
 import { ai } from '@/ai/genkit';
-import Tavily from 'tavily-js';
+import Tavily from 'tavily';
 import { z } from 'zod';
 
 const tavilyApiKey = process.env.TAVILY_API_KEY;

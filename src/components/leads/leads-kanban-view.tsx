@@ -197,77 +197,79 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
 
 
     return (
-        <Tabs defaultValue="pipeline" className="flex flex-col flex-1 min-h-0">
-             <div className="flex items-center justify-between gap-4 mb-4">
-                <div className="flex-1 min-w-0">
-                     <TabsList>
-                        <TabsTrigger value="pipeline">Pipeline View</TabsTrigger>
-                        <TabsTrigger value="followups">
-                            Follow-ups 
-                            {followUpCount > 0 && <Badge variant="secondary" className="ml-2">{followUpCount}</Badge>}
-                        </TabsTrigger>
-                    </TabsList>
+        <>
+            <Tabs defaultValue="pipeline" className="flex flex-col flex-1 min-h-0">
+                <div className="flex items-center justify-between gap-4 mb-4">
+                    <div className="flex-1 min-w-0">
+                        <TabsList>
+                            <TabsTrigger value="pipeline">Pipeline View</TabsTrigger>
+                            <TabsTrigger value="followups">
+                                Follow-ups 
+                                {followUpCount > 0 && <Badge variant="secondary" className="ml-2">{followUpCount}</Badge>}
+                            </TabsTrigger>
+                        </TabsList>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Button variant="outline" onClick={handleCreate}>
+                            <PlusCircle className="mr-2 h-4 w-4" />
+                            Create Lead
+                        </Button>
+                        <Button onClick={handleExport}>
+                            <Download className="mr-2 h-4 w-4" />
+                            Export CSV
+                        </Button>
+                    </div>
                 </div>
-                <div className="flex items-center gap-2">
-                    <Button variant="outline" onClick={handleCreate}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Create Lead
-                    </Button>
-                    <Button onClick={handleExport}>
-                        <Download className="mr-2 h-4 w-4" />
-                        Export CSV
-                    </Button>
+                
+                <div className="relative w-full max-w-sm mb-4">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search leads by name or email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                    />
                 </div>
-            </div>
-            
-             <div className="relative w-full max-w-sm mb-4">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                    placeholder="Search leads by name or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                />
-            </div>
-            
-            <TabsContent value="pipeline" className="flex flex-col flex-1 min-h-0">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1 overflow-y-auto">
-                    {statuses.map(status => (
-                        <div key={status} className="bg-muted/50 rounded-lg flex flex-col">
-                            <div className="p-4 border-b border-border sticky top-0 bg-muted/50 rounded-t-lg z-10">
-                                <div className="flex items-center gap-3">
-                                    <div className={`w-3 h-3 rounded-full ${statusStyles[status].color}`} />
-                                    <h3 className="font-semibold">{statusStyles[status].title}</h3>
-                                    <span className="text-sm font-normal text-muted-foreground bg-background px-2 py-0.5 rounded-full">
-                                        {leadsByStatus[status].length}
-                                    </span>
+                
+                <TabsContent value="pipeline" className="flex flex-col flex-1 min-h-0">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1 overflow-y-auto">
+                        {statuses.map(status => (
+                            <div key={status} className="bg-muted/50 rounded-lg flex flex-col">
+                                <div className="p-4 border-b border-border sticky top-0 bg-muted/50 rounded-t-lg z-10">
+                                    <div className="flex items-center gap-3">
+                                        <div className={`w-3 h-3 rounded-full ${statusStyles[status].color}`} />
+                                        <h3 className="font-semibold">{statusStyles[status].title}</h3>
+                                        <span className="text-sm font-normal text-muted-foreground bg-background px-2 py-0.5 rounded-full">
+                                            {leadsByStatus[status].length}
+                                        </span>
+                                    </div>
+                                </div>
+                                <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                                    {leadsByStatus[status].length > 0 ? (
+                                        leadsByStatus[status].map(lead => (
+                                            <LeadCard
+                                                key={lead.$id}
+                                                lead={lead}
+                                                onStatusChange={handleStatusChange}
+                                                onEdit={handleEdit}
+                                                onDelete={handleDelete}
+                                            />
+                                        ))
+                                    ) : (
+                                        <div className="text-center text-sm text-muted-foreground py-10">
+                                            No leads in this stage.
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                            <div className="p-4 space-y-4 overflow-y-auto flex-1">
-                                {leadsByStatus[status].length > 0 ? (
-                                    leadsByStatus[status].map(lead => (
-                                        <LeadCard
-                                            key={lead.$id}
-                                            lead={lead}
-                                            onStatusChange={handleStatusChange}
-                                            onEdit={handleEdit}
-                                            onDelete={handleDelete}
-                                        />
-                                    ))
-                                ) : (
-                                    <div className="text-center text-sm text-muted-foreground py-10">
-                                        No leads in this stage.
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </TabsContent>
-            
-            <TabsContent value="followups">
-                <FollowUpList leads={filteredLeads} onEdit={handleEdit} />
-            </TabsContent>
+                        ))}
+                    </div>
+                </TabsContent>
+                
+                <TabsContent value="followups">
+                    <FollowUpList leads={filteredLeads} onEdit={handleEdit} />
+                </TabsContent>
+            </Tabs>
 
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
@@ -307,6 +309,6 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </div>
+        </>
     );
 }
