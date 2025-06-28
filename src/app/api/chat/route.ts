@@ -56,61 +56,69 @@ function createChatStream(
 }
 
 export async function POST(req: Request) {
-  const request = await req.json();
+  try {
+    const request = await req.json();
 
-  const validatedRequest = ChatRequestSchema.safeParse(request);
-  if (!validatedRequest.success) {
-    return new Response(JSON.stringify(validatedRequest.error.format()), { status: 400 });
+    const validatedRequest = ChatRequestSchema.safeParse(request);
+    if (!validatedRequest.success) {
+      return new Response(JSON.stringify(validatedRequest.error.format()), { status: 400 });
+    }
+
+    const user = await getLoggedInUser();
+    if (!user) {
+      return new Response('Unauthorized', { status: 401 });
+    }
+
+    const { prompt, image } = validatedRequest.data;
+
+    // 1. Get existing conversation or create a new one if it's the first message.
+    let conversation = await getConversation(user.$id);
+    if (!conversation) {
+      conversation = await createConversation(user.$id);
+    }
+
+    // 2. Construct the user's message and add it to the history.
+    const userMessage: ChatMessageWithId = {
+      role: 'user',
+      content: prompt,
+      id: uuidv4(),
+      image,
+    };
+
+    const historyWithUserMessage = [...conversation.history, userMessage];
+    
+    // 3. Save the updated history (with the new user message) *before* calling the AI.
+    // This ensures the user's message is never lost, even if the AI fails.
+    await updateConversation(conversation.docId, historyWithUserMessage);
+
+    // 4. Prepare the input for the AI flow.
+    // The AI needs a slightly different format for multi-modal prompts.
+    // We also remove the 'id' and 'image' from the history sent to the AI.
+    const aiInputHistory = conversation.history.map(({ id, image, ...rest }) => ({
+        ...rest
+    }));
+
+    const flowPromise = conversationalRagChat({
+      history: aiInputHistory,
+      prompt: prompt, // Pass the raw prompt for RAG
+      image: image,
+    });
+
+    // 5. Create and return the custom stream. It will handle saving the AI's response.
+    const stream = createChatStream(
+      flowPromise, 
+      user.$id, 
+      historyWithUserMessage
+    );
+    
+    return new Response(stream, {
+      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
+    });
+  } catch (error: any) {
+      if (error instanceof SyntaxError) {
+        return new Response('Invalid JSON in request body.', { status: 400 });
+      }
+      console.error("An unexpected error occurred in chat API:", error);
+      return new Response('An internal server error occurred.', { status: 500 });
   }
-
-  const user = await getLoggedInUser();
-  if (!user) {
-    return new Response('Unauthorized', { status: 401 });
-  }
-
-  const { prompt, image } = validatedRequest.data;
-
-  // 1. Get existing conversation or create a new one if it's the first message.
-  let conversation = await getConversation(user.$id);
-  if (!conversation) {
-    conversation = await createConversation(user.$id);
-  }
-
-  // 2. Construct the user's message and add it to the history.
-  const userMessage: ChatMessageWithId = {
-    role: 'user',
-    content: prompt,
-    id: uuidv4(),
-    image,
-  };
-
-  const historyWithUserMessage = [...conversation.history, userMessage];
-  
-  // 3. Save the updated history (with the new user message) *before* calling the AI.
-  // This ensures the user's message is never lost, even if the AI fails.
-  await updateConversation(conversation.docId, historyWithUserMessage);
-
-  // 4. Prepare the input for the AI flow.
-  // The AI needs a slightly different format for multi-modal prompts.
-  // We also remove the 'id' and 'image' from the history sent to the AI.
-  const aiInputHistory = conversation.history.map(({ id, image, ...rest }) => ({
-      ...rest
-  }));
-
-  const flowPromise = conversationalRagChat({
-    history: aiInputHistory,
-    prompt: prompt, // Pass the raw prompt for RAG
-    image: image,
-  });
-
-  // 5. Create and return the custom stream. It will handle saving the AI's response.
-  const stream = createChatStream(
-    flowPromise, 
-    user.$id, 
-    historyWithUserMessage
-  );
-  
-  return new Response(stream, {
-    headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-  });
 }

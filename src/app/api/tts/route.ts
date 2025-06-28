@@ -19,6 +19,9 @@ export async function POST(req: Request) {
     
     return NextResponse.json(result);
   } catch (error: any) {
+    if (error instanceof SyntaxError) {
+        return new Response('Invalid JSON in request body.', { status: 400 });
+    }
     console.error('Error in TTS route:', error);
     return new Response(`An error occurred: ${error.message}`, { status: 500 });
   }

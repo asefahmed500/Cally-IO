@@ -197,7 +197,7 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
 
 
     return (
-        <>
+        <div className="flex flex-col h-full">
             <Tabs defaultValue="pipeline" className="flex flex-col flex-1 min-h-0">
                 <div className="flex items-center justify-between gap-4 mb-4">
                     <div className="flex-1 min-w-0">
@@ -309,6 +309,6 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
                     </AlertDialogFooter>
                 </AlertDialogContent>
             </AlertDialog>
-        </>
+        </div>
     );
 }
