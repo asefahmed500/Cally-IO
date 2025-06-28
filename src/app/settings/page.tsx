@@ -1,7 +1,7 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { BarChart2, MessageSquare, Star, Users, Cog, UserPlus, Link as LinkIcon, CheckCircle, XCircle, AlertTriangle } from "lucide-react";
+import { BarChart2, MessageSquare, Star, Users, Cog, UserPlus, Link as LinkIcon, CheckCircle, XCircle, AlertTriangle, Phone } from "lucide-react";
 import { databases } from "@/lib/appwrite-server";
 import { Query } from "node-appwrite";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -172,7 +172,7 @@ export default async function SettingsPage() {
 
       <Card>
         <CardHeader>
-            <CardTitle className="flex items-center gap-2"><LinkIcon /> Integration Hub</CardTitle>
+            <CardTitle className="flex items-center gap-2"><LinkIcon /> Integrations</CardTitle>
             <CardDescription>Connect Cally-IO to your other business tools. See documentation for setup instructions.</CardDescription>
         </CardHeader>
         <CardContent className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -183,6 +183,16 @@ export default async function SettingsPage() {
                         <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Active</p>
                     ) : (
                         <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1"><XCircle className="h-3 w-3" /> Inactive: Set WEBHOOK_URL_NEW_LEAD</p>
+                    )}
+                </div>
+            </div>
+            <div className="flex items-center justify-between p-4 border rounded-lg">
+                <div>
+                    <h4 className="font-semibold flex items-center gap-2"><Phone size={16} /> Twilio Calling</h4>
+                     {isTwilioConfigured ? (
+                        <p className="text-xs text-green-600 dark:text-green-400 mt-1 flex items-center gap-1"><CheckCircle className="h-3 w-3" /> Active</p>
+                    ) : (
+                        <p className="text-xs text-amber-600 dark:text-amber-400 mt-1 flex items-center gap-1"><XCircle className="h-3 w-3" /> Inactive: Set Twilio ENV variables</p>
                     )}
                 </div>
             </div>
@@ -198,7 +208,7 @@ export default async function SettingsPage() {
             </AlertDescription>
         </Alert>
       ) : (
-        <SettingsForm settings={aiSettings} timezones={timezones} isTwilioConfigured={isTwilioConfigured} />
+        <SettingsForm settings={aiSettings} timezones={timezones} />
       )}
     </div>
   )

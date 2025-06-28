@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -11,7 +12,6 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Switch } from "@/components/ui/switch";
 import {
   Select,
@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { BrainCircuit, Clock, TestTube2, AlertCircle, Phone, FileText } from 'lucide-react';
+import { BrainCircuit, Clock, TestTube2, AlertCircle, FileText } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
@@ -33,7 +33,7 @@ function SubmitButton({ isPending }: { isPending: boolean }) {
   );
 }
 
-export function SettingsForm({ settings, timezones, isTwilioConfigured }: { settings: AISettings, timezones: string[], isTwilioConfigured: boolean }) {
+export function SettingsForm({ settings, timezones }: { settings: AISettings, timezones: string[] }) {
     const { toast } = useToast();
     const [state, formAction, isPending] = useActionState(updateAISettings, null);
 
@@ -184,39 +184,6 @@ export function SettingsForm({ settings, timezones, isTwilioConfigured }: { sett
                         <Label htmlFor="away-message">Away Message</Label>
                         <Textarea id="away-message" name="away_message" placeholder="We are currently away. Please leave a message..." className="min-h-24" defaultValue={settings.awayMessage} />
                         <p className="text-xs text-muted-foreground">This message will be shown to users who visit outside of business hours.</p>
-                    </div>
-                </CardContent>
-            </Card>
-
-            <Card>
-                <CardHeader>
-                    <div className="flex items-center gap-2">
-                        <Phone className="h-6 w-6" />
-                        <CardTitle>Twilio Integration</CardTitle>
-                    </div>
-                <CardDescription>Connect your Twilio account to enable automated calling capabilities. These values should be set in your .env file.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                    {!isTwilioConfigured && (
-                        <Alert variant="destructive">
-                            <Phone className="h-4 w-4" />
-                            <AlertTitle>Twilio Not Configured</AlertTitle>
-                            <AlertDescription>
-                                Please set the `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, and `TWILIO_PHONE_NUMBER` environment variables to enable calling features.
-                            </AlertDescription>
-                        </Alert>
-                    )}
-                    <div className="space-y-2">
-                        <Label htmlFor="twilio-sid">Account SID</Label>
-                        <Input id="twilio-sid" placeholder={isTwilioConfigured ? "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" : "Not configured"} readOnly disabled />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="twilio-token">Auth Token</Label>
-                        <Input id="twilio-token" type="password" value={isTwilioConfigured ? "••••••••••••••••••••••••••••" : ""} readOnly disabled />
-                    </div>
-                    <div className="space-y-2">
-                        <Label htmlFor="twilio-phone">Twilio Phone Number</Label>
-                        <Input id="twilio-phone" placeholder={isTwilioConfigured ? "+15551234567" : "Not configured"} readOnly disabled />
                     </div>
                 </CardContent>
                  <CardFooter className="bg-muted/50 border-t px-6 py-3 flex justify-end">
