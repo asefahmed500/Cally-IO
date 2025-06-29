@@ -1,11 +1,11 @@
 'use server'
 
-import { users, account, databases } from '@/lib/appwrite-server';
+import { account } from '@/lib/appwrite-server';
 import { setSessionCookie, deleteSessionCookie } from '@/lib/auth';
-import { ID, Permission, Role } from 'node-appwrite';
 import { redirect } from 'next/navigation';
 import { cookies, headers } from 'next/headers';
 import { Client, Account as UserAccount } from 'appwrite';
+import { _createNewUserAndLead } from '../settings/users_actions';
 
 export async function signup(prevState: any, formData: FormData) {
   const name = formData.get('name') as string;
@@ -13,54 +13,15 @@ export async function signup(prevState: any, formData: FormData) {
   const password = formData.get('password') as string;
 
   try {
-    const newUser = await users.create(ID.unique(), email, undefined, password, name);
-    
     const isAdmin = process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
-    const labels = isAdmin ? ['user', 'admin'] : ['user'];
-    await users.updateLabels(newUser.$id, labels);
-
-    // Create a corresponding lead document
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
-    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
-
-    if (dbId && leadsCollectionId) {
-        const leadData = {
-            userId: newUser.$id,
-            name: name,
-            email: email,
-            status: 'New',
-            score: Math.floor(Math.random() * 21) + 10, // Random score between 10-30
-            lastActivity: new Date().toISOString(),
-            agentId: null, // This lead is unassigned
-        };
-        await databases.createDocument(
-            dbId,
-            leadsCollectionId,
-            ID.unique(),
-            leadData,
-            [
-                Permission.read(Role.users()), // Any authenticated user can see it
-                Permission.update(Role.users()), // Any authenticated user can claim it
-                Permission.delete(Role.label('admin')), // Only admins can delete
-            ]
-        );
-
-        // --- Integration Hooks ---
-        if (process.env.WEBHOOK_URL_NEW_LEAD) {
-            try {
-                // Fire-and-forget fetch request. We don't `await` this on purpose
-                // so it doesn't block the signup process if the webhook is slow.
-                fetch(process.env.WEBHOOK_URL_NEW_LEAD, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(leadData),
-                });
-            } catch (webhookError) {
-                console.error("Failed to send new lead webhook:", webhookError);
-                // Fail silently so it doesn't interrupt the user experience.
-            }
-        }
-    }
+    
+    await _createNewUserAndLead({
+      name,
+      email,
+      password,
+      labels: isAdmin ? ['user', 'admin'] : ['user'],
+      assignToSelf: false, // Public signup leads are unassigned
+    });
     
     const session = await account.createEmailPasswordSession(email, password);
     await setSessionCookie(session.secret, session.expire);

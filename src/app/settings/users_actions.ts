@@ -7,8 +7,82 @@ import { revalidatePath } from 'next/cache';
 import { ID, AppwriteException, Query, Permission, Role } from 'node-appwrite';
 import { z } from 'zod';
 
-const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
+const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
+
+// Shared user creation logic to reduce duplication
+export async function _createNewUserAndLead({
+    name,
+    email,
+    password,
+    labels,
+    assignToSelf = false,
+}: {
+    name: string;
+    email: string;
+    password?: string;
+    labels: string[];
+    assignToSelf?: boolean;
+}) {
+    // Create the user first
+    const newUser = await users.create(ID.unique(), email, undefined, password, name);
+    await users.updateLabels(newUser.$id, labels);
+    
+    // Then create the associated lead
+    if (dbId && leadsCollectionId) {
+        const leadData = {
+            userId: newUser.$id,
+            name: name,
+            email: email,
+            status: 'New' as const,
+            score: Math.floor(Math.random() * 21) + 10,
+            lastActivity: new Date().toISOString(),
+            agentId: assignToSelf ? newUser.$id : null,
+        };
+
+        const permissions = assignToSelf
+            ? [ // For users created via admin panel
+                Permission.read(Role.user(newUser.$id)),
+                Permission.update(Role.user(newUser.$id)),
+                Permission.delete(Role.user(newUser.$id)),
+                Permission.read(Role.label('admin')),
+                Permission.update(Role.label('admin')),
+                Permission.delete(Role.label('admin')),
+            ]
+            : [ // For public signups
+                Permission.read(Role.users()),
+                Permission.update(Role.users()),
+                Permission.delete(Role.label('admin')),
+            ];
+
+        await databases.createDocument(
+            dbId,
+            leadsCollectionId,
+            ID.unique(),
+            leadData,
+            permissions
+        );
+
+        // Only fire webhook for public signups (which are not assigned to self)
+        if (!assignToSelf && process.env.WEBHOOK_URL_NEW_LEAD) {
+            try {
+                // Fire-and-forget
+                fetch(process.env.WEBHOOK_URL_NEW_LEAD, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(leadData),
+                });
+            } catch (webhookError) {
+                console.error("Failed to send new lead webhook:", webhookError);
+            }
+        }
+    } else {
+        console.error('Database or leads collection not configured. Skipping lead creation.');
+    }
+    
+    return newUser;
+}
+
 
 export type UserSummary = {
     $id: string;
@@ -71,36 +145,13 @@ export async function createUser(prevState: any, formData: FormData) {
     const { name, email, password, isAdmin: makeAdmin } = validatedFields.data;
 
     try {
-        const newUser = await users.create(ID.unique(), email, undefined, password, name);
-        const labels = makeAdmin ? ['user', 'admin'] : ['user'];
-        await users.updateLabels(newUser.$id, labels);
-        
-        // Create a corresponding lead document for the new user
-        if (dbId && leadsCollectionId) {
-            const leadData = {
-                userId: newUser.$id,
-                name: name,
-                email: email,
-                status: 'New',
-                score: Math.floor(Math.random() * 21) + 10,
-                lastActivity: new Date().toISOString(),
-                agentId: newUser.$id, // Assign the lead to the user themselves initially
-            };
-            await databases.createDocument(
-                dbId,
-                leadsCollectionId,
-                ID.unique(),
-                leadData,
-                [
-                    Permission.read(Role.user(newUser.$id)),
-                    Permission.update(Role.user(newUser.$id)),
-                    Permission.delete(Role.user(newUser.$id)),
-                    Permission.read(Role.label('admin')),
-                    Permission.update(Role.label('admin')),
-                    Permission.delete(Role.label('admin')),
-                ]
-            );
-        }
+        await _createNewUserAndLead({
+            name,
+            email,
+            password,
+            labels: makeAdmin ? ['user', 'admin'] : ['user'],
+            assignToSelf: true,
+        });
 
         revalidatePath('/settings');
         revalidatePath('/leads');
