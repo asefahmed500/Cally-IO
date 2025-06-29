@@ -20,6 +20,7 @@ const nextConfig = {
 
     config.ignoreWarnings = (config.ignoreWarnings || []).concat([
       /Critical dependency: the request of a dependency is an expression/,
+      /require\.extensions/,
     ]);
     
     return config;

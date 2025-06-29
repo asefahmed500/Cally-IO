@@ -35,12 +35,10 @@ export default async function RootLayout({
             <SidebarProvider>
               <SidebarNav user={user} />
               <SidebarInset>
-                  <div className="flex flex-col h-svh">
-                      <MobileHeader />
-                      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-                          {children}
-                      </main>
-                  </div>
+                <MobileHeader />
+                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                    {children}
+                </main>
               </SidebarInset>
             </SidebarProvider>
           ) : (
