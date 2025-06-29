@@ -385,8 +385,18 @@ export function ChatPanel({
       if (!response.body) throw new Error('No response body');
       
       if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || 'The API returned an error.');
+        const errorText = await response.text();
+        let errorMessage = errorText;
+        try {
+            // Check if the error is JSON and has a message property
+            const errorJson = JSON.parse(errorText);
+            if (errorJson.message) {
+                errorMessage = errorJson.message;
+            }
+        } catch (e) {
+            // Not a JSON error, so we use the raw text.
+        }
+        throw new Error(errorMessage || 'The API returned an unspecified error.');
       }
       
       const reader = response.body.getReader();
