@@ -10,7 +10,7 @@ import { z } from 'zod';
 import * as mammoth from 'mammoth';
 import pdf from 'pdf-parse';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { embed, embedder } from 'genkit';
+import { embed } from 'genkit/ai';
 import {
   appwriteDatabases,
   appwriteDatabaseId,

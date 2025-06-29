@@ -8,13 +8,15 @@ import { PlusCircle, Trash2, Edit, Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
-import { useActionState, useTransition } from 'react';
+import { useFormState } from 'react-dom';
+import { useTransition } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { saveFaq, deleteFaq, type Faq } from '@/app/knowledge/actions';
 import { Label } from '../ui/label';
 
 function FaqForm({ faq, onFormSuccess }: { faq?: Faq | null; onFormSuccess: () => void }) {
-    const [state, formAction, isPending] = useActionState(saveFaq, null);
+    const [state, formAction] = useFormState(saveFaq, null);
+    const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -27,7 +29,10 @@ function FaqForm({ faq, onFormSuccess }: { faq?: Faq | null; onFormSuccess: () =
     }, [state, toast, onFormSuccess]);
 
     return (
-        <form action={formAction} className="space-y-4">
+        <form 
+            action={(formData) => startTransition(() => formAction(formData))}
+            className="space-y-4"
+        >
             <input type="hidden" name="id" value={faq?.$id || ''} />
             <div className="space-y-2">
                 <Label htmlFor="question">Question</Label>
@@ -150,5 +155,3 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
         </div>
     );
 }
-
-    

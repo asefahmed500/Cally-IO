@@ -8,7 +8,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { embed, type Part } from 'genkit';
+import { embed, type Part } from 'genkit/ai';
 import { webSearch } from '@/ai/tools/tavily';
 import {
   appwriteDatabases,

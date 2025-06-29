@@ -1,9 +1,7 @@
-
 'use client';
 
 import * as React from 'react';
-import { useActionState } from 'react';
-import { useFormStatus } from 'react-dom';
+import { useFormState, useFormStatus } from 'react-dom';
 import { type AISettings } from '@/lib/settings';
 import { updateAISettings } from '@/app/settings/actions';
 import { useToast } from '@/hooks/use-toast';
@@ -22,6 +20,7 @@ import {
 } from "@/components/ui/select";
 import { BrainCircuit, Clock, TestTube2, AlertCircle, FileText } from 'lucide-react';
 import { Loader2 } from 'lucide-react';
+import { useTransition } from 'react';
 
 function SubmitButton({ isPending }: { isPending: boolean }) {
   const { pending } = useFormStatus();
@@ -35,7 +34,8 @@ function SubmitButton({ isPending }: { isPending: boolean }) {
 
 export function SettingsForm({ settings, timezones }: { settings: AISettings, timezones: string[] }) {
     const { toast } = useToast();
-    const [state, formAction, isPending] = useActionState(updateAISettings, null);
+    const [state, formAction] = useFormState(updateAISettings, null);
+    const [isPending, startTransition] = useTransition();
 
     React.useEffect(() => {
         if (state?.success) {
@@ -54,7 +54,10 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
     }, [state, toast]);
 
     return (
-        <form action={formAction} className="space-y-8">
+        <form 
+            action={(formData) => startTransition(() => formAction(formData))}
+            className="space-y-8"
+        >
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-2">

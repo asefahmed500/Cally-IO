@@ -1,7 +1,7 @@
 'use client'
 
-import { useActionState, Suspense } from 'react'
-import { useFormStatus } from 'react-dom'
+import { Suspense } from 'react'
+import { useFormState, useFormStatus } from 'react-dom'
 import { useSearchParams } from 'next/navigation'
 import { resetPassword } from '@/app/auth/actions'
 import { Button } from "@/components/ui/button"
@@ -23,7 +23,7 @@ function ResetPasswordForm() {
     const searchParams = useSearchParams()
     const userId = searchParams.get('userId')
     const secret = searchParams.get('secret')
-    const [state, formAction] = useActionState(resetPassword, null)
+    const [state, formAction] = useFormState(resetPassword, null)
 
     if (!userId || !secret) {
         return (

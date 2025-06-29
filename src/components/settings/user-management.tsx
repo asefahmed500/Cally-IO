@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -21,8 +20,9 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { MoreHorizontal, PlusCircle, Trash2, Shield, ShieldOff, KeyRound, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { useActionState, useTransition } from 'react';
-import { listUsers, createUser, deleteUser, updateUserRole, sendPasswordReset } from '@/app/settings/users_actions';
+import { useFormState } from 'react-dom';
+import { useTransition } from 'react';
+import { createUser, deleteUser, updateUserRole, sendPasswordReset } from '@/app/settings/users_actions';
 import { Badge } from '@/components/ui/badge';
 import {
   Dialog,
@@ -49,7 +49,8 @@ import { Switch } from '../ui/switch';
 import type { UserSummary } from '@/app/settings/users_actions';
 
 function CreateUserForm({ onFormSuccess }: { onFormSuccess: () => void }) {
-    const [state, formAction, isPending] = useActionState(createUser, null);
+    const [state, formAction] = useFormState(createUser, null);
+    const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
 
     React.useEffect(() => {
@@ -62,7 +63,10 @@ function CreateUserForm({ onFormSuccess }: { onFormSuccess: () => void }) {
     }, [state, toast, onFormSuccess]);
 
     return (
-        <form action={formAction} className="space-y-4">
+        <form 
+            action={(formData) => startTransition(() => formAction(formData))}
+            className="space-y-4"
+        >
             <div className="space-y-2">
                 <Label htmlFor="name">Full Name</Label>
                 <Input id="name" name="name" placeholder="Jane Doe" required />

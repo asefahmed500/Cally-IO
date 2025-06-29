@@ -1,8 +1,7 @@
-
 'use client';
 
 import * as React from 'react';
-import { useActionState } from 'react';
+import { useFormState } from 'react-dom';
 import { useToast } from '@/hooks/use-toast';
 import { saveLead } from '@/app/leads/actions';
 import type { Lead } from '@/app/leads/types';
@@ -18,9 +17,11 @@ import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useTransition } from 'react';
 
 export function LeadForm({ lead, onFormSuccess, allUsers, isAdmin }: { lead?: Lead | null, onFormSuccess: () => void, allUsers: UserSummary[], isAdmin: boolean }) {
-    const [state, formAction, isPending] = useActionState(saveLead, null);
+    const [state, formAction] = useFormState(saveLead, null);
+    const [isPending, startTransition] = useTransition();
     const { toast } = useToast();
     const formRef = React.useRef<HTMLFormElement>(null);
     const [followUpDate, setFollowUpDate] = React.useState<Date | undefined>(
@@ -37,7 +38,11 @@ export function LeadForm({ lead, onFormSuccess, allUsers, isAdmin }: { lead?: Le
     }, [state, toast, onFormSuccess]);
 
     return (
-        <form ref={formRef} action={formAction} className="space-y-4">
+        <form 
+            ref={formRef} 
+            action={(formData) => startTransition(() => formAction(formData))}
+            className="space-y-4"
+        >
             <input type="hidden" name="id" value={lead?.$id || ''} />
             <input type="hidden" name="followUpDate" value={followUpDate ? followUpDate.toISOString() : ''} />
             
