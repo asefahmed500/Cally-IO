@@ -35,10 +35,9 @@ export async function getLeads(user: Models.User<Models.Preferences>): Promise<{
     } catch (e: any) {
         console.error("Failed to fetch leads:", e);
         if (e instanceof AppwriteException && e.type === 'general_query_invalid') {
-            return { leads: [], error: `Appwrite schema error: ${e.message}. Please verify your 'leads' collection attributes against documentation.txt.` };
+            return { leads: [], error: `The 'leads' collection has a schema error: ${e.message}. Please check your Appwrite setup against documentation.txt.` };
         }
-        // This might happen if the collection doesn't exist yet.
-        return { leads: [], error: `Failed to fetch leads: ${e.message}` };
+        return { leads: [], error: `An unexpected error occurred while fetching leads: ${e.message}` };
     }
 }
 

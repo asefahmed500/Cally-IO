@@ -18,7 +18,7 @@ export async function GET() {
         if (error instanceof AppwriteException && error.type === 'general_query_invalid') {
              return NextResponse.json({ 
                 error: "Database not configured correctly.", 
-                message: "The 'conversations' collection appears to be missing required attributes. Please check the Appwrite setup guide in documentation.txt.",
+                message: `The 'conversations' collection has a schema error: ${error.message}. Please check your Appwrite setup against documentation.txt.`,
                 details: error.message,
             }, { status: 500 });
         }

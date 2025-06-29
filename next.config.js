@@ -11,14 +11,12 @@ const nextConfig = {
       },
     ],
   },
-  webpack: (config, { isServer }) => {
+  webpack: (config) => {
     // This is a workaround for a bug in Next.js where it tries to bundle
-    // optional server-side dependencies for the client.
-    // These warnings and errors can be safely ignored.
-    if (!isServer) {
-      config.externals.push('@opentelemetry/exporter-jaeger');
-      config.externals.push('require-in-the-middle');
-    }
+    // optional server-side dependencies. We can mark them as external to
+    // prevent them from being bundled, which resolves warnings.
+    config.externals.push('@opentelemetry/exporter-jaeger');
+    config.externals.push('require-in-the-middle');
 
     config.ignoreWarnings = (config.ignoreWarnings || []).concat([
       /Critical dependency: the request of a dependency is an expression/,
