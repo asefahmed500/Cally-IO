@@ -76,7 +76,7 @@ export function LeadCard({
                         </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-1" disabled={isPending}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-1">
                                     {isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <MoreHorizontal className="h-4 w-4" />}
                                 </Button>
                             </DropdownMenuTrigger>
@@ -85,7 +85,7 @@ export function LeadCard({
                                     <User className="mr-2 h-4 w-4" />
                                     View Profile
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => handleInitiateCall(lead)}>
+                                <DropdownMenuItem onSelect={() => handleInitiateCall(lead)} disabled={isPending}>
                                     <Phone className="mr-2 h-4 w-4" />
                                     Start Automated Call
                                 </DropdownMenuItem>

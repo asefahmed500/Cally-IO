@@ -239,38 +239,40 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
                     />
                 </div>
                 
-                <TabsContent value="pipeline" className="flex flex-col flex-1 min-h-0">
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 flex-1 overflow-y-auto">
-                        {statuses.map(status => (
-                            <div key={status} className="bg-muted/50 rounded-lg flex flex-col">
-                                <div className="p-4 border-b border-border sticky top-0 bg-muted/50 rounded-t-lg z-10">
-                                    <div className="flex items-center gap-3">
-                                        <div className={`w-3 h-3 rounded-full ${statusStyles[status].color}`} />
-                                        <h3 className="font-semibold">{statusStyles[status].title}</h3>
-                                        <span className="text-sm font-normal text-muted-foreground bg-background px-2 py-0.5 rounded-full">
-                                            {leadsByStatus[status].length}
-                                        </span>
+                <TabsContent value="pipeline" className="flex flex-col flex-1 min-h-0 overflow-hidden">
+                    <div className="flex-1 overflow-x-auto md:overflow-y-auto">
+                        <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 pb-4 md:pb-0">
+                            {statuses.map(status => (
+                                <div key={status} className="bg-muted/50 rounded-lg flex flex-col w-[300px] shrink-0 md:w-auto">
+                                    <div className="p-4 border-b border-border sticky top-0 bg-muted/50 rounded-t-lg z-10">
+                                        <div className="flex items-center gap-3">
+                                            <div className={`w-3 h-3 rounded-full ${statusStyles[status].color}`} />
+                                            <h3 className="font-semibold">{statusStyles[status].title}</h3>
+                                            <span className="text-sm font-normal text-muted-foreground bg-background px-2 py-0.5 rounded-full">
+                                                {leadsByStatus[status].length}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="p-4 space-y-4 overflow-y-auto flex-1">
+                                        {leadsByStatus[status].length > 0 ? (
+                                            leadsByStatus[status].map(lead => (
+                                                <LeadCard
+                                                    key={lead.$id}
+                                                    lead={lead}
+                                                    onStatusChange={handleStatusChange}
+                                                    onEdit={handleEdit}
+                                                    onDelete={handleDelete}
+                                                />
+                                            ))
+                                        ) : (
+                                            <div className="text-center text-sm text-muted-foreground py-10">
+                                                No leads in this stage.
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
-                                <div className="p-4 space-y-4 overflow-y-auto flex-1">
-                                    {leadsByStatus[status].length > 0 ? (
-                                        leadsByStatus[status].map(lead => (
-                                            <LeadCard
-                                                key={lead.$id}
-                                                lead={lead}
-                                                onStatusChange={handleStatusChange}
-                                                onEdit={handleEdit}
-                                                onDelete={handleDelete}
-                                            />
-                                        ))
-                                    ) : (
-                                        <div className="text-center text-sm text-muted-foreground py-10">
-                                            No leads in this stage.
-                                        </div>
-                                    )}
-                                </div>
-                            </div>
-                        ))}
+                            ))}
+                        </div>
                     </div>
                 </TabsContent>
                 
