@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Lead } from '@/app/leads/page';
+import type { Lead } from '@/app/leads/types';
 import { LeadCard } from './lead-card';
 import { updateLeadStatus, deleteLead } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';

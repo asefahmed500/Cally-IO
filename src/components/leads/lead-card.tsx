@@ -2,7 +2,7 @@
 'use client';
 
 import * as React from 'react';
-import type { Lead } from '@/app/leads/page';
+import type { Lead } from '@/app/leads/types';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import {
   DropdownMenu,

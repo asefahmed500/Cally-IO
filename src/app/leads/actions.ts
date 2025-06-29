@@ -7,7 +7,7 @@ import { revalidatePath } from 'next/cache';
 import twilio from 'twilio';
 import { ID, Permission, Role, Query } from 'node-appwrite';
 import { z } from 'zod';
-import type { Lead } from './page';
+import type { Lead } from './types';
 
 const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;

@@ -10,22 +10,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table } from "lucide-react";
 import { listUsers } from "../settings/users_actions";
 import type { UserSummary } from "../settings/users_actions";
-
-export interface Lead extends Models.Document {
-    userId: string | null; // Can be null for manually created leads
-    name: string;
-    email: string;
-    phone?: string;
-    company?: string;
-    jobTitle?: string;
-    notes?: string;
-    status: 'New' | 'Qualified' | 'Called' | 'Converted';
-    score: number;
-    lastActivity: string;
-    agentId: string | null; // The agent who owns this lead
-    followUpDate?: string;
-    followUpNotes?: string;
-}
+import type { Lead } from "./types";
 
 export async function getLeads(user: Models.User<Models.Preferences>): Promise<Lead[]> {
     const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;

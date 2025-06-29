@@ -5,7 +5,7 @@ import * as React from 'react';
 import { useActionState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { saveLead } from '@/app/leads/actions';
-import type { Lead } from '@/app/leads/page';
+import type { Lead } from '@/app/leads/types';
 import type { UserSummary } from '@/app/settings/users_actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

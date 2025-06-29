@@ -1,5 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import type { Lead } from "@/app/leads/page";
+import type { Lead } from "@/app/leads/types";
 import { User, Star, Activity, Calendar, ClipboardList, Phone, Building, Briefcase, StickyNote, CalendarClock } from 'lucide-react';
 import { Separator } from "../ui/separator";
 

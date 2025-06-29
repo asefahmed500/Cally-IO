@@ -4,7 +4,7 @@ import { twiml } from 'twilio';
 import { databases } from '@/lib/appwrite-server';
 import { generateScript } from '@/ai/flows/generate-call-script';
 import { getAISettings } from '@/lib/settings';
-import type { Lead } from '@/app/leads/page';
+import type { Lead } from '@/app/leads/types';
 
 const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
 const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
