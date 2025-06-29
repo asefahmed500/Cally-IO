@@ -207,22 +207,25 @@ ${docContext || 'No context found in your documents for this query.'}
     });
 
     const userMessageContent: Part[] = [{ text: prompt }];
-
     if (image) {
       userMessageContent.unshift({ media: { url: image } });
     }
 
-    const llmInput: Message[] = [
-      ...history,
-      {
-        role: 'user',
-        // The type mismatch is handled by Genkit's `generate` which can accept complex prompts.
-        // We cast to any to satisfy the strict `Message` type for the array.
-        content: userMessageContent as any,
-      },
-    ];
+    // Create the final user message object with its correct type (content is Part[])
+    const userPromptWithParts = {
+      role: 'user' as const,
+      content: userMessageContent,
+    };
 
-    const llmResponse = await chatPrompt(llmInput);
+    // Combine the string-based history with the new Part-based prompt.
+    // The resulting array is of a mixed type.
+    const llmInput = [...history, userPromptWithParts];
+
+    // Call the prompt, casting the entire mixed-type array to 'any'.
+    // This is necessary because the inferred type of `chatPrompt` expects a
+    // homogenous array of `Message` (with string content), but the underlying
+    // Genkit `generate` function is more flexible and can handle this mixed format.
+    const llmResponse = await chatPrompt(llmInput as any);
     return llmResponse.output.content;
   }
 );
