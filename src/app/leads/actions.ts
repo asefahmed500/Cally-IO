@@ -80,7 +80,7 @@ const LeadSchema = z.object({
     notes: z.string().optional(),
     followUpDate: z.string().optional(),
     followUpNotes: z.string().optional(),
-    agentId: z.string().optional(),
+    agentId: z.string().nullable().optional(),
 });
 
 export async function saveLead(prevState: any, formData: FormData) {
