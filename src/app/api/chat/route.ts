@@ -5,6 +5,7 @@ import { getConversation, createConversation, updateConversation } from '@/lib/c
 import { z } from 'zod';
 import { type Part } from '@genkit-ai/ai';
 import { v4 as uuidv4 } from 'uuid';
+import { AppwriteException } from 'node-appwrite';
 
 const ChatRequestSchema = z.object({
   prompt: z.string(),
@@ -59,7 +60,10 @@ export async function POST(req: Request) {
   try {
     // Server-side guard to prevent execution if not configured.
     if (!process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID || !process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID) {
-      return new Response('Chat functionality is not configured on the server.', { status: 503 });
+       return new Response(JSON.stringify({ 
+          error: "Server Configuration Error",
+          message: 'Chat functionality is not configured on the server. Please check your environment variables.'
+      }), { status: 503, headers: { 'Content-Type': 'application/json' } });
     }
       
     const request = await req.json();
@@ -120,10 +124,20 @@ export async function POST(req: Request) {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
     });
   } catch (error: any) {
-      if (error instanceof SyntaxError) {
+    if (error instanceof AppwriteException && error.type === 'document_invalid_structure') {
+        console.error("Appwrite schema error in chat API:", error);
+        return new Response(JSON.stringify({
+            error: "Database Schema Error",
+            message: `The 'conversations' collection has a schema error which prevents chat from working. The specific error is: "${error.message}". Please check your Appwrite project configuration.`,
+        }), { status: 503, headers: { 'Content-Type': 'application/json' } });
+    }
+    if (error instanceof SyntaxError) {
         return new Response('Invalid JSON in request body.', { status: 400 });
-      }
-      console.error("An unexpected error occurred in chat API:", error);
-      return new Response('An internal server error occurred.', { status: 500 });
+    }
+    console.error("An unexpected error occurred in chat API:", error);
+    return new Response(JSON.stringify({
+        error: "Internal Server Error",
+        message: 'An internal server error occurred. Please check the server logs for more details.',
+    }), { status: 500, headers: { 'Content-Type': 'application/json' } });
   }
 }
