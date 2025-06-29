@@ -35,7 +35,7 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
     <Sidebar collapsible="icon" className="group-data-[collapsible=icon]:p-0">
       <SidebarHeader className="h-16 justify-between p-2">
             <Logo />
-            <SidebarTrigger className="group-data-[collapsible=icon]:hidden" />
+            <SidebarTrigger />
       </SidebarHeader>
       <SidebarContent>
         <SidebarMenu>
