@@ -40,33 +40,33 @@ export function SidebarNav({ user }: { user: Models.User<Models.Preferences> }) 
       <SidebarContent>
         <SidebarMenu>
           <SidebarMenuItem>
-            <Link href="/dashboard" passHref>
-              <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip={{children: 'Dashboard'}}>
-                <a><LayoutDashboard /><span>Dashboard</span></a>
-              </SidebarMenuButton>
-            </Link>
+            <SidebarMenuButton asChild isActive={pathname === '/dashboard'} tooltip={{children: 'Dashboard'}}>
+              <Link href="/dashboard">
+                <LayoutDashboard /><span>Dashboard</span>
+              </Link>
+            </SidebarMenuButton>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Link href="/knowledge" passHref>
             <SidebarMenuButton asChild isActive={pathname === '/knowledge'} tooltip={{children: 'Knowledge'}}>
-                <a><BookOpen /><span>Knowledge</span></a>
+              <Link href="/knowledge">
+                <BookOpen /><span>Knowledge</span>
+              </Link>
             </SidebarMenuButton>
-            </Link>
           </SidebarMenuItem>
           <SidebarMenuItem>
-            <Link href="/leads" passHref>
             <SidebarMenuButton asChild isActive={pathname === '/leads'} tooltip={{children: 'Leads'}}>
-                <a><Users /><span>Leads</span></a>
+                <Link href="/leads">
+                    <Users /><span>Leads</span>
+                </Link>
             </SidebarMenuButton>
-            </Link>
           </SidebarMenuItem>
           {isAdmin && (
             <SidebarMenuItem>
-                <Link href="/settings" passHref>
                 <SidebarMenuButton asChild isActive={pathname === '/settings'} tooltip={{children: 'Settings'}}>
-                    <a><Settings /><span>Settings</span></a>
+                    <Link href="/settings">
+                        <Settings /><span>Settings</span>
+                    </Link>
                 </SidebarMenuButton>
-                </Link>
             </SidebarMenuItem>
           )}
         </SidebarMenu>
