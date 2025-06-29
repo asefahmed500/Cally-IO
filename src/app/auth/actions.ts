@@ -5,6 +5,7 @@ import { setSessionCookie, deleteSessionCookie } from '@/lib/auth';
 import { redirect } from 'next/navigation';
 import { cookies, headers } from 'next/headers';
 import { Client, Account as UserAccount } from 'appwrite';
+import { AppwriteException } from 'node-appwrite';
 import { _createNewUserAndLead } from '../settings/users_actions';
 
 export async function signup(prevState: any, formData: FormData) {
@@ -27,12 +28,10 @@ export async function signup(prevState: any, formData: FormData) {
     await setSessionCookie(session.secret, session.expire);
   } catch (e: any) {
     console.error(e);
-    // If user already exists, Appwrite throws a specific error.
-    // We can check for that and provide a friendlier message.
-    if (e.code === 409) {
+    if (e instanceof AppwriteException && e.code === 409) {
         return { message: 'A user with this email already exists. Please try logging in.'}
     }
-    return { message: e.message };
+    return { message: 'An unexpected error occurred during signup. Please try again.' };
   }
   redirect('/dashboard');
 }
@@ -45,8 +44,10 @@ export async function login(prevState: any, formData: FormData) {
     const session = await account.createEmailPasswordSession(email, password);
     await setSessionCookie(session.secret, session.expire);
   } catch (e: any) {
-    console.error(e);
-    return { message: e.message };
+    if (e instanceof AppwriteException && (e.code === 401 || e.code === 404)) {
+        return { message: 'Invalid email or password. Please try again.' };
+    }
+    return { message: 'An unexpected error occurred. Please try again later.' };
   }
   redirect('/dashboard');
 }
