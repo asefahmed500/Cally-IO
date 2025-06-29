@@ -16,7 +16,7 @@ function SubmitButton() {
 }
 
 export default function SignupPage() {
-    const [state, formAction] = useFormState(signup, null)
+    const [state, formAction] = useFormState(signup, undefined)
     
   return (
     <div className="flex items-center justify-center min-h-screen bg-background">
@@ -53,8 +53,14 @@ export default function SignupPage() {
               </div>
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
-                <Input id="password" type="password" name="password" required />
-                <p className="text-xs text-muted-foreground">Password must be at least 8 characters long.</p>
+                <Input id="password" type="password" name="password" required aria-describedby="password-hint" />
+                <div id="password-hint">
+                    {state?.errors?.password ? (
+                        <p className="text-sm font-medium text-destructive">{state.errors.password}</p>
+                    ) : (
+                        <p className="text-xs text-muted-foreground">Password must be at least 8 characters long.</p>
+                    )}
+                </div>
               </div>
             </div>
           </CardContent>

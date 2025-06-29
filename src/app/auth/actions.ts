@@ -13,6 +13,12 @@ export async function signup(prevState: any, formData: FormData) {
   const email = formData.get('email') as string;
   const password = formData.get('password') as string;
 
+  if (!password || password.length < 8) {
+      return {
+          errors: { password: 'Password must be at least 8 characters long.' }
+      }
+  }
+
   try {
     const isAdmin = process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
     
@@ -31,6 +37,9 @@ export async function signup(prevState: any, formData: FormData) {
     if (e instanceof AppwriteException) {
       if (e.code === 409) { // User already exists
           return { message: 'A user with this email already exists. Please try logging in.'}
+      }
+      if (e.message.includes('Password')) { // Catch other password errors from appwrite
+           return { errors: { password: 'This password is too common or does not meet security requirements. Please choose a stronger one.'} }
       }
       // Return the specific Appwrite message for other errors (like invalid password)
       return { message: e.message };
