@@ -72,10 +72,10 @@ export const processDocument = ai.defineFlow(
       const text = await extractText(input.fileDataUri, input.fileName);
       const chunks = await textSplitter.splitText(text);
 
-      const embeddings = await embed({
-        embedder: 'googleai/text-embedding-004',
-        content: chunks,
-      });
+      const embeddings = await embed(
+        chunks,
+        { embedder: 'googleai/text-embedding-004' }
+      );
 
       const permissions = [
         Permission.read(Role.user(user.$id)),

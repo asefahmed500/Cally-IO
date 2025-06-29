@@ -94,11 +94,10 @@ async function searchEmbeddings(
     return defaultResponse;
   }
   
-  // To work around a TypeScript type resolution issue, we pass the query as a single-item array.
-  const embeddingArray = await embed({
-    embedder: 'googleai/text-embedding-004',
-    content: [query],
-  });
+  const embeddingArray = await embed(
+    [query],
+    { embedder: 'googleai/text-embedding-004' }
+  );
   const queryEmbedding = embeddingArray[0];
 
 

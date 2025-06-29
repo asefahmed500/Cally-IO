@@ -54,6 +54,7 @@ export default function SignupPage() {
               <div className="grid gap-2">
                 <Label htmlFor="password">Password</Label>
                 <Input id="password" type="password" name="password" required />
+                <p className="text-xs text-muted-foreground">Password must be at least 8 characters long.</p>
               </div>
             </div>
           </CardContent>

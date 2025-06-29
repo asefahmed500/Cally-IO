@@ -6,7 +6,7 @@ import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { KeyRound, Database, Clock, Users, BarChart2, Star } from "lucide-react";
 import { getAISettings, type AISettings } from "@/lib/settings";
 import { getLeads } from "../leads/page";
-import type { Lead } from "../leads/types";
+import type { Lead } from "@/app/leads/types";
 import type { Models } from "appwrite";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -72,7 +72,8 @@ export default async function DashboardPage() {
   const isAppwriteConfigured =
     !!process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID &&
     !!process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID &&
-    !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
+    !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID &&
+    !!process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID;
 
   const [settings, allVisibleLeads] = await Promise.all([
     getAISettings(),
@@ -112,9 +113,9 @@ export default async function DashboardPage() {
       {!isAppwriteConfigured && (
         <Alert variant="destructive">
           <Database className="h-4 w-4" />
-          <AlertTitle>Appwrite Database Not Configured</AlertTitle>
+          <AlertTitle>Appwrite Collections Not Configured</AlertTitle>
           <AlertDescription>
-            Please set the Appwrite database, storage, and collection IDs in your environment variables to enable document processing and chat.
+            Please set all required Appwrite database, storage, and collection IDs in your environment variables to enable all features. See documentation for details.
           </AlertDescription>
         </Alert>
       )}
