@@ -76,14 +76,19 @@ export default async function DashboardPage() {
     !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID &&
     !!process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID;
 
-  const [settings, { leads: allVisibleLeads, error: leadsError }] = await Promise.all([
+  const [settings, leadsResult] = await Promise.all([
     getAISettings(),
     getLeads(user)
   ]);
+
+  // Safely extract leads and errors to prevent crashes
+  const allVisibleLeads = leadsResult?.leads || [];
+  const leadsError = leadsResult?.error || null;
+
   const isChatActive = isWithinBusinessHours(settings);
   
-  // For the personal dashboard, statistics should only be calculated on leads *assigned* to this agent.
-  const agentLeadsForStats = allVisibleLeads ? allVisibleLeads.filter(lead => lead.agentId === user.$id) : [];
+  // This line is now safe because allVisibleLeads is guaranteed to be an array.
+  const agentLeadsForStats = allVisibleLeads.filter(lead => lead.agentId === user.$id);
   const agentStats = getAgentStats(agentLeadsForStats);
 
   return (
