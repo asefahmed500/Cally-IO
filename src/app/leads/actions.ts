@@ -104,10 +104,11 @@ export async function saveLead(prevState: any, formData: FormData) {
                 // If the lead is assigned, only that agent and admins should have access.
                 permissions.push(Permission.read(Role.user(agentForNewLead)));
                 permissions.push(Permission.update(Role.user(agentForNewLead)));
+                permissions.push(Permission.delete(Role.user(agentForNewLead)));
             } else {
                 // If the lead is unassigned, any logged-in user can read it (to see it in the 'New' column)
                 // and any user can update it (which is how they "claim" it).
-                // The updateLeadStatus action provides the final check.
+                // The updateLeadStatus action provides the final check and locks permissions.
                 permissions.push(Permission.read(Role.users()));
                 permissions.push(Permission.update(Role.users()));
             }
@@ -169,14 +170,23 @@ export async function updateLeadStatus(leadId: string, status: string) {
         return { error: 'You do not have permission to update this lead.' };
     }
     
-    const updateData: { status: string; lastActivity: string; agentId?: string } = {
+    const updateData: { status: string; lastActivity: string; agentId?: string; $permissions?: string[] } = {
         status,
         lastActivity: new Date().toISOString(),
     };
 
-    // If the lead is unassigned, assign it to the current user ("claim" it).
+    // If the lead is unassigned, assign it to the current user ("claim" it)
+    // and lock down the permissions.
     if (!lead.agentId) {
         updateData.agentId = user.$id;
+        updateData.$permissions = [
+            Permission.read(Role.user(user.$id)),
+            Permission.update(Role.user(user.$id)),
+            Permission.delete(Role.user(user.$id)),
+            Permission.read(Role.label('admin')),
+            Permission.update(Role.label('admin')),
+            Permission.delete(Role.label('admin')),
+        ];
     }
 
     await databases.updateDocument(dbId, leadsCollectionId, leadId, updateData);
