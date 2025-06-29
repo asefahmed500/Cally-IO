@@ -1,3 +1,4 @@
+
 'use client';
 import * as React from 'react';
 import Image from 'next/image';
@@ -458,7 +459,7 @@ export function ChatPanel({
   }, []);
 
   return (
-    <div className="flex flex-col h-[calc(100%-4rem)]">
+    <div className="flex flex-col h-full">
       <div className="flex items-center justify-between pb-2 mb-2 border-b">
         <h3 className="text-lg font-semibold">Conversation</h3>
         <div className="flex items-center gap-2">
@@ -482,7 +483,7 @@ export function ChatPanel({
             </Button>
         </div>
       </div>
-      <ScrollArea className="flex-1" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1 min-h-0" ref={scrollAreaRef}>
         {isHistoryLoading ? (
             <ChatSkeleton />
         ) : historyError ? (

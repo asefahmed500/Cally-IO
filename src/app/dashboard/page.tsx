@@ -5,7 +5,7 @@ import { ChatPanel } from "@/components/chat/chat-panel";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { KeyRound, Database, Clock, Users, BarChart2, Star, AlertTriangle } from "lucide-react";
 import { getAISettings, type AISettings } from "@/lib/settings";
-import { getLeads } from "../leads/actions";
+import { getLeads } from "@/app/leads/actions";
 import type { Lead } from "@/app/leads/types";
 import type { Models } from "appwrite";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -144,12 +144,15 @@ export default async function DashboardPage() {
             </AlertDescription>
           </Alert>
        )}
-
-      <ChatPanel 
-        user={user} 
-        disabled={!isGoogleConfigured || !isAppwriteConfigured} 
-        isChatActive={isChatActive}
-      />
+      
+      {/* This flex wrapper is the key fix. It grows to fill remaining space and allows ChatPanel to use h-full. */}
+      <div className="flex-1 min-h-0">
+        <ChatPanel 
+          user={user} 
+          disabled={!isGoogleConfigured || !isAppwriteConfigured} 
+          isChatActive={isChatActive}
+        />
+      </div>
     </div>
   );
 }
