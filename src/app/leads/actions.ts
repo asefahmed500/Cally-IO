@@ -5,14 +5,42 @@ import { databases } from '@/lib/appwrite-server';
 import { getLoggedInUser } from '@/lib/auth';
 import { revalidatePath } from 'next/cache';
 import twilio from 'twilio';
-import { ID, Permission, Role, Query } from 'node-appwrite';
+import { ID, Permission, Role, Query, Models, AppwriteException } from 'node-appwrite';
 import { z } from 'zod';
 import type { Lead } from './types';
 
-const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
-const callLogsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CALL_LOGS_COLLECTION_ID!;
+export async function getLeads(user: Models.User<Models.Preferences>): Promise<{leads: Lead[], error: string | null}> {
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
+    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
+    const isAdmin = user.labels.includes('admin');
 
+    if (!dbId || !leadsCollectionId) {
+        // Return empty array if not configured, page will show an alert.
+        return { leads: [], error: null };
+    }
+
+    try {
+        const queries = isAdmin 
+            ? [Query.orderDesc('$createdAt'), Query.limit(500)]
+            // If not admin, fetch leads assigned to this user AND unassigned leads
+            : [Query.equal('agentId', [user.$id, null]), Query.orderDesc('$createdAt'), Query.limit(500)];
+
+        const response = await databases.listDocuments(
+            dbId,
+            leadsCollectionId,
+            queries
+        );
+
+        return { leads: response.documents as Lead[], error: null };
+    } catch (e: any) {
+        console.error("Failed to fetch leads:", e);
+        if (e instanceof AppwriteException && e.type === 'general_query_invalid') {
+            return { leads: [], error: `Appwrite schema error: ${e.message}. Please verify your 'leads' collection attributes against documentation.txt.` };
+        }
+        // This might happen if the collection doesn't exist yet.
+        return { leads: [], error: `Failed to fetch leads: ${e.message}` };
+    }
+}
 
 const LeadSchema = z.object({
     id: z.string().optional(),

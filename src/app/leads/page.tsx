@@ -1,8 +1,6 @@
 
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
-import { databases } from "@/lib/appwrite-server";
-import { AppwriteException, Query } from "node-appwrite";
 import { LeadsKanbanView } from "@/components/leads/leads-kanban-view";
 import type { Models } from "node-appwrite";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,40 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Table, AlertTriangle } from "lucide-react";
 import { listUsers } from "../settings/users_actions";
 import type { UserSummary } from "../settings/users_actions";
-import type { Lead } from "./types";
-
-export async function getLeads(user: Models.User<Models.Preferences>): Promise<{leads: Lead[], error: string | null}> {
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
-    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
-    const isAdmin = user.labels.includes('admin');
-
-    if (!dbId || !leadsCollectionId) {
-        // Return empty array if not configured, page will show an alert.
-        return { leads: [], error: null };
-    }
-
-    try {
-        const queries = isAdmin 
-            ? [Query.orderDesc('$createdAt'), Query.limit(500)]
-            // If not admin, fetch leads assigned to this user AND unassigned leads
-            : [Query.equal('agentId', [user.$id, null]), Query.orderDesc('$createdAt'), Query.limit(500)];
-
-        const response = await databases.listDocuments(
-            dbId,
-            leadsCollectionId,
-            queries
-        );
-
-        return { leads: response.documents as Lead[], error: null };
-    } catch (e: any) {
-        console.error("Failed to fetch leads:", e);
-        if (e instanceof AppwriteException && e.type === 'general_query_invalid') {
-            return { leads: [], error: `Appwrite schema error: ${e.message}. Please verify your 'leads' collection attributes against documentation.txt.` };
-        }
-        // This might happen if the collection doesn't exist yet.
-        return { leads: [], error: `Failed to fetch leads: ${e.message}` };
-    }
-}
+import { getLeads } from "./actions";
 
 
 export default async function LeadsPage() {

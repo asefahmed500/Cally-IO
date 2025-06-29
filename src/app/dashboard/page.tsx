@@ -5,7 +5,7 @@ import { ChatPanel } from "@/components/chat/chat-panel";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { KeyRound, Database, Clock, Users, BarChart2, Star, AlertTriangle } from "lucide-react";
 import { getAISettings, type AISettings } from "@/lib/settings";
-import { getLeads } from "../leads/page";
+import { getLeads } from "../leads/actions";
 import type { Lead } from "@/app/leads/types";
 import type { Models } from "appwrite";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
