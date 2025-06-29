@@ -1,3 +1,4 @@
+
 'use server'
 
 import { account } from '@/lib/appwrite-server';
@@ -22,6 +23,7 @@ export async function signup(prevState: any, formData: FormData) {
   try {
     const isAdmin = process.env.ADMIN_EMAIL && email === process.env.ADMIN_EMAIL;
     
+    // This call is now resilient and won't throw for database structure errors.
     await _createNewUserAndLead({
       name,
       email,
@@ -41,10 +43,7 @@ export async function signup(prevState: any, formData: FormData) {
       if (e.type === 'general_argument_invalid' && e.message.includes('Password')) {
            return { errors: { password: 'This password is too common or does not meet security requirements. Please choose a stronger one.'} }
       }
-      if (e.type === 'document_invalid_structure' || e.type === 'general_query_invalid') {
-           return { message: 'Signup failed: Database is not configured correctly. Please contact an administrator or check the setup guide.' };
-      }
-      // Return a generic message for other Appwrite errors
+      // Other errors are now generic, as DB structure errors are handled internally.
       return { message: `An unexpected error occurred: ${e.message}` };
     }
     return { message: 'An unexpected error occurred during signup. Please try again.' };

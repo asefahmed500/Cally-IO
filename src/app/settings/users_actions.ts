@@ -28,36 +28,34 @@ export async function _createNewUserAndLead({
     const newUser = await users.create(ID.unique(), email, undefined, password, name);
     await users.updateLabels(newUser.$id, labels);
     
-    // Then create the associated lead
-    if (dbId && leadsCollectionId) {
-        // To prevent crashes on misconfigured databases, we create a lead object
-        // that matches the documented schema but will omit the 'userId' if it causes an error.
-        const leadData: { [key: string]: any; } = {
-            userId: newUser.$id,
-            name: name,
-            email: email,
-            status: 'New' as const,
-            score: Math.floor(Math.random() * 21) + 10,
-            lastActivity: new Date().toISOString(),
-            agentId: assignToSelf ? newUser.$id : null,
-        };
+    // Then, attempt to create the associated lead, but do not let it block signup if it fails.
+    try {
+        if (dbId && leadsCollectionId) {
+            const leadData: { [key: string]: any; } = {
+                userId: newUser.$id,
+                name: name,
+                email: email,
+                status: 'New' as const,
+                score: Math.floor(Math.random() * 21) + 10,
+                lastActivity: new Date().toISOString(),
+                agentId: assignToSelf ? newUser.$id : null,
+            };
 
-        const permissions = assignToSelf
-            ? [ // For users created via admin panel
-                Permission.read(Role.user(newUser.$id)),
-                Permission.update(Role.user(newUser.$id)),
-                Permission.delete(Role.user(newUser.$id)),
-                Permission.read(Role.label('admin')),
-                Permission.update(Role.label('admin')),
-                Permission.delete(Role.label('admin')),
-            ]
-            : [ // For public signups
-                Permission.read(Role.users()),
-                Permission.update(Role.users()),
-                Permission.delete(Role.label('admin')),
-            ];
+            const permissions = assignToSelf
+                ? [ // For users created via admin panel
+                    Permission.read(Role.user(newUser.$id)),
+                    Permission.update(Role.user(newUser.$id)),
+                    Permission.delete(Role.user(newUser.$id)),
+                    Permission.read(Role.label('admin')),
+                    Permission.update(Role.label('admin')),
+                    Permission.delete(Role.label('admin')),
+                ]
+                : [ // For public signups
+                    Permission.read(Role.users()),
+                    Permission.update(Role.users()),
+                    Permission.delete(Role.label('admin')),
+                ];
 
-        try {
             await databases.createDocument(
                 dbId,
                 leadsCollectionId,
@@ -65,42 +63,30 @@ export async function _createNewUserAndLead({
                 leadData,
                 permissions
             );
-        } catch (e) {
-             if (e instanceof AppwriteException && e.type === 'document_invalid_structure' && e.message.includes('userId')) {
-                // This is a recovery mechanism for a misconfigured database.
-                // The 'userId' attribute is missing from the 'leads' collection schema.
-                // To allow signup to succeed, we will try again without the 'userId'.
-                console.warn("Resilience Warning: The 'userId' attribute is missing in the 'leads' collection. The new lead will not be associated with the user account. Please update your Appwrite schema according to documentation.txt to fix this.");
-                const { userId, ...resilientLeadData } = leadData;
-                 await databases.createDocument(
-                    dbId,
-                    leadsCollectionId,
-                    ID.unique(),
-                    resilientLeadData,
-                    permissions
-                );
-            } else {
-                // Re-throw any other errors so they can be handled by the calling function.
-                throw e;
+            
+            // Only fire webhook for public signups (which are not assigned to self)
+            if (!assignToSelf && process.env.WEBHOOK_URL_NEW_LEAD) {
+                try {
+                    // Fire-and-forget
+                    fetch(process.env.WEBHOOK_URL_NEW_LEAD, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(leadData),
+                    });
+                } catch (webhookError) {
+                    console.error("Failed to send new lead webhook:", webhookError);
+                }
             }
         }
-
-
-        // Only fire webhook for public signups (which are not assigned to self)
-        if (!assignToSelf && process.env.WEBHOOK_URL_NEW_LEAD) {
-            try {
-                // Fire-and-forget
-                fetch(process.env.WEBHOOK_URL_NEW_LEAD, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(leadData),
-                });
-            } catch (webhookError) {
-                console.error("Failed to send new lead webhook:", webhookError);
-            }
-        }
-    } else {
-        console.error('Database or leads collection not configured. Skipping lead creation.');
+    } catch (e) {
+        // If lead creation fails for ANY reason (e.g., schema mismatch), log it and continue.
+        // This makes the application resilient to misconfigured databases.
+        console.error(
+            "CRITICAL WARNING: Lead creation failed during user signup. " +
+            "The user account was created successfully, but the associated lead was not. " +
+            "This is likely due to a misconfigured 'leads' collection in your Appwrite database. " +
+            "Please check your schema against the documentation.txt file. Error details:", e
+        );
     }
     
     return newUser;
