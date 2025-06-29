@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Generates a personalized call script for a sales lead.
@@ -9,7 +10,7 @@ import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 import { getAISettings } from '@/lib/settings';
 
-export const GenerateCallScriptInputSchema = z.object({
+const GenerateCallScriptInputSchema = z.object({
   leadName: z.string().describe("The name of the lead to call."),
   leadStatus: z.string().describe("The current status of the lead (e.g., New, Qualified)."),
   leadScore: z.number().describe("The lead's quality score (1-100)."),

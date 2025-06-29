@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Processes uploaded documents for RAG.
@@ -19,7 +20,7 @@ import {
 import { getLoggedInUser } from '@/lib/auth';
 import { ID, Permission, Role } from 'appwrite';
 
-export const ProcessDocumentInputSchema = z.object({
+const ProcessDocumentInputSchema = z.object({
   fileDataUri: z.string().describe('The document file as a data URI.'),
   fileName: z.string().describe('The name of the document file.'),
   documentId: z.string().describe('The Appwrite ID of the document file.'),

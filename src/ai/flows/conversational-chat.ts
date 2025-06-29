@@ -27,7 +27,7 @@ const MessageSchema = z.object({
   content: z.string(),
 });
 
-export const ConversationalRagChatInputSchema = z.object({
+const ConversationalRagChatInputSchema = z.object({
   history: z.array(MessageSchema),
   prompt: z.string(),
   image: z.string().optional().describe('An optional image for the user prompt, as a data URI.'),

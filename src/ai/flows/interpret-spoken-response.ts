@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview An AI flow to interpret the intent of a spoken response from a Twilio call.
@@ -8,7 +9,7 @@
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
 
-export const InterpretSpokenResponseOutputSchema = z.object({
+const InterpretSpokenResponseOutputSchema = z.object({
   intent: z.enum(['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'ESCALATE'])
     .describe('The classified intent of the spoken response.'),
   summary: z.string()

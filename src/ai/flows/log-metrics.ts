@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Logs chat interaction metrics to Appwrite.
@@ -14,7 +15,7 @@ import {
 import { getLoggedInUser } from '@/lib/auth';
 import { ID, Permission, Role } from 'appwrite';
 
-export const LogInteractionInputSchema = z.object({
+const LogInteractionInputSchema = z.object({
   messageId: z.string(),
   feedback: z.enum(['good', 'bad']),
   prompt: z.string().optional(),
