@@ -1,4 +1,3 @@
-
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { LeadsKanbanView } from "@/components/leads/leads-kanban-view";
