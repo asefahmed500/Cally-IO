@@ -1,4 +1,3 @@
-
 'use client';
 
 import * as React from 'react';
@@ -22,6 +21,7 @@ import { initiateCall } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { LeadProfileCard } from './lead-profile-card';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
 
 const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
 
@@ -124,12 +124,17 @@ export function LeadCard({
                             <Star className="h-3 w-3 text-yellow-500" />
                             <span>{lead.score}</span>
                         </div>
-                         {lead.followUpDate && (
-                            <div className={cn("flex items-center gap-1", isFollowUpDue && "text-destructive font-semibold")}>
-                                <CalendarDays className="h-3 w-3" />
-                                <span>{new Date(lead.followUpDate).toLocaleDateString()}</span>
-                            </div>
-                        )}
+                        <div className="flex items-center gap-2">
+                            {!lead.agentId && (
+                                <Badge variant="secondary">Unclaimed</Badge>
+                            )}
+                            {lead.followUpDate && (
+                                <div className={cn("flex items-center gap-1", isFollowUpDue && "text-destructive font-semibold")}>
+                                    <CalendarDays className="h-3 w-3" />
+                                    <span>{new Date(lead.followUpDate).toLocaleDateString()}</span>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 </CardContent>
             </Card>
