@@ -152,7 +152,7 @@ export function ChatPanel({
         });
 
         try {
-        const bucketId = await appwriteStorageBucketId();
+        const bucketId = appwriteStorageBucketId;
         if (!bucketId) {
             throw new Error('Appwrite storage bucket not configured.');
         }
