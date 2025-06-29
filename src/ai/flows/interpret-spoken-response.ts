@@ -3,7 +3,7 @@
 /**
  * @fileOverview An AI flow to interpret the intent of a spoken response from a Twilio call.
  * - interpretSpokenResponse: The main function to classify the response.
- * - InterpretSpokenResponseOutputSchema: The return type for the function.
+ * - InterpretSpokenResponseOutput: The return type for the function.
  */
 
 import { ai } from '@/ai/genkit';

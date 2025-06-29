@@ -3,8 +3,8 @@
 /**
  * @fileOverview A Text-to-Speech (TTS) flow using Genkit.
  * - generateSpeech: Converts a string of text into playable audio data.
- * - GenerateSpeechInputSchema: The input type for the speech generation function.
- * - GenerateSpeechOutputSchema: The output type for the speech generation function.
+ * - GenerateSpeechInput: The input type for the speech generation function.
+ * - GenerateSpeechOutput: The output type for the speech generation function.
  */
 
 import { ai } from '@/ai/genkit';
