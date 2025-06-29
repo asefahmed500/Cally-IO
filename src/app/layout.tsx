@@ -33,15 +33,17 @@ export default async function RootLayout({
             disableTransitionOnChange
         >
           {user ? (
-            <SidebarProvider>
-              <SidebarNav user={user} />
-              <SidebarInset>
-                <MobileHeader />
-                <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-                    {children}
-                </main>
-              </SidebarInset>
-            </SidebarProvider>
+            <div className="flex min-h-screen">
+              <SidebarProvider>
+                <SidebarNav user={user} />
+                <SidebarInset>
+                    <MobileHeader />
+                    <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+                        {children}
+                    </main>
+                </SidebarInset>
+              </SidebarProvider>
+            </div>
           ) : (
             <main className="min-h-screen">
               {children}
