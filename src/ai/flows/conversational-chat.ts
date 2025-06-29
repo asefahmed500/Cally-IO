@@ -19,7 +19,7 @@ import {
 import { Query } from 'appwrite';
 import { getLoggedInUser } from '@/lib/auth';
 import { getAISettings } from '@/lib/settings';
-import { logDocumentUsage } from '@/app/settings/analytics_actions';
+import { logDocumentUsage } from '@/lib/analytics';
 
 const MessageSchema = z.object({
   role: z.enum(['user', 'model']),
