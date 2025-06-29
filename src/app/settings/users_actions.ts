@@ -79,14 +79,21 @@ export async function _createNewUserAndLead({
             }
         }
     } catch (e) {
-        // If lead creation fails for ANY reason (e.g., schema mismatch), log it and continue.
-        // This makes the application resilient to misconfigured databases.
-        console.error(
-            "CRITICAL WARNING: Lead creation failed during user signup. " +
-            "The user account was created successfully, but the associated lead was not. " +
-            "This is likely due to a misconfigured 'leads' collection in your Appwrite database. " +
-            "Please check your schema against the documentation.txt file. Error details:", e
-        );
+        if (e instanceof AppwriteException && e.type === 'document_invalid_structure') {
+            // Provide a clear, actionable guide for the most common setup error.
+            console.warn(
+                `\n[Cally-IO Setup Action Required]: Lead creation failed due to a database schema mismatch. ` +
+                `While the user account was created successfully, the system couldn't create the associated lead. ` +
+                `\n\n>>> To fix this, please go to your Appwrite Console > Databases > [Your DB] > 'leads' collection > Attributes, and ensure you have an attribute named 'userId' of type 'String'. ` +
+                `\nThis is required to link new signups to leads in the pipeline. The original error was: ${e.message}\n`
+            );
+        } else {
+            // Log other, unexpected errors more seriously.
+            console.error(
+                "CRITICAL WARNING: An unexpected error occurred during lead creation for a new user. " +
+                "The user account was created, but the lead was not. Error details:", e
+            );
+        }
     }
     
     return newUser;
