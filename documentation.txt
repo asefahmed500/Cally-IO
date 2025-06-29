@@ -92,28 +92,106 @@ This project is proud to partner with leading companies in the AI and cloud spac
 
 ## Appwrite Setup
 
-To make the application fully functional, you need to configure your Appwrite project. The following collections are required:
+**CRITICAL**: The application will not function correctly if the following collections and attributes are not configured exactly as specified. Mismatched names or types will cause runtime errors.
 
-1.  **Storage Bucket**: For storing uploaded documents.
-2.  **Database**: Create one database to hold all the following collections.
-3.  **Collections**:
-    *   **`embeddings`**: Stores document chunks and their vector embeddings.
-        - Attributes: `documentId` (string, required), `fileName` (string, required), `chunkText` (string, required, size 10000), `embedding` (float[], size 768, required), `userId` (string, required).
-    *   **`metrics`**: Stores user feedback on AI responses.
-        - Attributes: `userId` (string, required), `messageId` (string, required), `feedback` (string, required), `prompt` (string, size 8192, **not** required).
-    *   **`leads`**: Stores information about leads.
-        - Attributes: `userId` (string, **not** required), `name` (string, required), `email` (string, required), `phone` (string, **not** required), `company` (string, **not** required), `jobTitle` (string, **not** required), `notes` (string, size 8192, **not** required), `status` (string, required), `score` (integer, required), `lastActivity` (datetime, required), `agentId` (string, **not** required), `followUpDate` (datetime, **not** required), `followUpNotes` (string, size 8192, **not** required).
-    *   **`settings`**: A singleton collection for AI and business configuration.
-        - Create **one** document with the ID `default_config`.
-        - Attributes: `ai_personality` (string, required), `ai_style` (string, required), `ai_instructions` (string, required, size 8192), `business_hours_enabled` (boolean, required), `business_hours_start` (string, required), `business_hours_end` (string, required), `business_hours_timezone` (string, required), `away_message` (string, required, size 8192), `call_script_template` (string, required, size 8192).
-    *   **`conversations`**: Stores persistent chat history for each user.
-        - Attributes: `userId` (string, required), `history` (string, size 1000000, required).
-    *   **`faqs`**: Stores admin-curated question-and-answer pairs.
-        - Attributes: `question` (string, required), `answer` (string, required, size 8192).
-    *   **`call_logs`**: Stores logs of outbound Twilio calls.
-        - Attributes: `leadId` (string, required), `userId` (string, required), `callSid` (string, required), `status` (string, required), `duration` (integer, **not** required), `recordingUrl` (string, **not** required), `leadResponse` (string, **not** required, size 8192), `speechConfidence` (float, **not** required).
-    *   **`analytics_logs`**: Stores events for advanced analytics.
-        - Attributes: `eventType` (string, required), `eventData` (string, size 10000, required), `userId` (string, required).
+1.  **Storage Bucket**: First, create one Storage Bucket for storing uploaded documents.
+2.  **Database**: Create one Database to hold all the following collections.
+
+### Collections
+
+#### `embeddings`
+Stores document chunks and their vector embeddings for AI search.
+
+| Attribute Name | Type       | Size    | Required | Notes                               |
+|----------------|------------|---------|----------|-------------------------------------|
+| `documentId`   | String     | 255     | Yes      | The ID of the file in Storage.      |
+| `fileName`     | String     | 255     | Yes      | The original name of the uploaded file. |
+| `chunkText`    | String     | 10000   | Yes      | A text chunk from the document.     |
+| `embedding`    | Float      | 768     | Yes      | Vector embedding of the `chunkText`. |
+| `userId`       | String     | 255     | Yes      | ID of the user who uploaded the document. |
+
+#### `metrics`
+Stores user feedback on AI responses (thumbs up/down).
+
+| Attribute Name | Type   | Size  | Required | Notes                                      |
+|----------------|--------|-------|----------|--------------------------------------------|
+| `userId`       | String | 255   | Yes      | ID of the user providing feedback.         |
+| `messageId`    | String | 255   | Yes      | The unique ID of the AI message.           |
+| `feedback`     | String | 255   | Yes      | The feedback given ('good' or 'bad').      |
+| `prompt`       | String | 8192  | No       | The user prompt that led to the response. |
+
+#### `leads`
+Stores information about sales leads.
+
+| Attribute Name  | Type     | Size  | Required | Notes                                    |
+|-----------------|----------|-------|----------|------------------------------------------|
+| `userId`        | String   | 255   | No       | User ID if the lead came from a signup.  |
+| `name`          | String   | 255   | Yes      | Full name of the lead.                   |
+| `email`         | String   | 255   | Yes      | Email address of the lead.               |
+| `phone`         | String   | 255   | No       | Phone number of the lead.                |
+| `company`       | String   | 255   | No       | The lead's company.                      |
+| `jobTitle`      | String   | 255   | No       | The lead's job title.                    |
+| `notes`         | String   | 8192  | No       | General notes about the lead.            |
+| `status`        | String   | 255   | Yes      | Current status in the sales pipeline.    |
+| `score`         | Integer  |       | Yes      | A quality score from 1-100.              |
+| `lastActivity`  | Datetime |       | Yes      | Timestamp of the last interaction.       |
+| `agentId`       | String   | 255   | No       | The user ID of the agent assigned to the lead. |
+| `followUpDate`  | Datetime |       | No       | Scheduled date for the next follow-up.   |
+| `followUpNotes` | String   | 8192  | No       | Notes for the scheduled follow-up.       |
+
+#### `settings`
+A singleton collection for AI and business configuration. Create **one** document with the ID `default_config`.
+
+| Attribute Name             | Type    | Size  | Required | Notes                                       |
+|----------------------------|---------|-------|----------|---------------------------------------------|
+| `ai_personality`           | String  | 255   | Yes      | e.g., 'Professional', 'Friendly'            |
+| `ai_style`                 | String  | 255   | Yes      | e.g., 'Concise', 'Detailed'                 |
+| `ai_instructions`          | String  | 8192  | Yes      | Custom instructions for the AI.             |
+| `business_hours_enabled`   | Boolean |       | Yes      | Whether to enforce business hours.          |
+| `business_hours_start`     | String  | 255   | Yes      | Start time, e.g., '09:00'.                  |
+| `business_hours_end`       | String  | 255   | Yes      | End time, e.g., '17:00'.                    |
+| `business_hours_timezone`  | String  | 255   | Yes      | Timezone, e.g., 'UTC'.                      |
+| `away_message`             | String  | 8192  | Yes      | Message to show outside of business hours.  |
+| `call_script_template`     | String  | 8192  | Yes      | Template for automated call scripts.        |
+
+#### `conversations`
+Stores persistent chat history for each user.
+
+| Attribute Name | Type   | Size    | Required | Notes                                   |
+|----------------|--------|---------|----------|-----------------------------------------|
+| `userId`       | String | 255     | Yes      | The ID of the user having the conversation. |
+| `history`      | String | 1000000 | Yes      | JSON string of the entire chat history. |
+
+#### `faqs`
+Stores admin-curated question-and-answer pairs.
+
+| Attribute Name | Type   | Size | Required | Notes                               |
+|----------------|--------|------|----------|-------------------------------------|
+| `question`     | String | 255  | Yes      | The frequently asked question.      |
+| `answer`       | String | 8192 | Yes      | The official answer to the question. |
+
+#### `call_logs`
+Stores logs of outbound Twilio calls.
+
+| Attribute Name     | Type    | Size | Required | Notes                                     |
+|--------------------|---------|------|----------|-------------------------------------------|
+| `leadId`           | String  | 255  | Yes      | ID of the lead that was called.           |
+| `userId`           | String  | 255  | Yes      | ID of the user who initiated the call.    |
+| `callSid`          | String  | 255  | Yes      | The unique SID from Twilio.               |
+| `status`           | String  | 255  | Yes      | The status of the call from Twilio.       |
+| `duration`         | Integer |      | No       | The duration of the call in seconds.      |
+| `recordingUrl`     | String  | 255  | No       | URL of the call recording, if any.        |
+| `leadResponse`     | String  | 8192 | No       | AI-interpreted summary of the lead's response. |
+| `speechConfidence` | Float   |      | No       | Twilio's confidence in the speech-to-text. |
+
+#### `analytics_logs`
+Stores events for advanced analytics.
+
+| Attribute Name | Type   | Size  | Required | Notes                                     |
+|----------------|--------|-------|----------|-------------------------------------------|
+| `eventType`    | String | 255   | Yes      | The type of event (e.g., 'DOCUMENT_USED'). |
+| `eventData`    | String | 10000 | Yes      | JSON string with data about the event.    |
+| `userId`       | String | 255   | Yes      | ID of the user who triggered the event.   |
 
 **Permissions are critical for security.** In general:
 - Users should only have CRUD access to their own documents (`Permission.read(Role.user(userId))`).

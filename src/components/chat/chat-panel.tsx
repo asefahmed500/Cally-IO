@@ -5,7 +5,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, Square, Download, Trash2 } from 'lucide-react';
+import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, Square, Download, Trash2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
@@ -26,6 +26,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { Alert, AlertTitle, AlertDescription } from '../ui/alert';
 
 
 async function fileToDataUri(file: File): Promise<string> {
@@ -85,6 +86,7 @@ export function ChatPanel({
   const [imagePreview, setImagePreview] = React.useState<string | null>(null);
   const [isLoading, setIsLoading] = React.useState(false);
   const [isHistoryLoading, setIsHistoryLoading] = React.useState(true);
+  const [historyError, setHistoryError] = React.useState<string | null>(null);
   const [feedbackSent, setFeedbackSent] = React.useState<Set<string>>(new Set());
   const [audioState, setAudioState] = React.useState<AudioPlaybackState>({ messageId: null, status: 'idle' });
   const [isClearConfirmOpen, setIsClearConfirmOpen] = React.useState(false);
@@ -102,18 +104,21 @@ export function ChatPanel({
     }
     const fetchHistory = async () => {
       setIsHistoryLoading(true);
+      setHistoryError(null);
       try {
         const response = await fetch('/api/chat/history');
+        const data = await response.json();
         if (!response.ok) {
-          throw new Error('Failed to fetch history');
+          throw new Error(data.message || 'Failed to fetch history');
         }
-        const history: ChatMessage[] = await response.json();
-        setMessages(history);
-      } catch (error) {
+        setMessages(data);
+      } catch (error: any) {
         console.error(error);
+        setHistoryError(error.message || 'Could not load chat history.');
         toast({
             variant: 'destructive',
-            title: 'Could not load chat history.',
+            title: 'Error Loading History',
+            description: error.message || 'Could not load chat history.',
         });
       } finally {
         setIsHistoryLoading(false);
@@ -150,6 +155,14 @@ export function ChatPanel({
     }
 
     if (isDocument) {
+        if (!appwriteStorageBucketId) {
+             toast({
+                variant: 'destructive',
+                title: 'Storage Not Configured',
+                description: 'Please set the Appwrite storage bucket ID in your environment variables.',
+            });
+            return;
+        }
         setIsLoading(true);
         toast({
         title: 'Uploading document...',
@@ -158,9 +171,6 @@ export function ChatPanel({
 
         try {
         const bucketId = appwriteStorageBucketId;
-        if (!bucketId) {
-            throw new Error('Appwrite storage bucket not configured.');
-        }
         
         const permissions = [
             Permission.read(Role.user(user.$id)),
@@ -378,6 +388,12 @@ export function ChatPanel({
       });
 
       if (!response.body) throw new Error('No response body');
+      
+      if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || 'The API returned an error.');
+      }
+      
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let modelResponse = '';
@@ -396,9 +412,9 @@ export function ChatPanel({
           return newMessages;
         });
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error fetching chat response:', error);
-      const errorMessage = "I'm sorry, but I encountered an error. Please try again.";
+      const errorMessage = `I'm sorry, but I encountered an error: ${error.message}`;
       setMessages((prev) => {
           const newMessages = [...prev];
           const lastMessage = newMessages.length > 0 ? newMessages[newMessages.length - 1] : undefined;
@@ -410,7 +426,7 @@ export function ChatPanel({
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to get a response from the AI assistant.',
+        description: error.message || 'Failed to get a response from the AI assistant.',
       });
     } finally {
       setIsLoading(false);
@@ -469,6 +485,14 @@ export function ChatPanel({
       <ScrollArea className="flex-1" ref={scrollAreaRef}>
         {isHistoryLoading ? (
             <ChatSkeleton />
+        ) : historyError ? (
+             <Alert variant="destructive" className="m-4">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Error Loading Chat</AlertTitle>
+              <AlertDescription>
+                {historyError}
+              </AlertDescription>
+            </Alert>
         ) : (
             <div className="space-y-6 pr-4">
             {messages.length === 0 && !effectiveDisabled && (

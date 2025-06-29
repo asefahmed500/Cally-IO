@@ -2,24 +2,24 @@
 import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { databases } from "@/lib/appwrite-server";
-import { Query } from "node-appwrite";
+import { AppwriteException, Query } from "node-appwrite";
 import { LeadsKanbanView } from "@/components/leads/leads-kanban-view";
 import type { Models } from "node-appwrite";
 import { Card, CardContent } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Table } from "lucide-react";
+import { Table, AlertTriangle } from "lucide-react";
 import { listUsers } from "../settings/users_actions";
 import type { UserSummary } from "../settings/users_actions";
 import type { Lead } from "./types";
 
-export async function getLeads(user: Models.User<Models.Preferences>): Promise<Lead[]> {
+export async function getLeads(user: Models.User<Models.Preferences>): Promise<{leads: Lead[], error: string | null}> {
     const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
     const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
     const isAdmin = user.labels.includes('admin');
 
     if (!dbId || !leadsCollectionId) {
         // Return empty array if not configured, page will show an alert.
-        return [];
+        return { leads: [], error: null };
     }
 
     try {
@@ -34,11 +34,14 @@ export async function getLeads(user: Models.User<Models.Preferences>): Promise<L
             queries
         );
 
-        return response.documents as Lead[];
-    } catch (e) {
+        return { leads: response.documents as Lead[], error: null };
+    } catch (e: any) {
         console.error("Failed to fetch leads:", e);
+        if (e instanceof AppwriteException && e.type === 'general_query_invalid') {
+            return { leads: [], error: `Appwrite schema error: ${e.message}. Please verify your 'leads' collection attributes against documentation.txt.` };
+        }
         // This might happen if the collection doesn't exist yet.
-        return [];
+        return { leads: [], error: `Failed to fetch leads: ${e.message}` };
     }
 }
 
@@ -52,7 +55,7 @@ export default async function LeadsPage() {
   const isAdmin = user.labels.includes('admin');
   const isConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
   
-  const [leads, allUsers] = await Promise.all([
+  const [{ leads, error: leadsError }, allUsers] = await Promise.all([
     getLeads(user),
     isAdmin ? listUsers() : Promise.resolve([] as UserSummary[])
   ]);
@@ -76,6 +79,18 @@ export default async function LeadsPage() {
                     <AlertTitle>Leads Collection Not Configured</AlertTitle>
                     <AlertDescription>
                         Please set the `NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID` environment variable and configure the collection in your Appwrite project to see your leads.
+                    </AlertDescription>
+                </Alert>
+            </CardContent>
+          </Card>
+      ) : leadsError ? (
+           <Card>
+            <CardContent className="pt-6">
+                <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Error Fetching Leads</AlertTitle>
+                    <AlertDescription>
+                        {leadsError}
                     </AlertDescription>
                 </Alert>
             </CardContent>

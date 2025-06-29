@@ -28,8 +28,12 @@ export async function signup(prevState: any, formData: FormData) {
     await setSessionCookie(session.secret, session.expire);
   } catch (e: any) {
     console.error(e);
-    if (e instanceof AppwriteException && e.code === 409) {
-        return { message: 'A user with this email already exists. Please try logging in.'}
+    if (e instanceof AppwriteException) {
+      if (e.code === 409) { // User already exists
+          return { message: 'A user with this email already exists. Please try logging in.'}
+      }
+      // Return the specific Appwrite message for other errors (like invalid password)
+      return { message: e.message };
     }
     return { message: 'An unexpected error occurred during signup. Please try again.' };
   }
