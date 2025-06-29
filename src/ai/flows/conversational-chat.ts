@@ -93,11 +93,14 @@ async function searchEmbeddings(
     );
     return defaultResponse;
   }
-
-  const queryEmbedding = await embed({
+  
+  // To work around a TypeScript type resolution issue, we pass the query as a single-item array.
+  const embeddingArray = await embed({
     embedder: 'googleai/text-embedding-004',
-    content: query,
+    content: [query],
   });
+  const queryEmbedding = embeddingArray[0];
+
 
   try {
     const response = await appwriteDatabases.listDocuments(
