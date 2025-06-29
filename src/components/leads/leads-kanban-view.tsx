@@ -106,6 +106,9 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
 
     const handleStatusChange = async (leadId: string, newStatus: Lead['status']) => {
         const originalLeads = [...leads];
+        const leadToUpdate = leads.find(l => l.$id === leadId);
+        if (!leadToUpdate) return; // Safety check
+
         setLeads(prevLeads =>
             prevLeads.map(lead =>
                 lead.$id === leadId ? { ...lead, status: newStatus, agentId: lead.agentId || currentUser.$id } : lead
@@ -117,7 +120,10 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
             toast({ variant: 'destructive', title: 'Error updating status', description: result.error });
             setLeads(originalLeads);
         } else {
-            toast({ title: 'Status Updated', description: 'The lead has been updated.' });
+            toast({
+                title: result.claimed ? 'Lead Claimed!' : 'Status Updated',
+                description: result.claimed ? `You have claimed "${leadToUpdate.name}".` : 'The lead has been updated.'
+            });
         }
     };
     

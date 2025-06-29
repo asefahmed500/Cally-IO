@@ -170,6 +170,8 @@ export async function updateLeadStatus(leadId: string, status: string) {
         return { error: 'You do not have permission to update this lead.' };
     }
     
+    const wasClaimed = !lead.agentId;
+
     const updateData: { status: string; lastActivity: string; agentId?: string; $permissions?: string[] } = {
         status,
         lastActivity: new Date().toISOString(),
@@ -193,7 +195,7 @@ export async function updateLeadStatus(leadId: string, status: string) {
     
     revalidatePath('/leads');
     revalidatePath('/dashboard'); // To update agent stats
-    return { success: true };
+    return { success: true, claimed: wasClaimed };
   } catch (e: any) {
     console.error('Failed to update lead status:', e);
     return { error: 'Failed to update lead status in the database.' };
