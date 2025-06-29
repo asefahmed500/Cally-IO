@@ -29,10 +29,12 @@ const statusStyles = {
     Converted: { title: 'Converted', color: 'bg-green-500' },
 };
 
-function FollowUpList({ leads, onEdit }: { leads: Lead[], onEdit: (lead: Lead) => void }) {
+function FollowUpList({ leads, onEdit, allUsers, isAdmin }: { leads: Lead[], onEdit: (lead: Lead) => void, allUsers: UserSummary[], isAdmin: boolean }) {
     const followUpLeads = leads
         .filter(lead => !!lead.followUpDate)
         .sort((a, b) => new Date(a.followUpDate!).getTime() - new Date(b.followUpDate!).getTime());
+    
+    const agentMap = new Map(allUsers.map(user => [user.$id, user.name]));
 
     return (
         <div className="border rounded-lg">
@@ -40,6 +42,7 @@ function FollowUpList({ leads, onEdit }: { leads: Lead[], onEdit: (lead: Lead) =
                 <TableHeader>
                     <TableRow>
                         <TableHead>Lead</TableHead>
+                        {isAdmin && <TableHead>Assigned To</TableHead>}
                         <TableHead>Follow-up Date</TableHead>
                         <TableHead>Notes</TableHead>
                         <TableHead className="text-right">Actions</TableHead>
@@ -55,6 +58,11 @@ function FollowUpList({ leads, onEdit }: { leads: Lead[], onEdit: (lead: Lead) =
                                         <div className="font-medium">{lead.name}</div>
                                         <div className="text-xs text-muted-foreground">{lead.email}</div>
                                     </TableCell>
+                                    {isAdmin && (
+                                        <TableCell>
+                                            {lead.agentId ? agentMap.get(lead.agentId) || 'Unknown' : <Badge variant="secondary">Unclaimed</Badge>}
+                                        </TableCell>
+                                    )}
                                     <TableCell className={cn(isOverdue && "text-destructive font-semibold")}>
                                         {new Date(lead.followUpDate!).toLocaleDateString()}
                                     </TableCell>
@@ -71,7 +79,7 @@ function FollowUpList({ leads, onEdit }: { leads: Lead[], onEdit: (lead: Lead) =
                         })
                     ) : (
                          <TableRow>
-                            <TableCell colSpan={4} className="h-24 text-center">
+                            <TableCell colSpan={isAdmin ? 5 : 4} className="h-24 text-center">
                                 No follow-ups scheduled.
                             </TableCell>
                         </TableRow>
@@ -267,7 +275,7 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
                 </TabsContent>
                 
                 <TabsContent value="followups">
-                    <FollowUpList leads={filteredLeads} onEdit={handleEdit} />
+                    <FollowUpList leads={filteredLeads} onEdit={handleEdit} allUsers={allUsers} isAdmin={isAdmin}/>
                 </TabsContent>
             </Tabs>
 
