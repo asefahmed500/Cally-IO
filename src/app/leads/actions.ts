@@ -84,21 +84,33 @@ export async function saveLead(prevState: any, formData: FormData) {
             await databases.updateDocument(dbId, leadsCollectionId, id, leadPayload);
         } else {
             // Creating a new lead
+            const agentForNewLead = isAdmin ? (leadDataFromForm.agentId || null) : user.$id;
+
             const newLeadData = {
                 ...leadPayload,
                 status: 'New',
                 score: Math.floor(Math.random() * 21) + 10,
-                // If admin didn't assign, it will be null from the payload. If user created, assign to them.
-                agentId: leadPayload.agentId === undefined ? user.$id : leadPayload.agentId,
+                agentId: agentForNewLead,
             };
 
-            // Use broad permissions and rely on server-side logic for security.
-            // This allows admins to reassign leads without complex permission updates.
+            // Refined permissions for better security
             const permissions = [
-                Permission.read(Role.users()),
-                Permission.update(Role.users()),
+                Permission.read(Role.label('admin')),
+                Permission.update(Role.label('admin')),
                 Permission.delete(Role.label('admin')),
             ];
+
+            if (agentForNewLead) {
+                // If the lead is assigned, only that agent and admins should have access.
+                permissions.push(Permission.read(Role.user(agentForNewLead)));
+                permissions.push(Permission.update(Role.user(agentForNewLead)));
+            } else {
+                // If the lead is unassigned, any logged-in user can read it (to see it in the 'New' column)
+                // and any user can update it (which is how they "claim" it).
+                // The updateLeadStatus action provides the final check.
+                permissions.push(Permission.read(Role.users()));
+                permissions.push(Permission.update(Role.users()));
+            }
 
             await databases.createDocument(
                 dbId,
