@@ -9,7 +9,7 @@ import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, 
 import { cn } from '@/lib/utils';
 import type { Message } from '@/ai/flows/conversational-chat';
 import { useToast } from '@/hooks/use-toast';
-import { storage, appwriteStorageBucketId } from '@/lib/appwrite-client';
+import { appwriteStorageBucketId, storage } from '@/lib/appwrite-client';
 import { ID, Permission, Role, type Models } from 'appwrite';
 import { processDocument } from '@/ai/flows/process-document';
 import { logInteraction } from '@/ai/flows/log-metrics';
@@ -93,8 +93,13 @@ export function ChatPanel({
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const audioRef = React.useRef<HTMLAudioElement | null>(null);
   const { toast } = useToast();
+  const effectiveDisabled = disabled || !isChatActive;
 
   React.useEffect(() => {
+    if (effectiveDisabled) {
+        setIsHistoryLoading(false);
+        return;
+    }
     const fetchHistory = async () => {
       setIsHistoryLoading(true);
       try {
@@ -115,7 +120,7 @@ export function ChatPanel({
       }
     };
     fetchHistory();
-  }, [toast]);
+  }, [toast, effectiveDisabled]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInput(e.target.value);
@@ -435,8 +440,6 @@ export function ChatPanel({
         }
     }
   }, []);
-
-  const effectiveDisabled = disabled || !isChatActive;
 
   return (
     <div className="flex flex-col h-[calc(100%-4rem)]">

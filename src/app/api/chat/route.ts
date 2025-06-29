@@ -3,7 +3,7 @@ import { conversationalRagChat, type Message } from '@/ai/flows/conversational-c
 import { getLoggedInUser } from '@/lib/auth';
 import { getConversation, createConversation, updateConversation } from '@/lib/conversation';
 import { z } from 'zod';
-import { type Part } from 'genkit/ai';
+import { type Part } from '@genkit-ai/ai';
 import { v4 as uuidv4 } from 'uuid';
 
 const ChatRequestSchema = z.object({
@@ -57,6 +57,11 @@ function createChatStream(
 
 export async function POST(req: Request) {
   try {
+    // Server-side guard to prevent execution if not configured.
+    if (!process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID || !process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID) {
+      return new Response('Chat functionality is not configured on the server.', { status: 503 });
+    }
+      
     const request = await req.json();
 
     const validatedRequest = ChatRequestSchema.safeParse(request);
