@@ -15,23 +15,52 @@ export async function getLeads(user: Models.User<Models.Preferences>): Promise<{
     const isAdmin = user.labels.includes('admin');
 
     if (!dbId || !leadsCollectionId) {
-        // Return empty array if not configured, page will show an alert.
         return { leads: [], error: null };
     }
 
     try {
-        const queries = isAdmin 
-            ? [Query.orderDesc('$createdAt'), Query.limit(500)]
-            // If not admin, fetch leads assigned to this user AND unassigned leads
-            : [Query.equal('agentId', [user.$id, null]), Query.orderDesc('$createdAt'), Query.limit(500)];
+        if (isAdmin) {
+            const response = await databases.listDocuments(
+                dbId,
+                leadsCollectionId,
+                [Query.orderDesc('$createdAt'), Query.limit(500)]
+            );
+            return { leads: response.documents as Lead[], error: null };
+        } else {
+            // For non-admins, fetch both their assigned leads and unassigned leads.
+            // This is done in two queries to handle cases where the 'agentId' attribute
+            // might not be nullable, which would cause `Query.equal('agentId', [id, null])` to fail.
+            const assignedLeadsPromise = databases.listDocuments(
+                dbId,
+                leadsCollectionId,
+                [Query.equal('agentId', user.$id), Query.limit(250)]
+            );
 
-        const response = await databases.listDocuments(
-            dbId,
-            leadsCollectionId,
-            queries
-        );
+            // An unassigned lead is one where the agentId attribute is null.
+            const unassignedLeadsPromise = databases.listDocuments(
+                dbId,
+                leadsCollectionId,
+                [Query.isNull('agentId'), Query.limit(250)]
+            );
 
-        return { leads: response.documents as Lead[], error: null };
+            const [assignedResponse, unassignedResponse] = await Promise.all([
+                assignedLeadsPromise,
+                unassignedLeadsPromise,
+            ]);
+
+            const combinedLeads = [
+                ...assignedResponse.documents,
+                ...unassignedResponse.documents,
+            ];
+            
+            // Remove duplicates just in case (though there shouldn't be any).
+            const uniqueLeads = Array.from(new Map(combinedLeads.map(lead => [lead.$id, lead])).values());
+
+            // Sort by creation date, newest first, as the original query did.
+            uniqueLeads.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
+
+            return { leads: uniqueLeads as Lead[], error: null };
+        }
     } catch (e: any) {
         console.error("Failed to fetch leads:", e);
         if (e instanceof AppwriteException && e.type === 'general_query_invalid') {
