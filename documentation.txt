@@ -98,22 +98,22 @@ To make the application fully functional, you need to configure your Appwrite pr
 2.  **Database**: Create one database to hold all the following collections.
 3.  **Collections**:
     *   **`embeddings`**: Stores document chunks and their vector embeddings.
-        - Attributes: `documentId` (string), `fileName` (string), `chunkText` (string), `embedding` (float[], size 768), `userId` (string).
+        - Attributes: `documentId` (string, required), `fileName` (string, required), `chunkText` (string, required, size 10000), `embedding` (float[], size 768, required), `userId` (string, required).
     *   **`metrics`**: Stores user feedback on AI responses.
-        - Attributes: `userId` (string), `messageId` (string), `feedback` (string), `prompt` (string, size 8192, optional).
+        - Attributes: `userId` (string, required), `messageId` (string, required), `feedback` (string, required), `prompt` (string, size 8192, **not** required).
     *   **`leads`**: Stores information about leads.
-        - Attributes: `userId` (string, **NOT required**), `name` (string), `email` (string), `phone` (string, optional), `company` (string, optional), `jobTitle` (string, optional), `notes` (string, optional), `status` (string), `score` (integer), `lastActivity` (datetime), `agentId` (string, **NOT required**), `followUpDate` (datetime, optional), `followUpNotes` (string, optional).
+        - Attributes: `userId` (string, **not** required), `name` (string, required), `email` (string, required), `phone` (string, **not** required), `company` (string, **not** required), `jobTitle` (string, **not** required), `notes` (string, size 8192, **not** required), `status` (string, required), `score` (integer, required), `lastActivity` (datetime, required), `agentId` (string, **not** required), `followUpDate` (datetime, **not** required), `followUpNotes` (string, size 8192, **not** required).
     *   **`settings`**: A singleton collection for AI and business configuration.
         - Create **one** document with the ID `default_config`.
-        - Attributes: `ai_personality` (string), `ai_style` (string), `ai_instructions` (string), `business_hours_enabled` (boolean), `business_hours_start` (string), `business_hours_end` (string), `business_hours_timezone` (string), `away_message` (string), `call_script_template` (string).
+        - Attributes: `ai_personality` (string, required), `ai_style` (string, required), `ai_instructions` (string, required, size 8192), `business_hours_enabled` (boolean, required), `business_hours_start` (string, required), `business_hours_end` (string, required), `business_hours_timezone` (string, required), `away_message` (string, required, size 8192), `call_script_template` (string, required, size 8192).
     *   **`conversations`**: Stores persistent chat history for each user.
-        - Attributes: `userId` (string), `history` (string, size 1000000).
+        - Attributes: `userId` (string, required), `history` (string, size 1000000, required).
     *   **`faqs`**: Stores admin-curated question-and-answer pairs.
-        - Attributes: `question` (string), `answer` (string).
+        - Attributes: `question` (string, required), `answer` (string, required, size 8192).
     *   **`call_logs`**: Stores logs of outbound Twilio calls.
-        - Attributes: `leadId` (string), `userId` (string), `callSid` (string), `status` (string), `duration` (integer, optional), `recordingUrl` (string, optional), `leadResponse` (string, optional), `speechConfidence` (float, optional).
+        - Attributes: `leadId` (string, required), `userId` (string, required), `callSid` (string, required), `status` (string, required), `duration` (integer, **not** required), `recordingUrl` (string, **not** required), `leadResponse` (string, **not** required, size 8192), `speechConfidence` (float, **not** required).
     *   **`analytics_logs`**: Stores events for advanced analytics.
-        - Attributes: `eventType` (string), `eventData` (string, size 10000), `userId` (string).
+        - Attributes: `eventType` (string, required), `eventData` (string, size 10000, required), `userId` (string, required).
 
 **Permissions are critical for security.** In general:
 - Users should only have CRUD access to their own documents (`Permission.read(Role.user(userId))`).
