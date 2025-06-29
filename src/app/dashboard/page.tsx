@@ -3,7 +3,7 @@ import { getLoggedInUser } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { ChatPanel } from "@/components/chat/chat-panel";
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
-import { KeyRound, Database, Clock, Users, BarChart2, Star } from "lucide-react";
+import { KeyRound, Database, Clock, Users, BarChart2, Star, AlertTriangle } from "lucide-react";
 import { getAISettings, type AISettings } from "@/lib/settings";
 import { getLeads } from "../leads/page";
 import type { Lead } from "@/app/leads/types";
@@ -50,6 +50,7 @@ function StatCard({ title, value, icon: Icon }: { title: string, value: string |
 }
 
 function getAgentStats(leads: Lead[]) {
+    if (!Array.isArray(leads)) return { totalLeads: 0, conversionRate: 0, averageScore: 0 };
     const totalLeads = leads.length;
     const convertedCount = leads.filter(l => l.status === 'Converted').length;
     const conversionRate = totalLeads > 0 ? Math.round((convertedCount / totalLeads) * 100) : 0;
@@ -75,14 +76,14 @@ export default async function DashboardPage() {
     !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID &&
     !!process.env.NEXT_PUBLIC_APPWRITE_CONVERSATIONS_COLLECTION_ID;
 
-  const [settings, allVisibleLeads] = await Promise.all([
+  const [settings, { leads: allVisibleLeads, error: leadsError }] = await Promise.all([
     getAISettings(),
     getLeads(user)
   ]);
   const isChatActive = isWithinBusinessHours(settings);
   
   // For the personal dashboard, statistics should only be calculated on leads *assigned* to this agent.
-  const agentLeadsForStats = allVisibleLeads.filter(lead => lead.agentId === user.$id);
+  const agentLeadsForStats = allVisibleLeads ? allVisibleLeads.filter(lead => lead.agentId === user.$id) : [];
   const agentStats = getAgentStats(agentLeadsForStats);
 
   return (
@@ -100,6 +101,16 @@ export default async function DashboardPage() {
         <StatCard title="Your Conversion Rate" value={`${agentStats.conversionRate}%`} icon={BarChart2} />
         <StatCard title="Avg. Lead Score" value={agentStats.averageScore} icon={Star} />
       </div>
+
+      {leadsError && (
+          <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error Fetching Leads Data</AlertTitle>
+            <AlertDescription>
+              Could not load your personal statistics. The error was: {leadsError}
+            </AlertDescription>
+          </Alert>
+      )}
 
       {!isGoogleConfigured && (
         <Alert variant="destructive">
