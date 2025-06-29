@@ -1,3 +1,4 @@
+
 'use client';
 
 import * as React from 'react';
@@ -35,29 +36,40 @@ import { Input } from '../ui/input';
 export function DocumentList({ documents, isAdmin }: { documents: KnowledgeDocument[], isAdmin: boolean }) {
   const { toast } = useToast();
   const [isPending, startTransition] = React.useTransition();
+  const [localDocuments, setLocalDocuments] = React.useState(documents);
   const [searchTerm, setSearchTerm] = React.useState('');
   const [deleteTarget, setDeleteTarget] = React.useState<KnowledgeDocument | null>(null);
 
-  const handleDelete = (doc: KnowledgeDocument) => {
+  React.useEffect(() => {
+    setLocalDocuments(documents);
+  }, [documents]);
+
+  const handleDelete = (docToDelete: KnowledgeDocument) => {
+    const originalDocuments = [...localDocuments];
+    // Optimistically remove the document from the list for a real-time feel
+    setLocalDocuments(currentDocs => currentDocs.filter(doc => doc.documentId !== docToDelete.documentId));
+
     startTransition(async () => {
-      const result = await deleteDocument(doc.documentId);
+      const result = await deleteDocument(docToDelete.documentId);
       if (result.error) {
         toast({
           variant: 'destructive',
           title: 'Error deleting document',
           description: result.error,
         });
+        // If deletion fails, revert the change
+        setLocalDocuments(originalDocuments);
       } else {
         toast({
           title: 'Document Deleted',
-          description: `"${doc.fileName}" has been removed from the knowledge base.`,
+          description: `"${docToDelete.fileName}" has been removed from the knowledge base.`,
         });
       }
       setDeleteTarget(null);
     });
   };
 
-  const filteredDocuments = documents.filter(doc => 
+  const filteredDocuments = localDocuments.filter(doc => 
     doc.fileName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (isAdmin && doc.userId.toLowerCase().includes(searchTerm.toLowerCase()))
   );
