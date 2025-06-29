@@ -3,6 +3,13 @@
 
 Cally-IO is a feature-complete, production-ready Next.js application designed to serve as an intelligent sales and support co-pilot. It leverages a modern tech stack to provide a seamless and intelligent user experience, allowing users to get answers from a knowledge base of their own documents, manage sales leads through a visual pipeline, and track performance with real-time analytics—all configurable by an administrator.
 
+## Live Demo & Deployment
+
+- **Live Demo**: [Check out the live demo](https://cally-io.web.app/)
+- **GitHub**: [View the source code on GitHub](https://github.com/GoogleCloudPlatform/cally-io)
+- **Deploy to Firebase**: [![Deploy to Firebase](https://deploy.web.app/button.svg)](https://deploy.web.app/cally-io.web.app)
+
+
 ## Tech Stack
 
 - **Framework**: Next.js (with App Router)
@@ -61,8 +68,8 @@ This project is proud to partner with leading companies in the AI and cloud spac
 Clone the repository and install the dependencies:
 
 ```bash
-git clone <repository-url>
-cd <repository-name>
+git clone https://github.com/GoogleCloudPlatform/cally-io.git
+cd cally-io
 npm install
 ```
 

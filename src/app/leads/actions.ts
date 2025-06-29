@@ -61,6 +61,8 @@ export async function saveLead(prevState: any, formData: FormData) {
         return { status: 'error', message: 'Unauthorized. Please log in.' };
     }
     const isAdmin = user.labels.includes('admin');
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
 
     const validatedFields = LeadSchema.safeParse({
         id: formData.get('id'),
@@ -166,6 +168,8 @@ export async function deleteLead(leadId: string) {
         return { error: 'Unauthorized. Please log in.' };
     }
     const isAdmin = user.labels.includes('admin');
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
 
     try {
         const lead = await databases.getDocument(dbId, leadsCollectionId, leadId);
@@ -189,6 +193,8 @@ export async function updateLeadStatus(leadId: string, status: string) {
     return { error: 'Unauthorized access.' };
   }
   const isAdmin = user.labels.includes('admin');
+  const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+  const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
 
   try {
     const lead = await databases.getDocument(dbId, leadsCollectionId, leadId);
@@ -238,6 +244,9 @@ export async function initiateCall(leadData: Lead) {
 
     const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    const callLogsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CALL_LOGS_COLLECTION_ID!;
+    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
+    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
 
     if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
         return { error: "Twilio is not configured on the server. Please contact an administrator." };
