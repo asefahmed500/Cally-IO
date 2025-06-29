@@ -30,10 +30,22 @@ export async function getConversation(userId: string): Promise<ConversationDocum
 
     if (response.documents.length > 0) {
       const doc = response.documents[0];
-      return {
-        docId: doc.$id,
-        history: JSON.parse(doc.history),
-      };
+      try {
+        // Add robust parsing to handle potential data corruption.
+        const history = JSON.parse(doc.history);
+        return {
+          docId: doc.$id,
+          // Ensure the parsed data is an array before returning.
+          history: Array.isArray(history) ? history : [],
+        };
+      } catch (e) {
+        console.error(`Failed to parse conversation history for user ${userId}, docId ${doc.$id}. Resetting history.`, e);
+        // Return a valid, empty history to prevent the app from crashing for the user.
+        return {
+          docId: doc.$id,
+          history: [],
+        };
+      }
     }
     return null;
   } catch (error) {
