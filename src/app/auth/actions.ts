@@ -35,14 +35,17 @@ export async function signup(prevState: any, formData: FormData) {
   } catch (e: any) {
     console.error(e);
     if (e instanceof AppwriteException) {
-      if (e.code === 409) { // User already exists
+      if (e.type === 'user_already_exists') {
           return { message: 'A user with this email already exists. Please try logging in.'}
       }
-      if (e.message.includes('Password')) { // Catch other password errors from appwrite
+      if (e.type === 'general_argument_invalid' && e.message.includes('Password')) {
            return { errors: { password: 'This password is too common or does not meet security requirements. Please choose a stronger one.'} }
       }
-      // Return the specific Appwrite message for other errors (like invalid password)
-      return { message: e.message };
+      if (e.type === 'document_invalid_structure' || e.type === 'general_query_invalid') {
+           return { message: 'Signup failed: Database is not configured correctly. Please contact an administrator or check the setup guide.' };
+      }
+      // Return a generic message for other Appwrite errors
+      return { message: `An unexpected error occurred: ${e.message}` };
     }
     return { message: 'An unexpected error occurred during signup. Please try again.' };
   }
