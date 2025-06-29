@@ -110,9 +110,9 @@ export default async function DashboardPage() {
       {leadsError && (
           <Alert variant="destructive">
             <AlertTriangle className="h-4 w-4" />
-            <AlertTitle>Error Fetching Leads Data</AlertTitle>
+            <AlertTitle>Could Not Load Agent Statistics</AlertTitle>
             <AlertDescription>
-              Could not load your personal statistics. The error was: {leadsError}
+              {leadsError}
             </AlertDescription>
           </Alert>
       )}

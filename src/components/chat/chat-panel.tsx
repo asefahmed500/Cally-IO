@@ -116,11 +116,6 @@ export function ChatPanel({
       } catch (error: any) {
         console.error(error);
         setHistoryError(error.message || 'Could not load chat history.');
-        toast({
-            variant: 'destructive',
-            title: 'Error Loading History',
-            description: error.message || 'Could not load chat history.',
-        });
       } finally {
         setIsHistoryLoading(false);
       }
@@ -489,7 +484,7 @@ export function ChatPanel({
         ) : historyError ? (
              <Alert variant="destructive" className="m-4">
               <AlertTriangle className="h-4 w-4" />
-              <AlertTitle>Error Loading Chat</AlertTitle>
+              <AlertTitle>Error Loading Chat History</AlertTitle>
               <AlertDescription>
                 {historyError}
               </AlertDescription>

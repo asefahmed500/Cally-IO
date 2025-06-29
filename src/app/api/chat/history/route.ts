@@ -17,9 +17,8 @@ export async function GET() {
         console.error("Failed to fetch chat history:", error);
         if (error instanceof AppwriteException && error.type === 'general_query_invalid') {
              return NextResponse.json({ 
-                error: "Database not configured correctly.", 
-                message: `The 'conversations' collection has a schema error: ${error.message}. Please check your Appwrite setup against documentation.txt.`,
-                details: error.message,
+                error: "Database Schema Error", 
+                message: `The 'conversations' collection has a schema error which is preventing chat history from loading. Please check your Appwrite project setup. Details: ${error.message}`,
             }, { status: 500 });
         }
         return new Response("Error fetching history", { status: 500 });
