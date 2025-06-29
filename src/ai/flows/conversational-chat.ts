@@ -95,10 +95,17 @@ async function searchEmbeddings(
     return defaultResponse;
   }
   
-  const queryEmbedding = await embed(
-    query,
+  const embeddingResponse = await embed(
+    [query],
     { embedder: 'googleai/text-embedding-004' }
   );
+
+  if (!embeddingResponse || embeddingResponse.length === 0) {
+    console.error('Failed to generate embedding for query:', query);
+    return defaultResponse;
+  }
+  
+  const queryEmbedding = embeddingResponse[0];
 
   try {
     const response = await appwriteDatabases.listDocuments(

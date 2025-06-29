@@ -68,7 +68,7 @@ This project is proud to partner with leading companies in the AI and cloud spac
 Clone the repository and install the dependencies:
 
 ```bash
-git clone https://github.com/GoogleCloudPlatform/cally-io.git
+git clone https://github.com/asefahmed500/Cally-IO
 cd cally-io
 npm install
 ```
