@@ -80,7 +80,6 @@ const LeadSchema = z.object({
     notes: z.string().optional(),
     followUpDate: z.string().optional(),
     followUpNotes: z.string().optional(),
-    agentId: z.string().nullable().optional(),
 });
 
 export async function saveLead(prevState: any, formData: FormData) {
@@ -102,7 +101,6 @@ export async function saveLead(prevState: any, formData: FormData) {
         notes: formData.get('notes'),
         followUpDate: formData.get('followUpDate'),
         followUpNotes: formData.get('followUpNotes'),
-        agentId: formData.get('agentId'),
     });
 
     if (!validatedFields.success) {
@@ -114,22 +112,14 @@ export async function saveLead(prevState: any, formData: FormData) {
     }
     
     const { id, ...leadDataFromForm } = validatedFields.data;
+    const agentIdFromForm = formData.get('agentId') as string | null;
 
     const leadPayload: { [key: string]: any } = {
-        name: leadDataFromForm.name,
-        email: leadDataFromForm.email,
-        phone: leadDataFromForm.phone,
-        company: leadDataFromForm.company,
-        jobTitle: leadDataFromForm.jobTitle,
-        notes: leadDataFromForm.notes,
+        ...leadDataFromForm,
         followUpDate: leadDataFromForm.followUpDate || null,
         followUpNotes: leadDataFromForm.followUpNotes || null,
         lastActivity: new Date().toISOString(),
     };
-
-    if (isAdmin) {
-        leadPayload.agentId = leadDataFromForm.agentId || null;
-    }
 
 
     try {
@@ -139,10 +129,15 @@ export async function saveLead(prevState: any, formData: FormData) {
             if (!isAdmin && existingLead.agentId !== user.$id) {
                 return { status: 'error', message: "You don't have permission to edit this lead." };
             }
+            // Only admins can change the agent assignment during an edit.
+            if (isAdmin) {
+                leadPayload.agentId = agentIdFromForm || null;
+            }
+
             await databases.updateDocument(dbId, leadsCollectionId, id, leadPayload);
         } else {
             // Creating a new lead
-            const agentForNewLead = isAdmin ? (leadDataFromForm.agentId || null) : user.$id;
+            const agentForNewLead = isAdmin ? (agentIdFromForm || null) : user.$id;
 
             const newLeadData = {
                 ...leadPayload,
