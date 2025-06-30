@@ -9,7 +9,7 @@
 
 import { ai } from '@/ai/genkit';
 import { z } from 'zod';
-import { embed, type Part } from '@genkit-ai/ai';
+import { type Part } from '@genkit-ai/ai';
 import { webSearch } from '@/ai/tools/tavily';
 import {
   appwriteDatabases,
@@ -95,9 +95,11 @@ async function searchEmbeddings(
     return defaultResponse;
   }
   
-  const embeddingResponse = await embed(
-    [query],
-    { embedder: 'googleai/text-embedding-004' }
+  const embeddingResponse = await ai.embed(
+    {
+      embedder: 'googleai/text-embedding-004',
+      content: query,
+    }
   );
 
   if (!embeddingResponse || embeddingResponse.length === 0) {
@@ -105,7 +107,7 @@ async function searchEmbeddings(
     return defaultResponse;
   }
   
-  const queryEmbedding = embeddingResponse[0];
+  const queryEmbedding = embeddingResponse;
 
   try {
     const response = await appwriteDatabases.listDocuments(

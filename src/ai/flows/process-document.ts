@@ -11,7 +11,6 @@ import { z } from 'zod';
 import * as mammoth from 'mammoth';
 import pdf from 'pdf-parse';
 import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
-import { embed } from '@genkit-ai/ai';
 import {
   appwriteDatabases,
   appwriteDatabaseId,
@@ -73,10 +72,10 @@ export const processDocument = ai.defineFlow(
       const text = await extractText(input.fileDataUri, input.fileName);
       const chunks = await textSplitter.splitText(text);
 
-      const embeddings = await embed(
-        chunks,
-        { embedder: 'googleai/text-embedding-004' }
-      );
+      const embeddings = await ai.embed({
+        embedder: 'googleai/text-embedding-004',
+        content: chunks,
+      });
 
       const permissions = [
         Permission.read(Role.user(user.$id)),
