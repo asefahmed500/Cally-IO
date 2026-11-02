@@ -86,7 +86,7 @@ export function DocumentList({ documents, isAdmin }: { documents: KnowledgeDocum
           className="max-w-sm"
         />
       </div>
-      <div className="rounded-md border">
+      <div className=" border">
         <Table>
           <TableHeader>
             <TableRow>
@@ -109,7 +109,7 @@ export function DocumentList({ documents, isAdmin }: { documents: KnowledgeDocum
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
                         <Button variant="ghost" size="icon" disabled={isPending}>
-                          <MoreHorizontal className="h-4 w-4" />
+                          <MoreHorizontal className="size-4" />
                           <span className="sr-only">Actions</span>
                         </Button>
                       </DropdownMenuTrigger>
@@ -118,7 +118,7 @@ export function DocumentList({ documents, isAdmin }: { documents: KnowledgeDocum
                           className="text-destructive"
                           onSelect={() => setDeleteTarget(doc)}
                         >
-                          <Trash2 className="mr-2 h-4 w-4" />
+                          <Trash2 />
                           Delete Document
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -143,7 +143,7 @@ export function DocumentList({ documents, isAdmin }: { documents: KnowledgeDocum
             <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
             <AlertDialogDescription>
               This action cannot be undone. This will permanently delete the document{' '}
-              <span className="font-semibold">"{deleteTarget?.fileName}"</span> and all of its associated data from your knowledge base.
+              <span className="font-semibold">&quot;{deleteTarget?.fileName}&quot;</span> and all of its associated data from your knowledge base.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -153,7 +153,7 @@ export function DocumentList({ documents, isAdmin }: { documents: KnowledgeDocum
               onClick={() => deleteTarget && handleDelete(deleteTarget)}
               disabled={isPending}
             >
-              {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+              {isPending && <Loader2 className="size-4 animate-spin" />}
               Yes, delete document
             </AlertDialogAction>
           </AlertDialogFooter>

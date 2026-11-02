@@ -35,7 +35,7 @@ export function ContentSuggestions() {
                 <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                          <Lightbulb />
-                         <CardTitle>Content Suggestions</CardTitle>
+                         <CardTitle>Content suggestions</CardTitle>
                     </div>
                     <Button variant="ghost" size="icon" onClick={fetchSuggestions} disabled={isLoading}>
                         <RefreshCw className={isLoading ? "animate-spin" : ""} />
@@ -56,7 +56,7 @@ export function ContentSuggestions() {
                     <ul className="space-y-3">
                         {suggestions.map((item) => (
                             <li key={item.prompt} className="text-sm border-b pb-2">
-                                <p className="font-semibold text-primary">"{item.prompt}"</p>
+                                <p className="font-semibold text-primary">&quot;{item.prompt}&quot;</p>
                                 <p className="text-xs text-muted-foreground">Asked {item.count} time(s). Consider creating an FAQ for this.</p>
                             </li>
                         ))}

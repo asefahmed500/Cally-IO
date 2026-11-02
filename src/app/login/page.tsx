@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Terminal } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import Link from 'next/link'
+import { Logo } from '@/components/logo'
 
 function SubmitButton() {
   const { pending } = useFormStatus()
-  return <Button type="submit" className="w-full" disabled={pending}>{pending ? 'Logging in...' : 'Login'}</Button>
+  return <Button type="submit" variant="brand" className="w-full" disabled={pending}>{pending ? 'Logging in...' : 'Log in'}</Button>
 }
 
 export default function LoginPage() {
@@ -22,16 +23,19 @@ export default function LoginPage() {
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Login</CardTitle>
+          <Link href="/" className="mb-2 block" prefetch={false}>
+            <Logo />
+          </Link>
+          <CardTitle className="text-2xl">Log in</CardTitle>
           <CardDescription>
-            Enter your email below to login to your account.
+            Enter your email below to log in to your account.
           </CardDescription>
         </CardHeader>
         <form action={formAction}>
           <CardContent className="grid gap-4">
             {state?.message && (
                <Alert variant="destructive">
-                  <Terminal className="h-4 w-4" />
+                  <AlertCircle className="size-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{state.message}</AlertDescription>
                 </Alert>

@@ -1,137 +1,128 @@
+import { getLoggedInUser } from '@/lib/auth';
+import { redirect } from 'next/navigation';
+import { prisma } from '@/lib/prisma';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { BookOpen, MessageSquarePlus } from 'lucide-react';
+import { DocumentList } from '@/components/knowledge/document-list';
+import { FaqManager } from '@/components/knowledge/faq-manager';
+import { getFaqs } from './actions';
+import { ContentSuggestions } from '@/components/knowledge/content-suggestions';
+import { PageHeader } from '@/components/layout/page-header';
 
-import { getLoggedInUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { databases } from "@/lib/appwrite-server";
-import { Query } from "node-appwrite";
-import type { Models } from "node-appwrite";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { BookOpen, Database, MessageSquarePlus, FileQuestion } from "lucide-react";
-import { DocumentList } from "@/components/knowledge/document-list";
-import { FaqManager } from "@/components/knowledge/faq-manager";
-import { getFaqs, type Faq } from "./actions";
-import { ContentSuggestions } from "@/components/knowledge/content-suggestions";
-
-export interface KnowledgeDocument extends Models.Document {
-    documentId: string;
-    fileName: string;
-    userId: string;
+// Serialized document shape consumed by <DocumentList/>.
+export interface KnowledgeDocument {
+  documentId: string;
+  fileName: string;
+  userId: string;
+  $createdAt: string;
 }
 
-async function getKnowledgeDocuments(user: Models.User<Models.Preferences>): Promise<KnowledgeDocument[]> {
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
-    const collectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
-    const isAdmin = user.labels.includes('admin');
+async function getKnowledgeDocuments(user: {
+  $id: string;
+  labels: string[];
+}): Promise<KnowledgeDocument[]> {
+  const isAdmin = user.labels.includes('admin');
 
-    if (!dbId || !collectionId) {
-        return [];
-    }
-    
-    const queries = isAdmin ? [Query.limit(5000)] : [Query.equal('userId', user.$id), Query.limit(5000)];
+  try {
+    const membership = await prisma.workspaceMember.findFirst({
+      where: { userId: user.$id },
+      orderBy: { createdAt: 'asc' },
+      select: { workspaceId: true },
+    });
 
-    try {
-        const response = await databases.listDocuments(dbId, collectionId, queries);
-        
-        const uniqueDocsMap = new Map<string, KnowledgeDocument>();
-        response.documents.forEach(doc => {
-            if (!uniqueDocsMap.has(doc.documentId)) {
-                uniqueDocsMap.set(doc.documentId, doc as KnowledgeDocument);
-            }
-        });
+    const documents = await prisma.knowledgeSource.findMany({
+      where: isAdmin
+        ? {}
+        : membership
+          ? { OR: [{ workspaceId: membership.workspaceId }, { workspaceId: null }] }
+          : { workspaceId: null },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
 
-        return Array.from(uniqueDocsMap.values());
-    } catch (e) {
-        console.error("Failed to fetch knowledge documents:", e);
-        return [];
-    }
+    return documents.map((doc) => ({
+      documentId: doc.id,
+      fileName: doc.name,
+      userId: doc.workspaceId ?? 'Shared',
+      $createdAt: doc.createdAt.toISOString(),
+    }));
+  } catch (e) {
+    console.error('Failed to fetch knowledge documents:', e);
+    return [];
+  }
 }
 
 export default async function KnowledgePage() {
-    const user = await getLoggedInUser();
-    if (!user) {
-        redirect("/login");
-    }
+  const user = await getLoggedInUser();
+  if (!user) {
+    redirect('/login');
+  }
 
-    const isAdmin = user.labels.includes('admin');
-    const isEmbeddingsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID;
-    const isFaqsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID;
-    const isMetricsConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID;
+  const isAdmin = user.labels.includes('admin');
 
-    const [documents, faqs] = await Promise.all([
-        getKnowledgeDocuments(user),
-        isAdmin ? getFaqs() : Promise.resolve([] as Faq[])
-    ]);
+  const [documents, faqs] = await Promise.all([
+    getKnowledgeDocuments(user),
+    isAdmin ? getFaqs() : Promise.resolve([]),
+  ]);
 
-    return (
-        <div className="space-y-8">
-            <header>
-                <h1 className="text-3xl font-bold tracking-tight">{isAdmin ? 'Knowledge Hub' : 'My Documents'}</h1>
-                <p className="text-muted-foreground">{isAdmin ? "Oversee, manage, and analyze your AI's knowledge base." : "Manage the documents you've uploaded to the AI."}</p>
-            </header>
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        title={isAdmin ? 'Knowledge hub' : 'My documents'}
+        description={
+          isAdmin
+            ? "Oversee, manage, and analyze your AI's knowledge base."
+            : "Manage the documents you've uploaded to the AI."
+        }
+      />
 
-            <Card>
-                <CardHeader>
-                    <CardTitle className="flex items-center gap-2"><BookOpen /> {isAdmin ? "All Documents" : "My Uploaded Documents"}</CardTitle>
-                    <CardDescription>{isAdmin ? "A list of all documents uploaded by users across the platform." : "A list of all documents you have uploaded."}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                    {!isEmbeddingsConfigured ? (
-                        <Alert variant="destructive">
-                            <Database className="h-4 w-4" />
-                            <AlertTitle>Embeddings Collection Not Configured</AlertTitle>
-                            <AlertDescription>
-                                Please set the `NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID` environment variable to manage documents.
-                            </AlertDescription>
-                        </Alert>
-                    ) : (
-                        <DocumentList documents={documents} isAdmin={isAdmin} />
-                    )}
-                </CardContent>
-            </Card>
-            
-            {isAdmin && (
-                <div className="grid gap-8 md:grid-cols-2">
-                    <Card>
-                        <CardHeader>
-                            <CardTitle className="flex items-center gap-2"><MessageSquarePlus /> FAQ Management</CardTitle>
-                            <CardDescription>Create and manage a library of frequently asked questions for the AI to use as its primary source of truth.</CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                             {!isFaqsConfigured ? (
-                                <Alert variant="destructive">
-                                    <Database className="h-4 w-4" />
-                                    <AlertTitle>FAQs Collection Not Configured</AlertTitle>
-                                    <AlertDescription>
-                                        Please set the `NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID` environment variable to manage FAQs.
-                                    </AlertDescription>
-                                </Alert>
-                            ) : (
-                                <FaqManager initialFaqs={faqs} />
-                            )}
-                        </CardContent>
-                    </Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <BookOpen /> {isAdmin ? 'All Documents' : 'My Uploaded Documents'}
+          </CardTitle>
+          <CardDescription>
+            {isAdmin
+              ? 'A list of all documents uploaded by users across the platform.'
+              : 'A list of all documents you have uploaded.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <DocumentList documents={documents} isAdmin={isAdmin} />
+        </CardContent>
+      </Card>
 
-                    <Card>
-                         {!isMetricsConfigured ? (
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2"><FileQuestion /> Content Suggestions</CardTitle>
-                                <CardDescription>Get AI-powered suggestions for new knowledge base content based on unanswered user questions.</CardDescription>
-                                 <CardContent className="pt-6">
-                                    <Alert variant="destructive">
-                                        <Database className="h-4 w-4" />
-                                        <AlertTitle>Metrics Collection Not Configured</AlertTitle>
-                                        <AlertDescription>
-                                            Please set the `NEXT_PUBLIC_APPWRITE_METRICS_COLLECTION_ID` environment variable to enable content suggestions.
-                                        </AlertDescription>
-                                    </Alert>
-                                </CardContent>
-                            </CardHeader>
-                        ) : (
-                           <ContentSuggestions />
-                        )}
-                    </Card>
-                </div>
-            )}
+      {isAdmin && (
+        <div className="grid gap-8 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquarePlus /> FAQ Management
+              </CardTitle>
+              <CardDescription>
+                Create and manage a library of frequently asked questions for the AI to use as its
+                primary source of truth.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FaqManager initialFaqs={faqs} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Content suggestions</CardTitle>
+              <CardDescription>
+                Get AI-powered suggestions for new knowledge base content based on unanswered user
+                questions.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <ContentSuggestions />
+            </CardContent>
+          </Card>
         </div>
-    )
+      )}
+    </div>
+  );
 }

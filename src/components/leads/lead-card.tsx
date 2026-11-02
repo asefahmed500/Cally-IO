@@ -23,7 +23,7 @@ import { LeadProfileCard } from './lead-profile-card';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
-const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
+const statuses: Lead['status'][] = ['NEW', 'CONTACTED', 'QUALIFIED', 'FOLLOW_UP', 'PROPOSAL', 'WON', 'LOST'];
 
 export function LeadCard({ 
     lead, 
@@ -76,17 +76,17 @@ export function LeadCard({
                         </div>
                         <DropdownMenu>
                             <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 -mt-1 -mr-1">
-                                    {isPending ? <Loader2 className="h-4 w-4 animate-spin"/> : <MoreHorizontal className="h-4 w-4" />}
+                                <Button variant="ghost" size="icon" className="size-8 -mt-1 -mr-1">
+                                    {isPending ? <Loader2 className="size-4 animate-spin"/> : <MoreHorizontal className="size-4" />}
                                 </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                                 <DropdownMenuItem onSelect={() => setProfileOpen(true)}>
-                                    <User className="mr-2 h-4 w-4" />
+                                    <User />
                                     View Profile
                                 </DropdownMenuItem>
                                 <DropdownMenuItem onSelect={() => handleInitiateCall(lead)} disabled={isPending}>
-                                    <Phone className="mr-2 h-4 w-4" />
+                                    <Phone />
                                     Start Automated Call
                                 </DropdownMenuItem>
                                 <DropdownMenuSub>
@@ -107,11 +107,11 @@ export function LeadCard({
                                 </DropdownMenuSub>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem onSelect={() => onEdit(lead)}>
-                                    <Edit className="mr-2 h-4 w-4" />
+                                    <Edit />
                                     Edit Lead
                                 </DropdownMenuItem>
                                 <DropdownMenuItem className="text-destructive" onSelect={() => onDelete(lead)}>
-                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    <Trash2 />
                                     Delete Lead
                                 </DropdownMenuItem>
                             </DropdownMenuContent>
@@ -121,7 +121,7 @@ export function LeadCard({
                 <CardContent className="p-4 pt-0">
                     <div className="flex items-center justify-between text-xs text-muted-foreground">
                         <div className="flex items-center gap-1">
-                            <Star className="h-3 w-3 text-yellow-500" />
+                            <Star className="size-3 text-warning" />
                             <span>{lead.score}</span>
                         </div>
                         <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export function LeadCard({
                             )}
                             {lead.followUpDate && (
                                 <div className={cn("flex items-center gap-1", isFollowUpDue && "text-destructive font-semibold")}>
-                                    <CalendarDays className="h-3 w-3" />
+                                    <CalendarDays className="size-3" />
                                     <span>{new Date(lead.followUpDate).toLocaleDateString()}</span>
                                 </div>
                             )}

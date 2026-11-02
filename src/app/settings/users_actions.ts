@@ -1,140 +1,82 @@
-
 'use server';
 
-import { users, account, databases } from '@/lib/appwrite-server';
+import { prisma } from '@/lib/prisma';
 import { getLoggedInUser } from '@/lib/auth';
+import { logAudit } from '@/lib/audit';
 import { revalidatePath } from 'next/cache';
-import { ID, AppwriteException, Query, Permission, Role } from 'node-appwrite';
+import bcrypt from 'bcryptjs';
+import { randomBytes, createHash } from 'crypto';
 import { z } from 'zod';
 
-const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
-const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
+const RESET_TOKEN_DURATION_MS = 1000 * 60 * 60; // 1 hour
 
-// Shared user creation logic to reduce duplication
+// Shared user creation logic. Lead/contact creation moves to workspace
+// onboarding in Phase 1 (leads require a workspace).
 export async function _createNewUserAndLead({
-    name,
-    email,
-    password,
-    labels,
-    assignToSelf = false,
+  name,
+  email,
+  password,
+  isAdmin,
 }: {
-    name: string;
-    email: string;
-    password?: string;
-    labels: string[];
-    assignToSelf?: boolean;
+  name: string;
+  email: string;
+  password?: string;
+  isAdmin: boolean;
+  assignToSelf?: boolean;
 }) {
-    // Create the user first
-    const newUser = await users.create(ID.unique(), email, undefined, password, name);
-    await users.updateLabels(newUser.$id, labels);
-    
-    // Then, attempt to create the associated lead, but do not let it block signup if it fails.
-    try {
-        if (dbId && leadsCollectionId) {
-            const leadData: { [key: string]: any; } = {
-                userId: newUser.$id,
-                name: name,
-                email: email,
-                status: 'New' as const,
-                score: Math.floor(Math.random() * 21) + 10,
-                lastActivity: new Date().toISOString(),
-                agentId: assignToSelf ? newUser.$id : null,
-            };
+  const passwordHash = password
+    ? await bcrypt.hash(password, 12)
+    : await bcrypt.hash(randomBytes(16).toString('hex'), 12);
 
-            const permissions = assignToSelf
-                ? [ // For users created via admin panel
-                    Permission.read(Role.user(newUser.$id)),
-                    Permission.update(Role.user(newUser.$id)),
-                    Permission.delete(Role.user(newUser.$id)),
-                    Permission.read(Role.label('admin')),
-                    Permission.update(Role.label('admin')),
-                    Permission.delete(Role.label('admin')),
-                ]
-                : [ // For public signups
-                    Permission.read(Role.users()),
-                    Permission.update(Role.users()),
-                    Permission.delete(Role.label('admin')),
-                ];
+  const newUser = await prisma.user.create({
+    data: {
+      name,
+      email,
+      passwordHash,
+      role: isAdmin ? 'SUPER_ADMIN' : 'USER',
+    },
+  });
 
-            await databases.createDocument(
-                dbId,
-                leadsCollectionId,
-                ID.unique(),
-                leadData,
-                permissions
-            );
-            
-            // Only fire webhook for public signups (which are not assigned to self)
-            if (!assignToSelf && process.env.WEBHOOK_URL_NEW_LEAD) {
-                try {
-                    // Fire-and-forget
-                    fetch(process.env.WEBHOOK_URL_NEW_LEAD, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(leadData),
-                    });
-                } catch (webhookError) {
-                    console.error("Failed to send new lead webhook:", webhookError);
-                }
-            }
-        }
-    } catch (e) {
-        if (e instanceof AppwriteException && e.type === 'document_invalid_structure') {
-            // Provide a clear, actionable guide for the most common setup error.
-            console.warn(
-                `\n[Cally-IO Setup Action Required]: Lead creation failed due to a database schema mismatch. ` +
-                `While the user account was created successfully, the system couldn't create the associated lead. ` +
-                `\n\n>>> To fix this, please go to your Appwrite Console > Databases > [Your DB] > 'leads' collection > Attributes, and ensure you have an attribute named 'userId' of type 'String'. ` +
-                `\nThis is required to link new signups to leads in the pipeline. The original error was: ${e.message}\n`
-            );
-        } else {
-            // Log other, unexpected errors more seriously.
-            console.error(
-                "CRITICAL WARNING: An unexpected error occurred during lead creation for a new user. " +
-                "The user account was created, but the lead was not. Error details:", e
-            );
-        }
-    }
-    
-    return newUser;
+  return newUser;
 }
 
-
 export type UserSummary = {
-    $id: string;
-    name: string;
-    email: string;
-    labels: string[];
-    emailVerification: boolean;
-    createdAt: string;
+  $id: string;
+  name: string;
+  email: string;
+  isAdmin: boolean;
+  emailVerification: boolean;
+  createdAt: string;
 };
 
 // Helper to check for admin
-async function isAdmin() {
-    const user = await getLoggedInUser();
-    if (!user || !user.labels.includes('admin')) {
-        throw new Error('Unauthorized: Admin access required.');
-    }
-    return user;
+async function requireAdmin() {
+  const user = await getLoggedInUser();
+  if (!user || !user.labels.includes('admin')) {
+    throw new Error('Unauthorized: Admin access required.');
+  }
+  return user;
 }
 
 export async function listUsers(): Promise<UserSummary[]> {
-    await isAdmin();
-    try {
-        const response = await users.list([Query.limit(100)]); // Get up to 100 users
-        const usersToReturn: UserSummary[] = response.users.map(user => ({
-            $id: user.$id,
-            name: user.name,
-            email: user.email,
-            labels: user.labels,
-            emailVerification: user.emailVerification,
-            createdAt: user.$createdAt,
-        }));
-        return usersToReturn;
-    } catch (e) {
-        console.error('Failed to list users:', e);
-        return [];
-    }
+  await requireAdmin();
+  try {
+    const users = await prisma.user.findMany({
+      take: 100,
+      orderBy: { createdAt: 'desc' },
+    });
+    return users.map((user) => ({
+      $id: user.id,
+      name: user.name,
+      email: user.email,
+      isAdmin: user.role === 'SUPER_ADMIN',
+      emailVerification: user.emailVerified,
+      createdAt: user.createdAt.toISOString(),
+    }));
+  } catch (e) {
+    console.error('Failed to list users:', e);
+    return [];
+  }
 }
 
 const CreateUserSchema = z.object({
@@ -145,97 +87,136 @@ const CreateUserSchema = z.object({
 });
 
 export async function createUser(prevState: any, formData: FormData) {
-    await isAdmin();
+  const adminUser = await requireAdmin();
 
-    const validatedFields = CreateUserSchema.safeParse({
-        name: formData.get('name'),
-        email: formData.get('email'),
-        password: formData.get('password'),
-        isAdmin: formData.get('isAdmin') === 'on',
+  const validatedFields = CreateUserSchema.safeParse({
+    name: formData.get('name'),
+    email: formData.get('email'),
+    password: formData.get('password'),
+    isAdmin: formData.get('isAdmin') === 'on',
+  });
+
+  if (!validatedFields.success) {
+    return { status: 'error', message: 'Invalid data.', errors: validatedFields.error.flatten().fieldErrors };
+  }
+
+  const { name, email, password, isAdmin: makeAdmin } = validatedFields.data;
+
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return { status: 'error', message: 'A user with this email already exists.' };
+    }
+
+    await _createNewUserAndLead({
+      name,
+      email,
+      password,
+      isAdmin: makeAdmin,
+      assignToSelf: true,
     });
 
-    if (!validatedFields.success) {
-        return { status: 'error', message: 'Invalid data.', errors: validatedFields.error.flatten().fieldErrors };
-    }
-    
-    const { name, email, password, isAdmin: makeAdmin } = validatedFields.data;
+    await logAudit({
+      userId: adminUser.$id,
+      action: 'platform.user.created',
+      entityType: 'User',
+      metadata: { email, isAdmin: makeAdmin },
+    });
 
-    try {
-        await _createNewUserAndLead({
-            name,
-            email,
-            password,
-            labels: makeAdmin ? ['user', 'admin'] : ['user'],
-            assignToSelf: true,
-        });
-
-        revalidatePath('/settings');
-        revalidatePath('/leads');
-        return { status: 'success', message: `User "${name}" created successfully.` };
-    } catch (e) {
-        if (e instanceof AppwriteException && e.code === 409) {
-            return { status: 'error', message: 'A user with this email already exists.' };
-        }
-        console.error('Failed to create user:', e);
-        return { status: 'error', message: 'An unexpected error occurred.' };
-    }
+    revalidatePath('/settings');
+    revalidatePath('/leads');
+    return { status: 'success', message: `User "${name}" created successfully.` };
+  } catch (e) {
+    console.error('Failed to create user:', e);
+    return { status: 'error', message: 'An unexpected error occurred.' };
+  }
 }
 
 export async function deleteUser(userId: string) {
-    const adminUser = await isAdmin();
-    if (adminUser.$id === userId) {
-        return { status: 'error', message: "You cannot delete your own account." };
-    }
+  const adminUser = await requireAdmin();
+  if (adminUser.$id === userId) {
+    return { status: 'error', message: 'You cannot delete your own account.' };
+  }
 
-    try {
-        await users.delete(userId);
-        revalidatePath('/settings');
-        revalidatePath('/leads');
-        return { status: 'success', message: 'User deleted successfully.' };
-    } catch (e) {
-        console.error('Failed to delete user:', e);
-        return { status: 'error', message: 'An unexpected error occurred while deleting the user.' };
-    }
+  try {
+    await prisma.user.delete({ where: { id: userId } });
+
+    await logAudit({
+      userId: adminUser.$id,
+      action: 'platform.user.deleted',
+      entityType: 'User',
+      entityId: userId,
+    });
+
+    revalidatePath('/settings');
+    revalidatePath('/leads');
+    return { status: 'success', message: 'User deleted successfully.' };
+  } catch (e) {
+    console.error('Failed to delete user:', e);
+    return { status: 'error', message: 'An unexpected error occurred while deleting the user.' };
+  }
 }
 
-export async function updateUserRole(userId: string, currentLabels: string[], makeAdmin: boolean) {
-    const adminUser = await isAdmin();
-     if (adminUser.$id === userId) {
-        return { status: 'error', message: "You cannot change your own role." };
-    }
+export async function updateUserRole(userId: string, makeAdmin: boolean) {
+  const adminUser = await requireAdmin();
+  if (adminUser.$id === userId) {
+    return { status: 'error', message: 'You cannot change your own role.' };
+  }
 
-    try {
-        let newLabels = [...currentLabels];
-        if (makeAdmin) {
-            if (!newLabels.includes('admin')) newLabels.push('admin');
-        } else {
-            newLabels = newLabels.filter(label => label !== 'admin');
-        }
-        
-        if (!newLabels.includes('user')) newLabels.push('user');
+  try {
+    await prisma.user.update({
+      where: { id: userId },
+      data: { role: makeAdmin ? 'SUPER_ADMIN' : 'USER' },
+    });
 
-        await users.updateLabels(userId, newLabels);
-        revalidatePath('/settings');
-        return { status: 'success', message: 'User role updated.' };
-    } catch (e) {
-         console.error('Failed to update user role:', e);
-        return { status: 'error', message: 'An unexpected error occurred while updating the role.' };
-    }
+    await logAudit({
+      userId: adminUser.$id,
+      action: 'platform.user.role_changed',
+      entityType: 'User',
+      entityId: userId,
+      metadata: { makeAdmin },
+    });
+
+    revalidatePath('/settings');
+    return { status: 'success', message: 'User role updated.' };
+  } catch (e) {
+    console.error('Failed to update user role:', e);
+    return { status: 'error', message: 'An unexpected error occurred while updating the role.' };
+  }
 }
 
 export async function sendPasswordReset(email: string) {
-    await isAdmin();
-    try {
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-        if(!baseUrl) {
-            console.error("NEXT_PUBLIC_BASE_URL is not set. Cannot send password reset email.");
-            return { status: 'error', message: 'Application base URL is not configured.'};
-        };
-        const resetUrl = `${baseUrl}/reset-password`;
-        await account.createRecovery(email, resetUrl);
-        return { status: 'success', message: `Password reset link sent to ${email}.`};
-    } catch (e) {
-        console.error('Failed to send password reset:', e);
-        return { status: 'error', message: 'An unexpected error occurred.' };
+  await requireAdmin();
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return { status: 'error', message: 'No user found with that email.' };
     }
+
+    const token = randomBytes(32).toString('hex');
+    await prisma.passwordResetToken.create({
+      data: {
+        // Stored hashed — resetPassword hashes the incoming token to match.
+        token: createHash('sha256').update(token).digest('hex'),
+        userId: user.id,
+        expiresAt: new Date(Date.now() + RESET_TOKEN_DURATION_MS),
+      },
+    });
+
+    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+    if (!baseUrl) {
+      console.error('NEXT_PUBLIC_BASE_URL is not set. Cannot build password reset link.');
+      return { status: 'error', message: 'Application base URL is not configured.' };
+    }
+
+    const resetUrl = `${baseUrl}/reset-password?userId=${user.id}&token=${token}`;
+    // No email provider is configured (free tier), so the link is returned to the admin.
+    return {
+      status: 'success',
+      message: `Reset link generated for ${email}: ${resetUrl}`,
+    };
+  } catch (e) {
+    console.error('Failed to generate password reset:', e);
+    return { status: 'error', message: 'An unexpected error occurred.' };
+  }
 }

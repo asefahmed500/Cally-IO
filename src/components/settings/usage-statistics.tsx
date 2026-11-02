@@ -10,8 +10,8 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, ResponsiveContaine
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="rounded-lg border bg-background p-2 shadow-sm">
-           <p className="font-bold text-primary">{`${label}`}</p>
+        <div className=" border bg-background p-2 shadow-sm">
+           <p className="font-semibold text-primary">{`${label}`}</p>
            <p className="text-sm text-muted-foreground">{`Used in ${payload[0].value} conversations`}</p>
         </div>
       );
@@ -48,7 +48,7 @@ export function UsageStatistics() {
                  <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                         <Book />
-                        <CardTitle>Document Usage Statistics</CardTitle>
+                        <CardTitle>Document usage statistics</CardTitle>
                     </div>
                     <Button variant="ghost" size="icon" onClick={fetchStats} disabled={isLoading}>
                         <RefreshCw className={isLoading ? "animate-spin" : ""} />

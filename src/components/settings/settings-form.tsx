@@ -26,7 +26,7 @@ function SubmitButton({ isPending }: { isPending: boolean }) {
   const { pending } = useFormStatus();
   return (
     <Button type="submit" disabled={pending || isPending} className="w-full sm:w-auto">
-      {(pending || isPending) && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+      {(pending || isPending) && <Loader2 className="size-4 animate-spin" />}
       Save All Settings
     </Button>
   );
@@ -61,8 +61,8 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-2">
-                        <BrainCircuit className="h-6 w-6" />
-                        <CardTitle>AI Agent Configuration</CardTitle>
+                        <BrainCircuit className="size-6" />
+                        <CardTitle>AI agent configuration</CardTitle>
                     </div>
                     <CardDescription>Define how your AI assistant should think, talk, and behave.</CardDescription>
                 </CardHeader>
@@ -110,19 +110,19 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                         <Card className="bg-muted/50">
                             <CardHeader className="flex-row items-center gap-2 space-y-0">
                                 <TestTube2 className="w-5 h-5" />
-                                <CardTitle className="text-lg">Knowledge Base Testing</CardTitle>
+                                <CardTitle className="text-lg">Knowledge base testing</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-sm text-muted-foreground">To test your AI's responses, simply go to the main Dashboard, upload your documents, and start asking questions. This is the live environment for testing how the AI uses its knowledge base.</p>
+                                <p className="text-sm text-muted-foreground">To test your AI&apos;s responses, simply go to the main Dashboard, upload your documents, and start asking questions. This is the live environment for testing how the AI uses its knowledge base.</p>
                             </CardContent>
                         </Card>
                         <Card className="bg-muted/50">
                             <CardHeader className="flex-row items-center gap-2 space-y-0">
                                 <AlertCircle className="w-5 h-5" />
-                                <CardTitle className="text-lg">Escalation Rules</CardTitle>
+                                <CardTitle className="text-lg">Escalation rules</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p className="text-sm text-muted-foreground">The AI is pre-configured to escalate to a human specialist when it doesn't know an answer. This behavior is part of the core prompt and is not currently editable via the UI.</p>
+                                <p className="text-sm text-muted-foreground">The AI is pre-configured to escalate to a human specialist when it doesn&apos;t know an answer. This behavior is part of the core prompt and is not currently editable via the UI.</p>
                             </CardContent>
                         </Card>
                     </div>
@@ -132,10 +132,12 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-2">
-                        <FileText className="h-6 w-6" />
-                        <CardTitle>Call Script Builder</CardTitle>
+                        <FileText className="size-6" />
+                        <CardTitle>Call script builder</CardTitle>
                     </div>
-                  <CardDescription>Create a template for the AI to generate personalized call scripts. Use Handlebars placeholders like `{{leadName}}`, `{{leadStatus}}`, and `{{leadScore}}`.</CardDescription>
+                  <CardDescription>
+                    {'Create a template for the AI to generate personalized call scripts. Use Handlebars placeholders like {{leadName}}, {{leadStatus}}, and {{leadScore}}.'}
+                  </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <Textarea 
@@ -144,7 +146,7 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
                         className="min-h-48 font-mono text-xs"
                     />
                     <p className="text-xs text-muted-foreground">
-                        This template will be used by the AI to generate scripts on the Leads page. The AI is instructed to adapt the opener and value proposition based on the lead's status and score.
+                        This template will be used by the AI to generate scripts on the Leads page. The AI is instructed to adapt the opener and value proposition based on the lead&apos;s status and score.
                     </p>
                 </CardContent>
             </Card>
@@ -152,19 +154,19 @@ export function SettingsForm({ settings, timezones }: { settings: AISettings, ti
             <Card>
                 <CardHeader>
                     <div className="flex items-center gap-2">
-                        <Clock className="h-6 w-6" />
-                        <CardTitle>Business Hours</CardTitle>
+                        <Clock className="size-6" />
+                        <CardTitle>Business hours</CardTitle>
                     </div>
                     <CardDescription>Define when the AI assistant is active. Outside these hours, the chat will be disabled and show an away message.</CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
                     <div className="flex items-center space-x-2">
                         <Switch id="business-hours-enabled" name="business_hours_enabled" defaultChecked={settings.businessHoursEnabled} />
-                        <Label htmlFor="business-hours-enabled">Enable Business Hours</Label>
+                        <Label htmlFor="business-hours-enabled">Enable Business hours</Label>
                     </div>
                     <div className="grid md:grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <Label htmlFor="business-hours-start">Start Time</Label>
+                            <Label htmlFor="business-hours-start">Start time</Label>
                             <Input id="business-hours-start" name="business_hours_start" type="time" defaultValue={settings.businessHoursStart} />
                         </div>
                         <div className="space-y-2">

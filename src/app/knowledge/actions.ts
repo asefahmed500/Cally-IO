@@ -1,19 +1,16 @@
 'use server';
 
-import { databases, storage } from '@/lib/appwrite-server';
+import { prisma } from '@/lib/prisma';
 import { getLoggedInUser } from '@/lib/auth';
+import { requireCapability, TenantError } from '@/lib/tenant';
 import { revalidatePath } from 'next/cache';
-import { ID, Permission, Role, Query, Models } from 'node-appwrite';
 import { z } from 'zod';
 
-const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const embeddingsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_EMBEDDINGS_COLLECTION_ID!;
-const storageBucketId = process.env.NEXT_PUBLIC_APPWRITE_STORAGE_BUCKET_ID!;
-const faqsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_FAQS_COLLECTION_ID!;
-
-export interface Faq extends Models.Document {
-    question: string;
-    answer: string;
+export interface Faq {
+  $id: string;
+  question: string;
+  answer: string;
+  $createdAt: string;
 }
 
 const FaqSchema = z.object({
@@ -30,54 +27,53 @@ export async function deleteDocument(documentId: string) {
   }
 
   try {
-    const chunksResponse = await databases.listDocuments(
-      dbId,
-      embeddingsCollectionId,
-      [Query.equal('documentId', documentId), Query.limit(1)]
-    );
-
-    if (chunksResponse.documents.length > 0) {
-        const docOwnerId = chunksResponse.documents[0].userId;
-        const isAdmin = user.labels.includes('admin');
-        if (!isAdmin && user.$id !== docOwnerId) {
-            return { error: 'Unauthorized. You can only delete your own documents.' };
-        }
+    if (user.labels.includes('admin')) {
+      // Platform admins may delete shared (workspace-less) knowledge.
+      await prisma.knowledgeSource.delete({ where: { id: documentId } });
     } else {
-        if (!user.labels.includes('admin')) {
-             return { error: 'Document not found or you do not have permission to delete it.' };
+      // Workspace members need knowledge.manage, and can only delete
+      // documents that belong to their active workspace.
+      try {
+        const ctx = await requireCapability('knowledge.manage');
+        const deleted = await prisma.knowledgeSource.deleteMany({
+          where: { id: documentId, workspaceId: ctx.workspaceId },
+        });
+        if (deleted.count === 0) {
+          return { error: 'Document not found in this workspace.' };
         }
+      } catch (e) {
+        if (e instanceof TenantError) {
+          return { error: 'Unauthorized. You cannot manage knowledge in this workspace.' };
+        }
+        throw e;
+      }
     }
-
-    const chunksToDelete = await databases.listDocuments(
-      dbId,
-      embeddingsCollectionId,
-      [Query.equal('documentId', documentId), Query.limit(5000)]
-    );
-
-    if (chunksToDelete.documents.length > 0) {
-      const deletePromises = chunksToDelete.documents.map((chunk) =>
-        databases.deleteDocument(dbId, embeddingsCollectionId, chunk.$id)
-      );
-      await Promise.all(deletePromises);
-    }
-    
-    await storage.deleteFile(storageBucketId, documentId);
 
     revalidatePath('/knowledge');
     return { success: true };
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error('Failed to delete document:', e);
-    return { error: `Failed to delete document from the system.` };
+    return { error: 'Failed to delete document from the system.' };
   }
 }
 
 // FAQ ACTIONS //
 
 export async function getFaqs(): Promise<Faq[]> {
-  if (!dbId || !faqsCollectionId) return [];
   try {
-    const response = await databases.listDocuments(dbId, faqsCollectionId, [Query.orderDesc('$createdAt')]);
-    return response.documents as Faq[];
+    const user = await getLoggedInUser();
+    if (!user) return [];
+
+    const faqs = await prisma.faq.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+    });
+    return faqs.map((faq) => ({
+      $id: faq.id,
+      question: faq.question,
+      answer: faq.answer,
+      $createdAt: faq.createdAt.toISOString(),
+    }));
   } catch (e) {
     console.error('Failed to fetch FAQs:', e);
     return [];
@@ -106,20 +102,9 @@ export async function saveFaq(prevState: any, formData: FormData) {
 
   try {
     if (id) {
-      await databases.updateDocument(
-        dbId,
-        faqsCollectionId,
-        id,
-        validatedFields.data
-      );
+      await prisma.faq.update({ where: { id }, data: validatedFields.data });
     } else {
-      await databases.createDocument(
-        dbId,
-        faqsCollectionId,
-        ID.unique(),
-        validatedFields.data,
-        [Permission.read(Role.any()), Permission.write(Role.label('admin'))]
-      );
+      await prisma.faq.create({ data: validatedFields.data });
     }
     revalidatePath('/knowledge');
     revalidatePath('/dashboard');
@@ -131,24 +116,22 @@ export async function saveFaq(prevState: any, formData: FormData) {
 }
 
 export async function deleteFaq(faqId: string) {
-    const user = await getLoggedInUser();
-    if (!user || !user.labels.includes('admin')) {
-      return { status: 'error', message: 'Unauthorized' };
-    }
+  const user = await getLoggedInUser();
+  if (!user || !user.labels.includes('admin')) {
+    return { status: 'error', message: 'Unauthorized' };
+  }
 
-    if (!faqId) {
-        return { status: 'error', message: 'FAQ ID is missing.' };
-    }
+  if (!faqId) {
+    return { status: 'error', message: 'FAQ ID is missing.' };
+  }
 
-    try {
-        await databases.deleteDocument(dbId, faqsCollectionId, faqId);
-        revalidatePath('/knowledge');
-        revalidatePath('/dashboard');
-        return { status: 'success', message: 'FAQ deleted successfully.' };
-    } catch(e: any) {
-        console.error('Failed to delete FAQ:', e);
-        return { status: 'error', message: 'Database operation failed.' };
-    }
+  try {
+    await prisma.faq.delete({ where: { id: faqId } });
+    revalidatePath('/knowledge');
+    revalidatePath('/dashboard');
+    return { status: 'success', message: 'FAQ deleted successfully.' };
+  } catch (e: any) {
+    console.error('Failed to delete FAQ:', e);
+    return { status: 'error', message: 'Database operation failed.' };
+  }
 }
-
-    

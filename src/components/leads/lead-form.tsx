@@ -89,7 +89,6 @@ export function LeadForm({ lead, onFormSuccess, allUsers, isAdmin }: { lead?: Le
                             ))}
                         </SelectContent>
                     </Select>
-                    {state?.errors?.agentId && <p className="text-sm text-destructive">{state.errors.agentId[0]}</p>}
                 </div>
             )}
              <div className="space-y-2">
@@ -110,7 +109,7 @@ export function LeadForm({ lead, onFormSuccess, allUsers, isAdmin }: { lead?: Le
                                     !followUpDate && "text-muted-foreground"
                                 )}
                             >
-                                <CalendarIcon className="mr-2 h-4 w-4" />
+                                <CalendarIcon />
                                 {followUpDate ? format(followUpDate, "PPP") : <span>Pick a date</span>}
                             </Button>
                         </PopoverTrigger>
@@ -130,7 +129,7 @@ export function LeadForm({ lead, onFormSuccess, allUsers, isAdmin }: { lead?: Le
             
             <DialogFooter>
                  <Button type="submit" disabled={isPending}>
-                    {isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                    {isPending ? <Loader2 className="size-4 animate-spin" /> : <Save />}
                     {lead ? 'Save Changes' : 'Create Lead'}
                 </Button>
             </DialogFooter>

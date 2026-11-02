@@ -17,7 +17,7 @@ interface ConversationStartersProps {
 
 export function ConversationStarters({ onStarterClick }: ConversationStartersProps) {
     return (
-        <div className="p-4 rounded-lg">
+        <div className="p-4">
             <h3 className="text-lg font-semibold mb-4 text-center text-muted-foreground">
                 Start a Conversation
             </h3>
@@ -29,7 +29,7 @@ export function ConversationStarters({ onStarterClick }: ConversationStartersPro
                         className="w-full h-auto py-3 text-left justify-start whitespace-normal"
                         onClick={() => onStarterClick(prompt)}
                     >
-                        <Lightbulb className="mr-3 h-4 w-4 shrink-0" />
+                        <Lightbulb className="size-4 shrink-0" />
                         {prompt}
                     </Button>
                 ))}

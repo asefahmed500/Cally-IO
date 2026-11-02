@@ -8,11 +8,11 @@ import { updateLeadStatus, deleteLead } from '@/app/leads/actions';
 import { useToast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Download, Search, PlusCircle, Loader2, Edit, CalendarDays } from 'lucide-react';
+import { Download, Search, Plus, Loader2, Edit, CalendarDays } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 import { LeadForm } from './lead-form';
-import type { Models } from 'appwrite';
+import type { SessionUser } from '@/lib/auth';
 import type { UserSummary } from '@/app/settings/users_actions';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -20,13 +20,16 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 
 
-const statuses: Lead['status'][] = ['New', 'Qualified', 'Called', 'Converted'];
+const statuses: Lead['status'][] = ['NEW', 'CONTACTED', 'QUALIFIED', 'FOLLOW_UP', 'PROPOSAL', 'WON', 'LOST'];
 
-const statusStyles = {
-    New: { title: 'New Leads', color: 'bg-blue-500' },
-    Qualified: { title: 'Qualified', color: 'bg-yellow-500' },
-    Called: { title: 'Called', color: 'bg-purple-500' },
-    Converted: { title: 'Converted', color: 'bg-green-500' },
+const statusStyles: Record<Lead['status'], { title: string; color: string }> = {
+    NEW: { title: 'New', color: 'bg-primary' },
+    CONTACTED: { title: 'Contacted', color: 'bg-muted-foreground' },
+    QUALIFIED: { title: 'Qualified', color: 'bg-warning' },
+    FOLLOW_UP: { title: 'Follow-up', color: 'bg-card-foreground/50' },
+    PROPOSAL: { title: 'Proposal', color: 'bg-accent-foreground' },
+    WON: { title: 'Won', color: 'bg-success' },
+    LOST: { title: 'Lost', color: 'bg-destructive' },
 };
 
 function FollowUpList({ leads, onEdit, allUsers, isAdmin }: { leads: Lead[], onEdit: (lead: Lead) => void, allUsers: UserSummary[], isAdmin: boolean }) {
@@ -37,7 +40,7 @@ function FollowUpList({ leads, onEdit, allUsers, isAdmin }: { leads: Lead[], onE
     const agentMap = new Map(allUsers.map(user => [user.$id, user.name]));
 
     return (
-        <div className="border rounded-lg">
+        <div className="border">
             <Table>
                 <TableHeader>
                     <TableRow>
@@ -71,7 +74,7 @@ function FollowUpList({ leads, onEdit, allUsers, isAdmin }: { leads: Lead[], onE
                                     </TableCell>
                                     <TableCell className="text-right">
                                         <Button variant="ghost" size="sm" onClick={() => onEdit(lead)}>
-                                            <Edit className="mr-2 h-4 w-4" /> Edit
+                                            <Edit /> Edit
                                         </Button>
                                     </TableCell>
                                 </TableRow>
@@ -90,7 +93,7 @@ function FollowUpList({ leads, onEdit, allUsers, isAdmin }: { leads: Lead[], onE
     );
 }
 
-export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initialLeads: Lead[], currentUser: Models.User<Models.Preferences>, allUsers: UserSummary[] }) {
+export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initialLeads: Lead[], currentUser: SessionUser, allUsers: UserSummary[] }) {
     const [leads, setLeads] = React.useState<Lead[]>(initialLeads);
     const [searchTerm, setSearchTerm] = React.useState('');
     const [isFormOpen, setIsFormOpen] = React.useState(false);
@@ -224,19 +227,19 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
                         </TabsList>
                     </div>
                     <div className="flex items-center gap-2">
-                        <Button variant="outline" onClick={handleCreate}>
-                            <PlusCircle className="mr-2 h-4 w-4" />
-                            Create Lead
+                        <Button variant="brand" onClick={handleCreate}>
+                            <Plus />
+                            Create lead
                         </Button>
-                        <Button onClick={handleExport}>
-                            <Download className="mr-2 h-4 w-4" />
+                        <Button variant="outline" onClick={handleExport}>
+                            <Download />
                             Export CSV
                         </Button>
                     </div>
                 </div>
                 
                 <div className="relative w-full max-w-sm mb-4">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
                     <Input
                         placeholder="Search leads by name or email..."
                         value={searchTerm}
@@ -249,12 +252,12 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
                     <div className="flex-1 overflow-x-auto md:overflow-y-auto">
                         <div className="flex md:grid md:grid-cols-2 lg:grid-cols-4 gap-6 pb-4 md:pb-0">
                             {statuses.map(status => (
-                                <div key={status} className="bg-muted/50 rounded-lg flex flex-col w-[300px] shrink-0 md:w-auto">
-                                    <div className="p-4 border-b border-border sticky top-0 bg-muted/50 rounded-t-lg z-10">
+                                <div key={status} className="bg-muted/50 flex flex-col w-[300px] shrink-0 md:w-auto">
+                                    <div className="p-4 border-b border-border sticky top-0 bg-muted/50 z-10">
                                         <div className="flex items-center gap-3">
-                                            <div className={`w-3 h-3 rounded-full ${statusStyles[status].color}`} />
+                                            <div className={`w-3 h-3 ${statusStyles[status].color}`} />
                                             <h3 className="font-semibold">{statusStyles[status].title}</h3>
-                                            <span className="text-sm font-normal text-muted-foreground bg-background px-2 py-0.5 rounded-full">
+                                            <span className="text-sm font-normal text-muted-foreground bg-background px-2 py-0.5">
                                                 {leadsByStatus[status].length}
                                             </span>
                                         </div>
@@ -290,7 +293,7 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
             <Dialog open={isFormOpen} onOpenChange={setIsFormOpen}>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{editingLead ? 'Edit Lead' : 'Create New Lead'}</DialogTitle>
+                        <DialogTitle>{editingLead ? 'Edit lead' : 'New lead'}</DialogTitle>
                         <DialogDescription>
                             {editingLead ? "Update the details for this lead." : "Manually add a new lead to your pipeline. It will be assigned to you."}
                         </DialogDescription>
@@ -309,7 +312,7 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
                     <AlertDialogHeader>
                         <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
                         <AlertDialogDescription>
-                            This will permanently delete the lead for <span className="font-semibold">"{deletingLead?.name}"</span>. This action cannot be undone.
+                            This will permanently delete the lead for <span className="font-semibold">&quot;{deletingLead?.name}&quot;</span>. This action cannot be undone.
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
@@ -319,7 +322,7 @@ export function LeadsKanbanView({ initialLeads, currentUser, allUsers }: { initi
                             onClick={confirmDelete}
                             disabled={isDeleting}
                         >
-                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isDeleting && <Loader2 className="size-4 animate-spin" />}
                             Yes, delete lead
                         </AlertDialogAction>
                     </AlertDialogFooter>

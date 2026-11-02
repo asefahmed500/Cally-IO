@@ -4,7 +4,7 @@ import * as React from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { PlusCircle, Trash2, Edit, Loader2 } from 'lucide-react';
+import { Plus, Trash2, Edit, Loader2 } from 'lucide-react';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
@@ -46,7 +46,7 @@ function FaqForm({ faq, onFormSuccess }: { faq?: Faq | null; onFormSuccess: () =
             </div>
             <DialogFooter>
                 <Button type="submit" disabled={isPending}>
-                    {isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {isPending && <Loader2 className="size-4 animate-spin" />}
                     {faq ? 'Save Changes' : 'Create FAQ'}
                 </Button>
             </DialogFooter>
@@ -96,15 +96,15 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
                             <span className="text-left flex-1 pr-4">{faq.question}</span>
                         </AccordionTrigger>
                         <AccordionContent>
-                            <div className="prose prose-sm dark:prose-invert max-w-none whitespace-pre-wrap">
+                            <div className="prose prose-sm max-w-none whitespace-pre-wrap">
                                 {faq.answer}
                             </div>
                             <div className="flex justify-end gap-2 mt-4">
                                 <Button variant="ghost" size="sm" onClick={() => handleEdit(faq)} disabled={isDeleting}>
-                                    <Edit className="mr-2 h-4 w-4" /> Edit
+                                    <Edit /> Edit
                                 </Button>
                                 <Button variant="destructive" size="sm" onClick={() => handleDeleteClick(faq.$id)} disabled={isDeleting}>
-                                    <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                    <Trash2 /> Delete
                                 </Button>
                             </div>
                         </AccordionContent>
@@ -117,12 +117,12 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
             <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                 <DialogTrigger asChild>
                     <Button onClick={() => setSelectedFaq(null)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add New FAQ
+                        <Plus /> Add FAQ
                     </Button>
                 </DialogTrigger>
                 <DialogContent>
                     <DialogHeader>
-                        <DialogTitle>{selectedFaq ? 'Edit FAQ' : 'Create New FAQ'}</DialogTitle>
+                        <DialogTitle>{selectedFaq ? 'Edit FAQ' : 'New FAQ'}</DialogTitle>
                         <DialogDescription>
                             {selectedFaq ? 'Update the question and answer for this FAQ.' : 'Add a new question and answer to the knowledge base.'}
                         </DialogDescription>
@@ -146,7 +146,7 @@ export function FaqManager({ initialFaqs }: { initialFaqs: Faq[] }) {
                             onClick={handleDeleteConfirm}
                             disabled={isDeleting}
                         >
-                            {isDeleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                            {isDeleting && <Loader2 className="size-4 animate-spin" />}
                             Yes, delete FAQ
                         </AlertDialogAction>
                     </AlertDialogFooter>

@@ -8,11 +8,12 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from 'next/link'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Terminal } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
+import { Logo } from '@/components/logo'
 
 function SubmitButton() {
     const { pending } = useFormStatus()
-    return <Button type="submit" className="w-full" disabled={pending}>{pending ? 'Creating account...' : 'Create an account'}</Button>
+    return <Button type="submit" variant="brand" className="w-full" disabled={pending}>{pending ? 'Creating account...' : 'Create an account'}</Button>
 }
 
 export default function SignupPage() {
@@ -22,7 +23,10 @@ export default function SignupPage() {
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-xl">Sign Up</CardTitle>
+          <Link href="/" className="mb-2 block" prefetch={false}>
+            <Logo />
+          </Link>
+          <CardTitle className="text-xl">Sign up</CardTitle>
           <CardDescription>
             Enter your information to create an account
           </CardDescription>
@@ -31,7 +35,7 @@ export default function SignupPage() {
           <CardContent>
             {state?.message && (
                <Alert variant="destructive" className="mb-4">
-                  <Terminal className="h-4 w-4" />
+                  <AlertCircle className="size-4" />
                   <AlertTitle>Error</AlertTitle>
                   <AlertDescription>{state.message}</AlertDescription>
                 </Alert>

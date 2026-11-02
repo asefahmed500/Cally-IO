@@ -7,12 +7,13 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
-import { Terminal, CheckCircle } from 'lucide-react'
+import { AlertCircle, CheckCircle2 } from 'lucide-react'
 import Link from 'next/link'
+import { Logo } from '@/components/logo'
 
 function SubmitButton() {
   const { pending } = useFormStatus()
-  return <Button type="submit" className="w-full" disabled={pending}>{pending ? 'Sending Link...' : 'Send Password Reset Link'}</Button>
+  return <Button type="submit" variant="brand" className="w-full" disabled={pending}>{pending ? 'Sending link...' : 'Send reset link'}</Button>
 }
 
 export default function ForgotPasswordPage() {
@@ -22,17 +23,20 @@ export default function ForgotPasswordPage() {
     <div className="flex items-center justify-center min-h-screen bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="text-2xl">Forgot Password</CardTitle>
+          <Link href="/" className="mb-2 block" prefetch={false}>
+            <Logo />
+          </Link>
+          <CardTitle className="text-2xl">Forgot password</CardTitle>
           <CardDescription>
-            Enter your email and we'll send you a link to reset your password.
+            Enter your email and we&apos;ll send you a link to reset your password.
           </CardDescription>
         </CardHeader>
         {state?.success ? (
           <CardContent>
-            <Alert variant="default" className="border-green-500">
-              <CheckCircle className="h-4 w-4 text-green-500" />
-              <AlertTitle className="text-green-700">Success!</AlertTitle>
-              <AlertDescription className="text-green-700">{state.message}</AlertDescription>
+            <Alert variant="default" className="border-success">
+              <CheckCircle2 className="size-4 text-success" />
+              <AlertTitle className="text-success">Success</AlertTitle>
+              <AlertDescription className="text-success break-words">{state.message}</AlertDescription>
             </Alert>
           </CardContent>
         ) : (
@@ -40,7 +44,7 @@ export default function ForgotPasswordPage() {
             <CardContent className="grid gap-4">
               {state?.message && (
                  <Alert variant="destructive">
-                    <Terminal className="h-4 w-4" />
+                    <AlertCircle className="size-4" />
                     <AlertTitle>Error</AlertTitle>
                     <AlertDescription>{state.message}</AlertDescription>
                   </Alert>
@@ -57,7 +61,7 @@ export default function ForgotPasswordPage() {
         )}
          <CardFooter className="justify-center">
             <Button variant="link" asChild>
-                <Link href="/login">Back to Login</Link>
+                <Link href="/login">Back to login</Link>
             </Button>
          </CardFooter>
       </Card>

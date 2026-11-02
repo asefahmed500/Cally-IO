@@ -7,13 +7,10 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Send, User, Bot, Loader2, Paperclip, ThumbsUp, ThumbsDown, X, Volume2, Square, Download, Trash2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { Message } from '@/ai/flows/conversational-chat';
+import type { ChatMessage } from '@/lib/conversation';
 import { useToast } from '@/hooks/use-toast';
-import { appwriteStorageBucketId, storage } from '@/lib/appwrite-client';
-import { ID, Permission, Role, type Models } from 'appwrite';
 import { processDocument } from '@/ai/flows/process-document';
 import { logInteraction } from '@/ai/flows/log-metrics';
-import { v4 as uuidv4 } from 'uuid';
 import { ConversationStarters } from './conversation-starters';
 import { Skeleton } from '../ui/skeleton';
 import {
@@ -38,8 +35,7 @@ async function fileToDataUri(file: File): Promise<string> {
   });
 }
 
-// Extend the Message type to include an ID and optional image data
-export type ChatMessage = Message & { id: string, image?: string };
+// ChatMessage (role/content/id/image) is defined in @/lib/conversation.
 
 type AudioPlaybackState = {
   messageId: string | null;
@@ -50,7 +46,7 @@ function ChatSkeleton() {
     return (
         <div className="space-y-6 pr-4">
             <div className="flex items-start gap-4">
-                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="size-8" />
                 <div className="flex flex-col gap-2">
                     <Skeleton className="h-16 w-64" />
                 </div>
@@ -59,10 +55,10 @@ function ChatSkeleton() {
                  <div className="flex flex-col gap-2 items-end">
                     <Skeleton className="h-10 w-48" />
                 </div>
-                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="size-8" />
             </div>
              <div className="flex items-start gap-4">
-                <Skeleton className="h-8 w-8 rounded-full" />
+                <Skeleton className="size-8" />
                 <div className="flex flex-col gap-2">
                     <Skeleton className="h-12 w-56" />
                 </div>
@@ -73,11 +69,9 @@ function ChatSkeleton() {
 
 export function ChatPanel({
   disabled,
-  user,
   isChatActive = true,
 }: {
   disabled?: boolean;
-  user: Models.User<Models.Preferences>;
   isChatActive?: boolean;
 }) {
   const [messages, setMessages] = React.useState<ChatMessage[]>([]);
@@ -150,14 +144,6 @@ export function ChatPanel({
     }
 
     if (isDocument) {
-        if (!appwriteStorageBucketId) {
-             toast({
-                variant: 'destructive',
-                title: 'Storage Not Configured',
-                description: 'Please set the Appwrite storage bucket ID in your environment variables.',
-            });
-            return;
-        }
         setIsLoading(true);
         toast({
         title: 'Uploading document...',
@@ -165,20 +151,9 @@ export function ChatPanel({
         });
 
         try {
-        const bucketId = appwriteStorageBucketId;
-        
-        const permissions = [
-            Permission.read(Role.user(user.$id)),
-            Permission.update(Role.user(user.$id)),
-            Permission.delete(Role.user(user.$id)),
-            Permission.read(Role.label('admin')),
-        ];
-
-        const fileUploadResponse = await storage.createFile(bucketId, ID.unique(), file, permissions);
-        const documentId = fileUploadResponse.$id;
         const fileDataUri = await fileToDataUri(file);
 
-        await processDocument({ fileDataUri, fileName: file.name, documentId });
+        await processDocument({ fileDataUri, fileName: file.name });
 
         toast({
             title: 'Success!',
@@ -360,7 +335,7 @@ export function ChatPanel({
         imageDataUri = await fileToDataUri(imageFile);
     }
 
-    const userMessage: ChatMessage = { role: 'user', content: prompt, id: uuidv4(), image: imageDataUri };
+    const userMessage: ChatMessage = { role: 'user', content: prompt, id: crypto.randomUUID(), image: imageDataUri };
     setMessages((prev) => [...prev, userMessage]);
     
     // Clear inputs immediately
@@ -368,7 +343,7 @@ export function ChatPanel({
     setImageFile(null);
     setImagePreview(null);
     
-    const modelMessageId = uuidv4();
+    const modelMessageId = crypto.randomUUID();
     // Add a placeholder for the model's response
     setMessages((prev) => [ ...prev, { role: 'model', content: '', id: modelMessageId }]);
 
@@ -473,7 +448,7 @@ export function ChatPanel({
                 onClick={() => setIsClearConfirmOpen(true)}
                 disabled={messages.length === 0 || isLoading || isClearing}
             >
-                <Trash2 className="mr-2 h-4 w-4" />
+                <Trash2 />
                 Clear
             </Button>
             <Button 
@@ -482,7 +457,7 @@ export function ChatPanel({
                 onClick={handleExportChat}
                 disabled={messages.length === 0 || isLoading}
             >
-                <Download className="mr-2 h-4 w-4" />
+                <Download />
                 Export
             </Button>
         </div>
@@ -492,7 +467,7 @@ export function ChatPanel({
             <ChatSkeleton />
         ) : historyError ? (
              <Alert variant="destructive" className="m-4">
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="size-4" />
               <AlertTitle>Error Loading Chat History</AlertTitle>
               <AlertDescription>
                 {historyError}
@@ -519,39 +494,39 @@ export function ChatPanel({
                 return (
                     <div key={message.id} className={cn('flex items-start gap-4', message.role === 'user' ? 'justify-end' : '')}>
                     {message.role === 'model' && (
-                        <Avatar className="h-8 w-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
+                        <Avatar className="size-8"><AvatarFallback><Bot /></AvatarFallback></Avatar>
                     )}
                     <div className="flex flex-col gap-2 max-w-prose">
                         <div className={cn(
-                            'rounded-lg p-3 text-sm',
+                            ' p-3 text-sm',
                             message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'
                         )}>
                             {message.image && (
-                                <Image src={message.image} alt="User upload" width={300} height={200} className="rounded-md mb-2" />
+                                <Image src={message.image} alt="User upload" width={300} height={200} className=" mb-2" />
                             )}
                             
                             {message.content ? (
                                 <p className="whitespace-pre-wrap">{message.content}</p>
-                            ) : ( isModelTyping && <Loader2 className="h-5 w-5 animate-spin" /> )}
+                            ) : ( isModelTyping && <Loader2 className="size-5 animate-spin" /> )}
                         </div>
                         {message.role === 'model' && message.content && !isModelTyping && (
                             <div className="flex items-center gap-2">
-                                <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handlePlayAudio(message)} disabled={audioState.status === 'loading'}>
-                                    {isThisMessageLoadingAudio ? <Loader2 className="h-4 w-4 animate-spin" /> : (isThisMessagePlayingAudio ? <Square className="h-4 w-4" /> : <Volume2 className="h-4 w-4" />)}
+                                <Button variant="ghost" size="icon" className="size-7" onClick={() => handlePlayAudio(message)} disabled={audioState.status === 'loading'}>
+                                    {isThisMessageLoadingAudio ? <Loader2 className="size-4 animate-spin" /> : (isThisMessagePlayingAudio ? <Square className="size-4" /> : <Volume2 className="size-4" />)}
                                 </Button>
                                 <div className="flex items-center gap-1">
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'good')} disabled={!!message.id && feedbackSent.has(message.id)}>
-                                        <ThumbsUp className="h-4 w-4" />
+                                    <Button variant="ghost" size="icon" className="size-7" onClick={() => handleFeedback(message, 'good')} disabled={!!message.id && feedbackSent.has(message.id)}>
+                                        <ThumbsUp className="size-4" />
                                     </Button>
-                                    <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => handleFeedback(message, 'bad')} disabled={!!message.id && feedbackSent.has(message.id)}>
-                                        <ThumbsDown className="h-4 w-4" />
+                                    <Button variant="ghost" size="icon" className="size-7" onClick={() => handleFeedback(message, 'bad')} disabled={!!message.id && feedbackSent.has(message.id)}>
+                                        <ThumbsDown className="size-4" />
                                     </Button>
                                 </div>
                             </div>
                         )}
                     </div>
                     {message.role === 'user' && (
-                        <Avatar className="h-8 w-8"><AvatarFallback><User /></AvatarFallback></Avatar>
+                        <Avatar className="size-8"><AvatarFallback><User /></AvatarFallback></Avatar>
                     )}
                     </div>
                 )
@@ -561,18 +536,18 @@ export function ChatPanel({
       </ScrollArea>
       <div className="mt-4">
         {imagePreview && (
-          <div className="relative w-24 h-24 mb-2 rounded-md overflow-hidden">
+          <div className="relative w-24 h-24 mb-2 overflow-hidden">
             <Image src={imagePreview} alt="Image preview" layout="fill" objectFit="cover" />
             <Button
               variant="destructive"
               size="icon"
-              className="absolute top-1 right-1 h-6 w-6"
+              className="absolute top-1 right-1 size-6"
               onClick={() => {
                 setImageFile(null);
                 setImagePreview(null);
               }}
             >
-              <X className="h-4 w-4" />
+              <X className="size-4" />
             </Button>
           </div>
         )}
@@ -586,7 +561,7 @@ export function ChatPanel({
             disabled={isLoading || effectiveDisabled}
           />
           <Button type="button" size="icon" variant="ghost" onClick={() => fileInputRef.current?.click()} disabled={isLoading || effectiveDisabled}>
-            <Paperclip className="h-4 w-4" />
+            <Paperclip className="size-4" />
             <span className="sr-only">Attach File</span>
           </Button>
           <Input
@@ -597,7 +572,7 @@ export function ChatPanel({
             disabled={isLoading || effectiveDisabled}
           />
           <Button type="submit" size="icon" disabled={isLoading || (!input.trim() && !imageFile) || effectiveDisabled}>
-            {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+            {isLoading ? <Loader2 className="size-4 animate-spin" /> : <Send className="size-4" />}
             <span className="sr-only">Send</span>
           </Button>
         </form>
@@ -618,7 +593,7 @@ export function ChatPanel({
                 onClick={handleClearHistory}
                 disabled={isClearing}
             >
-                {isClearing && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isClearing && <Loader2 className="size-4 animate-spin" />}
                 Yes, clear history
             </AlertDialogAction>
           </AlertDialogFooter>

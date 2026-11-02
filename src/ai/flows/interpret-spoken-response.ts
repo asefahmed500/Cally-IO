@@ -1,65 +1,105 @@
-
-'use server';
 /**
- * @fileOverview An AI flow to interpret the intent of a spoken response from a Twilio call.
- * - interpretSpokenResponse: The main function to classify the response.
- * - InterpretSpokenResponseOutput: The return type for the function.
+ * LangGraph calling-agent: interprets a lead's spoken response on a Twilio
+ * call, classifies intent, and produces the closing message.
+ *
+ * Graph: START -> classify -> (positive | negative | neutral | escalate) -> END
  */
 
-import { ai } from '@/ai/genkit';
-import { z } from 'zod';
+import { Annotation, StateGraph, START, END } from '@langchain/langgraph';
+import { getChatModel, isAIConfigured } from '@/ai/models';
 
-const InterpretSpokenResponseOutputSchema = z.object({
-  intent: z.enum(['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'ESCALATE'])
-    .describe('The classified intent of the spoken response.'),
-  summary: z.string()
-    .describe('A brief, one-sentence summary of what the lead said.'),
-  finalMessage: z.string()
-    .describe('A polite, final message to say to the lead before hanging up, based on their intent.')
+export type CallIntent = 'POSITIVE' | 'NEGATIVE' | 'NEUTRAL' | 'ESCALATE';
+
+export type InterpretSpokenResponseOutput = {
+  intent: CallIntent;
+  summary: string;
+  finalMessage: string;
+};
+
+const CallAgentState = Annotation.Root({
+  transcript: Annotation<string>(),
+  intent: Annotation<CallIntent>(),
+  summary: Annotation<string>(),
+  finalMessage: Annotation<string>(),
 });
-export type InterpretSpokenResponseOutput = z.infer<typeof InterpretSpokenResponseOutputSchema>;
 
-export const interpretSpokenResponse = ai.defineFlow(
-  {
-    name: 'interpretSpokenResponseFlow',
-    inputSchema: z.string(),
-    outputSchema: InterpretSpokenResponseOutputSchema,
-  },
-  async (transcript) => {
-    const prompt = `You are an expert at understanding sales call transcripts. Your task is to analyze the following spoken response from a lead and determine their intent.
+type Classification = { intent: CallIntent; summary: string };
+
+async function classifyNode(state: typeof CallAgentState.State) {
+  const model = getChatModel();
+
+  const prompt = `You are an expert at understanding sales call transcripts. Analyze the following spoken response from a lead and determine their intent.
 
 **Transcript:**
-"${transcript}"
+"${state.transcript}"
 
 **Instructions:**
-1.  Read the transcript carefully.
-2.  Classify the lead's intent into one of four categories:
-    *   'POSITIVE': The lead expresses clear interest (e.g., "yes", "that sounds great", "I'd like to learn more").
-    *   'NEGATIVE': The lead expresses clear disinterest (e.g., "no", "not interested", "remove me from your list").
-    *   'NEUTRAL': The lead is non-committal or asks for more information (e.g., "maybe", "I'm not sure", "can you send an email?").
-    *   'ESCALATE': The lead is confused, angry, or the response is unclear/garbled.
-3.  Provide a one-sentence summary of what the lead said.
-4.  Write a final, polite message to say to the lead before hanging up. This message should acknowledge their response.
+1. Classify the lead's intent into one of four categories:
+   - POSITIVE: clear interest (e.g., "yes", "that sounds great", "I'd like to learn more")
+   - NEGATIVE: clear disinterest (e.g., "no", "not interested", "remove me from your list")
+   - NEUTRAL: non-committal or asks for more information (e.g., "maybe", "send an email")
+   - ESCALATE: confused, angry, or the response is unclear/garbled
+2. Provide a one-sentence summary of what the lead said.
 
-**Example for "Yes, that sounds interesting":**
-- intent: 'POSITIVE'
-- summary: "The lead expressed interest in learning more."
-- finalMessage: "That's great to hear. A specialist will be in touch with you shortly. Thank you for your time. Goodbye."
+Respond ONLY with JSON in this exact format:
+{"intent": "POSITIVE|NEGATIVE|NEUTRAL|ESCALATE", "summary": "<one sentence>"}`;
 
-**Example for "No thanks, I'm not the right person":**
-- intent: 'NEGATIVE'
-- summary: "The lead indicated they are not interested and not the right contact."
-- finalMessage: "I understand. Thank you for your time. Goodbye."
-`;
+  const response = await model.invoke(prompt);
+  const raw = typeof response.content === 'string' ? response.content : String(response.content);
 
-    const llmResponse = await ai.generate({
-      prompt: prompt,
-      model: 'googleai/gemini-1.5-flash-latest',
-      output: {
-        schema: InterpretSpokenResponseOutputSchema
-      }
-    });
-
-    return llmResponse.output!;
+  try {
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : raw) as Classification;
+    const intent: CallIntent = ['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'ESCALATE'].includes(parsed.intent)
+      ? parsed.intent
+      : 'NEUTRAL';
+    return { intent, summary: parsed.summary || 'The lead responded to the call.' };
+  } catch {
+    return { intent: 'NEUTRAL' as CallIntent, summary: 'Could not clearly interpret the response.' };
   }
-);
+}
+
+async function respondNode(state: typeof CallAgentState.State) {
+  const messagesByIntent: Record<CallIntent, string> = {
+    POSITIVE: "That's great to hear. A specialist will be in touch with you shortly. Thank you for your time. Goodbye.",
+    NEGATIVE: 'I understand. Thank you for your time. Goodbye.',
+    NEUTRAL: 'No problem at all. We will send you some more information by email. Thank you for your time. Goodbye.',
+    ESCALATE: "I'm sorry about the confusion. A member of our team will call you back shortly. Thank you. Goodbye.",
+  };
+  return { finalMessage: messagesByIntent[state.intent] };
+}
+
+function routeByIntent(state: typeof CallAgentState.State): CallIntent {
+  return state.intent;
+}
+
+const callAgentGraph = new StateGraph(CallAgentState)
+  .addNode('classify', classifyNode)
+  .addNode('respond', respondNode)
+  .addEdge(START, 'classify')
+  .addConditionalEdges('classify', routeByIntent, {
+    POSITIVE: 'respond',
+    NEGATIVE: 'respond',
+    NEUTRAL: 'respond',
+    ESCALATE: 'respond',
+  })
+  .addEdge('respond', END)
+  .compile();
+
+export async function interpretSpokenResponse(transcript: string): Promise<InterpretSpokenResponseOutput> {
+  if (!isAIConfigured()) {
+    return {
+      intent: 'ESCALATE',
+      summary: 'AI is not configured.',
+      finalMessage:
+        "I'm sorry, an error occurred with our system. A specialist will reach out shortly. Goodbye.",
+    };
+  }
+
+  const result = await callAgentGraph.invoke({ transcript });
+  return {
+    intent: result.intent,
+    summary: result.summary,
+    finalMessage: result.finalMessage,
+  };
+}

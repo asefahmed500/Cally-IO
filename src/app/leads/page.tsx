@@ -1,67 +1,62 @@
-import { getLoggedInUser } from "@/lib/auth";
-import { redirect } from "next/navigation";
-import { LeadsKanbanView } from "@/components/leads/leads-kanban-view";
-import type { Models } from "node-appwrite";
-import { Card, CardContent } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Table, AlertTriangle } from "lucide-react";
-import { listUsers } from "../settings/users_actions";
-import type { UserSummary } from "../settings/users_actions";
-import { getLeads } from "./actions";
-
+import { requireWorkspace, TenantError } from '@/lib/tenant';
+import { redirect } from 'next/navigation';
+import { LeadsKanbanView } from '@/components/leads/leads-kanban-view';
+import { Card, CardContent } from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertTriangle } from 'lucide-react';
+import { listMembers } from '../settings/members_actions';
+import type { UserSummary } from '../settings/users_actions';
+import { getLeads } from './actions';
+import { PageHeader } from '@/components/layout/page-header';
 
 export default async function LeadsPage() {
-  const user = await getLoggedInUser();
-  if (!user) {
-    redirect("/login");
+  const ctx = await requireWorkspace().catch((e) => e);
+  if (ctx instanceof TenantError) {
+    redirect(ctx.status === 401 ? '/login' : '/onboarding');
   }
 
-  const isAdmin = user.labels.includes('admin');
-  const isConfigured = !!process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
-  
-  const [{ leads, error: leadsError }, allUsers] = await Promise.all([
-    getLeads(user),
-    isAdmin ? listUsers() : Promise.resolve([] as UserSummary[])
+  const isAdmin = ['WORKSPACE_OWNER', 'ADMIN', 'MANAGER'].includes(ctx.role);
+
+  const [{ leads, error: leadsError }, memberList] = await Promise.all([
+    getLeads(),
+    listMembers().catch(() => []),
   ]);
+
+  // Map workspace members onto the summary shape the kanban expects.
+  const allUsers: UserSummary[] = memberList.map((m) => ({
+    $id: m.userId,
+    name: m.name,
+    email: m.email,
+    isAdmin: ['WORKSPACE_OWNER', 'ADMIN'].includes(m.role),
+    emailVerification: true,
+    createdAt: m.createdAt,
+  }));
 
   return (
     <div className="flex flex-col h-full">
-      <header className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight">
-            {isAdmin ? 'Lead Management Pipeline' : 'Your Lead Pipeline'}
-        </h1>
-        <p className="text-muted-foreground">
-            {isAdmin ? 'Visualize and manage all leads through the sales funnel.' : 'Manage your assigned and created leads.'}
-        </p>
-      </header>
-        
-      {!isConfigured ? (
-          <Card>
-            <CardContent className="pt-6">
-                <Alert variant="destructive">
-                    <Table className="h-4 w-4" />
-                    <AlertTitle>Leads Collection Not Configured</AlertTitle>
-                    <AlertDescription>
-                        Please set the `NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID` environment variable and configure the collection in your Appwrite project to see your leads.
-                    </AlertDescription>
-                </Alert>
-            </CardContent>
-          </Card>
-      ) : leadsError ? (
-           <Card>
-            <CardContent className="pt-6">
-                <Alert variant="destructive">
-                    <AlertTriangle className="h-4 w-4" />
-                    <AlertTitle>Error Fetching Leads</AlertTitle>
-                    <AlertDescription>
-                        {leadsError}
-                    </AlertDescription>
-                </Alert>
-            </CardContent>
-          </Card>
+      <PageHeader
+        className="mb-8"
+        title={isAdmin ? 'Lead pipeline' : 'Your lead pipeline'}
+        description={
+          isAdmin
+            ? `All leads in ${ctx.workspaceName}, through the sales funnel.`
+            : 'Manage your assigned and unclaimed leads.'
+        }
+      />
+
+      {leadsError ? (
+        <Card>
+          <CardContent className="pt-6">
+            <Alert variant="destructive">
+              <AlertTriangle className="size-4" />
+              <AlertTitle>Error fetching leads</AlertTitle>
+              <AlertDescription>{leadsError}</AlertDescription>
+            </Alert>
+          </CardContent>
+        </Card>
       ) : (
-          <LeadsKanbanView initialLeads={leads} currentUser={user} allUsers={allUsers} />
+        <LeadsKanbanView initialLeads={leads} currentUser={ctx.user} allUsers={allUsers} />
       )}
     </div>
-  )
+  );
 }

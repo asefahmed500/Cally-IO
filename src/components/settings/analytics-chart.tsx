@@ -15,7 +15,7 @@ interface AnalyticsChartProps {
 const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="rounded-lg border bg-background p-2 shadow-sm">
+        <div className=" border bg-background p-2 shadow-sm">
           <div className="grid grid-cols-2 gap-4">
             <div className="flex flex-col space-y-1">
               <span className="text-[0.70rem] uppercase text-muted-foreground">
@@ -25,7 +25,7 @@ const CustomTooltip = ({ active, payload, label }: any) => {
             {payload.map((item: any) => (
                <div key={item.name} className="flex flex-col space-y-1 text-right">
                  <span className="text-[0.70rem] uppercase" style={{color: item.color}}>{item.name}</span>
-                 <span className="font-bold" style={{color: item.color}}>{item.value.toLocaleString()}</span>
+                 <span className="font-semibold" style={{color: item.color}}>{item.value.toLocaleString()}</span>
                </div>
             ))}
           </div>
@@ -39,7 +39,7 @@ export function AnalyticsChart({ data }: AnalyticsChartProps) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>User Feedback Breakdown</CardTitle>
+        <CardTitle>User feedback breakdown</CardTitle>
         <CardDescription>A summary of feedback received on AI responses.</CardDescription>
       </CardHeader>
       <CardContent>

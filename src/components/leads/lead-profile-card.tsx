@@ -7,7 +7,7 @@ function InfoRow({ icon: Icon, label, value }: { icon: React.ElementType, label:
     if (!value && typeof value !== 'number') return null;
     return (
         <div className="flex items-start gap-4">
-            <Icon className="h-5 w-5 text-muted-foreground mt-1 shrink-0" />
+            <Icon className="size-5 text-muted-foreground mt-1 shrink-0" />
             <div className="flex flex-col">
                 <span className="text-sm text-muted-foreground">{label}</span>
                 <span className="font-medium">{value}</span>
@@ -21,7 +21,7 @@ export function LeadProfileCard({ lead }: { lead: Lead }) {
     <Card className="border-none shadow-none">
         <CardHeader>
             <CardTitle className="flex items-center gap-3">
-                <User className="w-8 h-8 p-1.5 bg-muted rounded-full" /> {lead.name}
+                <User className="w-8 h-8 p-1.5 bg-muted" /> {lead.name}
             </CardTitle>
             <CardDescription>{lead.email}</CardDescription>
         </CardHeader>

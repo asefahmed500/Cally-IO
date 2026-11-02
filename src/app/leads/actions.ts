@@ -1,255 +1,269 @@
-
 'use server';
 
-import { databases } from '@/lib/appwrite-server';
-import { getLoggedInUser } from '@/lib/auth';
+import { prisma } from '@/lib/prisma';
+import { requireWorkspace, requireCapability, TenantError } from '@/lib/tenant';
 import { revalidatePath } from 'next/cache';
-import twilio from 'twilio';
-import { ID, Permission, Role, Query, Models, AppwriteException } from 'node-appwrite';
 import { z } from 'zod';
-import type { Lead } from './types';
+import type { Lead, LeadStage } from './types';
+import type { Lead as PrismaLead, Contact as PrismaContact } from '@prisma/client';
 
-export async function getLeads(user: Models.User<Models.Preferences>): Promise<{leads: Lead[], error: string | null}> {
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID;
-    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID;
-    const isAdmin = user.labels.includes('admin');
+const VALID_STAGES: LeadStage[] = ['NEW', 'CONTACTED', 'QUALIFIED', 'FOLLOW_UP', 'PROPOSAL', 'WON', 'LOST'];
 
-    if (!dbId || !leadsCollectionId) {
-        return { leads: [], error: null };
+function toLead(record: PrismaLead & { contact: PrismaContact }): Lead {
+  const contact = record.contact;
+  return {
+    $id: record.id,
+    contactId: contact.id,
+    userId: contact.ownerId,
+    name: contact.name,
+    email: contact.email ?? '',
+    phone: contact.phone ?? undefined,
+    company: contact.company ?? undefined,
+    jobTitle: contact.jobTitle ?? undefined,
+    notes: contact.notes ?? undefined,
+    status: record.stage,
+    score: record.score,
+    lastActivity: record.updatedAt.toISOString(),
+    agentId: record.agentId,
+    followUpDate: record.followUpDate ? record.followUpDate.toISOString() : undefined,
+    followUpNotes: record.followUpNotes ?? undefined,
+    $createdAt: record.createdAt.toISOString(),
+  };
+}
+
+export async function getLeads(): Promise<{ leads: Lead[]; error: string | null }> {
+  try {
+    const ctx = await requireWorkspace();
+    const leads = await prisma.lead.findMany({
+      where: {
+        workspaceId: ctx.workspaceId,
+        // Non-managers see their assigned leads plus unclaimed ones.
+        ...(canViewAll(ctx.role)
+          ? {}
+          : { OR: [{ agentId: ctx.user.$id }, { agentId: null }] }),
+      },
+      include: { contact: true },
+      orderBy: { createdAt: 'desc' },
+      take: 500,
+    });
+    return { leads: leads.map(toLead), error: null };
+  } catch (e) {
+    if (e instanceof TenantError && e.message === 'NO_WORKSPACE') {
+      return { leads: [], error: null };
     }
+    console.error('Failed to fetch leads:', e);
+    return { leads: [], error: 'An unexpected error occurred while fetching leads.' };
+  }
+}
 
-    try {
-        if (isAdmin) {
-            const response = await databases.listDocuments(
-                dbId,
-                leadsCollectionId,
-                [Query.orderDesc('$createdAt'), Query.limit(500)]
-            );
-            return { leads: response.documents as Lead[], error: null };
-        } else {
-            // For non-admins, fetch both their assigned leads and unassigned leads.
-            // This is done in two queries to handle cases where the 'agentId' attribute
-            // might not be nullable, which would cause `Query.equal('agentId', [id, null])` to fail.
-            const assignedLeadsPromise = databases.listDocuments(
-                dbId,
-                leadsCollectionId,
-                [Query.equal('agentId', user.$id), Query.limit(250)]
-            );
-
-            // An unassigned lead is one where the agentId attribute is null.
-            const unassignedLeadsPromise = databases.listDocuments(
-                dbId,
-                leadsCollectionId,
-                [Query.isNull('agentId'), Query.limit(250)]
-            );
-
-            const [assignedResponse, unassignedResponse] = await Promise.all([
-                assignedLeadsPromise,
-                unassignedLeadsPromise,
-            ]);
-
-            const combinedLeads = [
-                ...assignedResponse.documents,
-                ...unassignedResponse.documents,
-            ];
-            
-            // Remove duplicates just in case (though there shouldn't be any).
-            const uniqueLeads = Array.from(new Map(combinedLeads.map(lead => [lead.$id, lead])).values());
-
-            // Sort by creation date, newest first, as the original query did.
-            uniqueLeads.sort((a, b) => new Date(b.$createdAt).getTime() - new Date(a.$createdAt).getTime());
-
-            return { leads: uniqueLeads as Lead[], error: null };
-        }
-    } catch (e: any) {
-        console.error("Failed to fetch leads:", e);
-        if (e instanceof AppwriteException && e.type === 'general_query_invalid') {
-            return { leads: [], error: `Database Error: The 'leads' collection has a schema error. Please check your Appwrite project configuration. Details: ${e.message}` };
-        }
-        return { leads: [], error: `An unexpected error occurred while fetching leads: ${e.message}` };
-    }
+function canViewAll(role: import('@prisma/client').MemberRole): boolean {
+  return ['WORKSPACE_OWNER', 'ADMIN', 'MANAGER', 'SUPERVISOR', 'ANALYST'].includes(role);
 }
 
 const LeadSchema = z.object({
-    id: z.string().optional(),
-    name: z.string().min(2, 'Name must be at least 2 characters.'),
-    email: z.string().email('Please enter a valid email address.'),
-    phone: z.string().optional(),
-    company: z.string().optional(),
-    jobTitle: z.string().optional(),
-    notes: z.string().optional(),
-    followUpDate: z.string().optional(),
-    followUpNotes: z.string().optional(),
+  id: z.string().optional(),
+  name: z.string().min(2, 'Name must be at least 2 characters.'),
+  email: z.string().email('Please enter a valid email address.'),
+  phone: z.string().optional(),
+  company: z.string().optional(),
+  jobTitle: z.string().optional(),
+  notes: z.string().optional(),
+  followUpDate: z.string().optional(),
+  followUpNotes: z.string().optional(),
 });
 
 export async function saveLead(prevState: any, formData: FormData) {
-    const user = await getLoggedInUser();
-    if (!user) {
-        return { status: 'error', message: 'Unauthorized. Please log in.' };
-    }
-    const isAdmin = user.labels.includes('admin');
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
+  let ctx;
+  try {
+    ctx = await requireCapability('leads.write');
+  } catch {
+    return { status: 'error', message: 'Unauthorized. Please log in.' };
+  }
+  const user = ctx.user;
+  const isAdmin = ['WORKSPACE_OWNER', 'ADMIN', 'MANAGER'].includes(ctx.role);
 
-    const validatedFields = LeadSchema.safeParse({
-        id: formData.get('id'),
-        name: formData.get('name'),
-        email: formData.get('email'),
-        phone: formData.get('phone'),
-        company: formData.get('company'),
-        jobTitle: formData.get('jobTitle'),
-        notes: formData.get('notes'),
-        followUpDate: formData.get('followUpDate'),
-        followUpNotes: formData.get('followUpNotes'),
-    });
+  const validatedFields = LeadSchema.safeParse({
+    id: formData.get('id'),
+    name: formData.get('name'),
+    email: formData.get('email'),
+    phone: formData.get('phone'),
+    company: formData.get('company'),
+    jobTitle: formData.get('jobTitle'),
+    notes: formData.get('notes'),
+    followUpDate: formData.get('followUpDate'),
+    followUpNotes: formData.get('followUpNotes'),
+  });
 
-    if (!validatedFields.success) {
-        return {
-            status: 'error',
-            message: 'Invalid data provided.',
-            errors: validatedFields.error.flatten().fieldErrors,
-        };
-    }
-    
-    const { id, ...leadDataFromForm } = validatedFields.data;
-    const agentIdFromForm = formData.get('agentId') as string | null;
-
-    const leadPayload: { [key: string]: any } = {
-        ...leadDataFromForm,
-        followUpDate: leadDataFromForm.followUpDate || null,
-        followUpNotes: leadDataFromForm.followUpNotes || null,
-        lastActivity: new Date().toISOString(),
+  if (!validatedFields.success) {
+    return {
+      status: 'error',
+      message: 'Invalid data provided.',
+      errors: validatedFields.error.flatten().fieldErrors,
     };
+  }
 
+  const { id, followUpDate, ...leadDataFromForm } = validatedFields.data;
+  const agentIdFromForm = formData.get('agentId') as string | null;
 
-    try {
-        if (id) {
-            // Updating an existing lead
-            const existingLead = await databases.getDocument(dbId, leadsCollectionId, id);
-            if (!isAdmin && existingLead.agentId !== user.$id) {
-                return { status: 'error', message: "You don't have permission to edit this lead." };
-            }
-            // Only admins can change the agent assignment during an edit.
-            if (isAdmin) {
-                leadPayload.agentId = agentIdFromForm || null;
-            }
+  const contactPayload = {
+    name: leadDataFromForm.name,
+    email: leadDataFromForm.email,
+    phone: leadDataFromForm.phone || null,
+    company: leadDataFromForm.company || null,
+    jobTitle: leadDataFromForm.jobTitle || null,
+    notes: leadDataFromForm.notes || null,
+  };
 
-            await databases.updateDocument(dbId, leadsCollectionId, id, leadPayload);
-        } else {
-            // Creating a new lead
-            const agentForNewLead = isAdmin ? (agentIdFromForm || null) : user.$id;
+  const followUp = followUpDate ? new Date(followUpDate) : null;
 
-            const newLeadData = {
-                ...leadPayload,
-                status: 'New',
-                score: Math.floor(Math.random() * 21) + 10,
-                agentId: agentForNewLead,
-            };
+  try {
+    if (id) {
+      // Updating an existing lead — tenant-scoped
+      const existingLead = await prisma.lead.findFirst({
+        where: { id, workspaceId: ctx.workspaceId },
+        include: { contact: true },
+      });
+      if (!existingLead) {
+        return { status: 'error', message: 'Lead not found.' };
+      }
+      if (!isAdmin && existingLead.agentId !== user.$id) {
+        return { status: 'error', message: "You don't have permission to edit this lead." };
+      }
 
-            // Refined permissions for better security
-            const permissions = [
-                Permission.read(Role.label('admin')),
-                Permission.update(Role.label('admin')),
-                Permission.delete(Role.label('admin')),
-            ];
+      const updateData: Record<string, unknown> = {
+        followUpDate: followUp,
+        followUpNotes: leadDataFromForm.followUpNotes || null,
+      };
+      // Only admins can change the agent assignment during an edit.
+      if (isAdmin) {
+        updateData.agentId = agentIdFromForm || null;
+      }
 
-            if (agentForNewLead) {
-                // If the lead is assigned, only that agent and admins should have access.
-                permissions.push(Permission.read(Role.user(agentForNewLead)));
-                permissions.push(Permission.update(Role.user(agentForNewLead)));
-                permissions.push(Permission.delete(Role.user(agentForNewLead)));
-            } else {
-                // If the lead is unassigned, any logged-in user can read it (to see it in the 'New' column)
-                // and any user can update it (which is how they "claim" it).
-                // The updateLeadStatus action provides the final check and locks permissions.
-                permissions.push(Permission.read(Role.users()));
-                permissions.push(Permission.update(Role.users()));
-            }
+      await prisma.$transaction([
+        prisma.contact.update({ where: { id: existingLead.contactId }, data: contactPayload }),
+        prisma.lead.update({ where: { id }, data: updateData as any }),
+      ]);
+    } else {
+      // Creating a new lead (contact + pipeline entry) in the active workspace
+      const agentForNewLead = isAdmin ? agentIdFromForm || null : user.$id;
+      const membership = { workspaceId: ctx.workspaceId };
 
-            await databases.createDocument(
-                dbId,
-                leadsCollectionId,
-                ID.unique(),
-                newLeadData,
-                permissions
-            );
-        }
+      const contact = await prisma.contact.create({
+        data: {
+          workspaceId: membership.workspaceId,
+          ...contactPayload,
+          phone: contactPayload.phone,
+          email: contactPayload.email,
+          ownerId: user.$id,
+        },
+      });
+      const lead = await prisma.lead.create({
+        data: {
+          workspaceId: membership.workspaceId,
+          contactId: contact.id,
+          stage: 'NEW',
+          score: Math.floor(Math.random() * 21) + 10,
+          agentId: agentForNewLead,
+          followUpDate: followUp,
+          followUpNotes: leadDataFromForm.followUpNotes || null,
+        },
+      });
 
-        revalidatePath('/leads');
-        revalidatePath('/dashboard');
-        return { status: 'success', message: `Lead ${id ? 'updated' : 'created'} successfully.` };
-
-    } catch (e: any) {
-        console.error('Failed to save lead:', e);
-        return { status: 'error', message: `Database error: ${e.message}` };
+      // Workflow trigger: LEAD_CREATED (best-effort, non-blocking). Kept
+      // outside any transaction — it makes AI calls and uses the global
+      // client, so it must not hold a DB transaction open.
+      try {
+        const { triggerWorkflows } = await import('@/lib/workflows/engine');
+        await triggerWorkflows({
+          workspaceId: membership.workspaceId,
+          trigger: 'LEAD_CREATED',
+          entityType: 'Lead',
+          entityId: lead.id,
+          lead: { stage: 'NEW', contactId: contact.id },
+          contact: { id: contact.id, tags: [], ownerId: user.$id, name: contact.name },
+        });
+      } catch (e) {
+        console.error('Workflow trigger failed:', e);
+      }
     }
+
+    revalidatePath('/leads');
+    revalidatePath('/dashboard');
+    return { status: 'success', message: `Lead ${id ? 'updated' : 'created'} successfully.` };
+  } catch (e: any) {
+    console.error('Failed to save lead:', e);
+    return { status: 'error', message: 'A database error occurred. Please try again.' };
+  }
 }
 
 export async function deleteLead(leadId: string) {
-    const user = await getLoggedInUser();
-    if (!user) {
-        return { error: 'Unauthorized. Please log in.' };
-    }
-    const isAdmin = user.labels.includes('admin');
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
-
-    try {
-        const lead = await databases.getDocument(dbId, leadsCollectionId, leadId);
-        if (!isAdmin && lead.agentId !== user.$id) {
-            return { error: "You don't have permission to delete this lead." };
-        }
-        await databases.deleteDocument(dbId, leadsCollectionId, leadId);
-        revalidatePath('/leads');
-        revalidatePath('/dashboard');
-        return { success: true };
-    } catch(e: any) {
-        console.error("Failed to delete lead:", e);
-        return { error: `Database error: ${e.message}` };
-    }
-}
-
-
-export async function updateLeadStatus(leadId: string, status: string) {
-  const user = await getLoggedInUser();
-  if (!user) {
-    return { error: 'Unauthorized access.' };
+  let ctx;
+  try {
+    ctx = await requireCapability('leads.write');
+  } catch {
+    return { error: 'Unauthorized. Please log in.' };
   }
-  const isAdmin = user.labels.includes('admin');
-  const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-  const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
+  const isAdmin = ['WORKSPACE_OWNER', 'ADMIN', 'MANAGER'].includes(ctx.role);
 
   try {
-    const lead = await databases.getDocument(dbId, leadsCollectionId, leadId);
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId: ctx.workspaceId },
+    });
+    if (!lead) {
+      return { error: 'Lead not found.' };
+    }
+    if (!isAdmin && lead.agentId !== ctx.user.$id) {
+      return { error: "You don't have permission to delete this lead." };
+    }
+    // Contact deletion cascades to the pipeline entry.
+    await prisma.contact.delete({ where: { id: lead.contactId } });
+    revalidatePath('/leads');
+    revalidatePath('/dashboard');
+    return { success: true };
+  } catch (e: any) {
+    console.error('Failed to delete lead:', e);
+    return { error: 'A database error occurred. Please try again.' };
+  }
+}
+
+export async function updateLeadStatus(leadId: string, stage: string) {
+  let ctx;
+  try {
+    ctx = await requireCapability('leads.write');
+  } catch {
+    return { error: 'Unauthorized access.' };
+  }
+  if (!VALID_STAGES.includes(stage as LeadStage)) {
+    return { error: 'Invalid pipeline stage.' };
+  }
+  const isAdmin = ['WORKSPACE_OWNER', 'ADMIN', 'MANAGER'].includes(ctx.role);
+
+  try {
+    const lead = await prisma.lead.findFirst({
+      where: { id: leadId, workspaceId: ctx.workspaceId },
+    });
+    if (!lead) {
+      return { error: 'Lead not found.' };
+    }
 
     // SECURITY CHECK: Only admin or assigned agent (or anyone if unassigned) can update
-    if (!isAdmin && lead.agentId && lead.agentId !== user.$id) {
-        return { error: 'You do not have permission to update this lead.' };
+    if (!isAdmin && lead.agentId && lead.agentId !== ctx.user.$id) {
+      return { error: 'You do not have permission to update this lead.' };
     }
-    
+
     const wasClaimed = !lead.agentId;
 
-    const updateData: { status: string; lastActivity: string; agentId?: string; $permissions?: string[] } = {
-        status,
-        lastActivity: new Date().toISOString(),
+    const updateData: { stage: LeadStage; agentId?: string } = {
+      stage: stage as LeadStage,
     };
 
-    // If the lead is unassigned, assign it to the current user ("claim" it)
-    // and lock down the permissions.
+    // If the lead is unassigned, assign it to the current user ("claim" it).
     if (!lead.agentId) {
-        updateData.agentId = user.$id;
-        updateData.$permissions = [
-            Permission.read(Role.user(user.$id)),
-            Permission.update(Role.user(user.$id)),
-            Permission.delete(Role.user(user.$id)),
-            Permission.read(Role.label('admin')),
-            Permission.update(Role.label('admin')),
-            Permission.delete(Role.label('admin')),
-        ];
+      updateData.agentId = ctx.user.$id;
     }
 
-    await databases.updateDocument(dbId, leadsCollectionId, leadId, updateData);
-    
+    await prisma.lead.update({ where: { id: leadId }, data: updateData });
+
     revalidatePath('/leads');
     revalidatePath('/dashboard'); // To update agent stats
     return { success: true, claimed: wasClaimed };
@@ -260,82 +274,88 @@ export async function updateLeadStatus(leadId: string, status: string) {
 }
 
 export async function initiateCall(leadData: Lead) {
-    const user = await getLoggedInUser();
-    if (!user) {
-        return { error: 'Unauthorized access.' };
+  let ctx;
+  try {
+    ctx = await requireCapability('calls.initiate');
+  } catch {
+    return { error: 'Unauthorized access.' };
+  }
+  const user = ctx.user;
+
+  const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
+  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
+
+  if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
+    return { error: 'Twilio is not configured on the server. Please contact an administrator.' };
+  }
+  if (!baseUrl) {
+    return {
+      error:
+        "The application's public URL (NEXT_PUBLIC_BASE_URL) is not configured. Please contact an administrator.",
+    };
+  }
+  if (!leadData.phone) {
+    return { error: 'This lead does not have a phone number.' };
+  }
+
+  // SECURITY: verify the lead belongs to the caller's workspace before dialing.
+  const leadRecord = await prisma.lead.findFirst({
+    where: { id: leadData.$id, workspaceId: ctx.workspaceId },
+  });
+  if (!leadRecord) {
+    return { error: 'Lead not found in this workspace.' };
+  }
+
+  try {
+    const { twilioProvider } = await import('@/lib/telephony/twilio');
+    if (!twilioProvider.isConfigured()) {
+      return { error: 'Twilio is not configured on the server. Please contact an administrator.' };
     }
 
-    const { TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN, TWILIO_PHONE_NUMBER } = process.env;
-    const baseUrl = process.env.NEXT_PUBLIC_BASE_URL;
-    const callLogsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_CALL_LOGS_COLLECTION_ID!;
-    const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-    const leadsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_LEADS_COLLECTION_ID!;
+    const webhookUrl = new URL(`/api/twilio/call?leadId=${leadData.$id}`, baseUrl);
+    const statusCallbackUrl = new URL('/api/twilio/status', baseUrl);
 
-    if (!TWILIO_ACCOUNT_SID || !TWILIO_AUTH_TOKEN || !TWILIO_PHONE_NUMBER) {
-        return { error: "Twilio is not configured on the server. Please contact an administrator." };
-    }
-    if (!baseUrl) {
-        return { error: "The application's public URL (NEXT_PUBLIC_BASE_URL) is not configured. Please contact an administrator." };
-    }
-    if (!leadData.phone) {
-        return { error: "This lead does not have a phone number." };
-    }
-    if (!callLogsCollectionId || !dbId) {
-        return { error: "Call logs collection is not configured on the server." };
-    }
+    const { providerCallSid } = await twilioProvider.initiateCall({
+      to: leadData.phone,
+      from: TWILIO_PHONE_NUMBER,
+      webhookUrl: webhookUrl.toString(),
+      statusCallbackUrl: statusCallbackUrl.toString(),
+    });
 
-    try {
-        const twilioClient = twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN);
-        
-        const webhookUrl = new URL(`/api/twilio/call?leadId=${leadData.$id}`, baseUrl);
-        const statusCallbackUrl = new URL('/api/twilio/status', baseUrl);
+    // Log the call, mark the pipeline stage, in one transaction.
+    await prisma.$transaction([
+      prisma.call.create({
+        data: {
+          workspaceId: ctx.workspaceId,
+          direction: 'OUTBOUND',
+          status: 'QUEUED',
+          providerCallSid,
+          toNumber: leadData.phone,
+          contactId: leadRecord.contactId,
+          assignedUserId: user.$id,
+          initiatedById: user.$id,
+        },
+      }),
+      prisma.lead.update({
+        where: { id: leadRecord.id },
+        data: { stage: 'CONTACTED' },
+      }),
+      prisma.contact.update({
+        where: { id: leadRecord.contactId },
+        data: { lastContactedAt: new Date() },
+      }),
+    ]);
 
-        const call = await twilioClient.calls.create({
-            to: leadData.phone,
-            from: TWILIO_PHONE_NUMBER,
-            url: webhookUrl.toString(),
-            statusCallback: statusCallbackUrl.toString(),
-            statusCallbackMethod: 'POST',
-            statusCallbackEvent: ['initiated', 'ringing', 'answered', 'completed'],
-        });
+    revalidatePath('/leads');
+    revalidatePath('/dashboard');
 
-        // Log the call initiation in our database
-        const permissions = [
-            Permission.read(Role.user(user.$id)),
-            Permission.update(Role.user(user.$id)),
-            Permission.delete(Role.user(user.$id)),
-            Permission.read(Role.label('admin')),
-        ];
-
-        await databases.createDocument(
-            dbId,
-            callLogsCollectionId,
-            ID.unique(),
-            {
-                leadId: leadData.$id,
-                userId: user.$id,
-                callSid: call.sid,
-                status: 'initiated',
-            },
-            permissions
-        );
-        
-        // Update lead status to 'Called'
-        await databases.updateDocument(dbId, leadsCollectionId, leadData.$id, {
-            status: 'Called',
-            lastActivity: new Date().toISOString(),
-        });
-        
-        revalidatePath('/leads');
-        revalidatePath('/dashboard');
-        
-        return { success: true, callSid: call.sid };
-        
-    } catch (e: any) {
-        console.error('Failed to initiate Twilio call:', e);
-        if (e.code === 21211) { // Invalid 'To' phone number
-            return { error: `Invalid phone number for lead: ${leadData.phone}. Please check the format.`};
-        }
-        return { error: `Failed to initiate call: ${e.message}` };
+    return { success: true, callSid: providerCallSid };
+  } catch (e: any) {
+    console.error('Failed to initiate Twilio call:', e);
+    if (e.code === 21211) {
+      // Invalid 'To' phone number
+      return { error: `Invalid phone number for lead: ${leadData.phone}. Please check the format.` };
     }
+    return { error: 'Failed to initiate the call. Please try again.' };
+  }
 }

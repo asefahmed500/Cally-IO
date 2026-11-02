@@ -1,39 +1,24 @@
-'use server';
-
-import { databases } from '@/lib/appwrite-server';
-import { ID, Permission, Role } from 'node-appwrite';
-
-const dbId = process.env.NEXT_PUBLIC_APPWRITE_DATABASE_ID!;
-const analyticsLogsCollectionId = process.env.NEXT_PUBLIC_APPWRITE_ANALYTICS_LOGS_COLLECTION_ID!;
-
+import { prisma } from '@/lib/prisma';
 
 /**
  * Logs when a document is used as context for an AI response.
- * This is a fire-and-forget function.
+ * Fire-and-forget: failures are logged but never thrown.
  */
-export async function logDocumentUsage(userId: string, sources: { documentId: string; fileName: string; }[]) {
-    if (!analyticsLogsCollectionId || !dbId) {
-        console.warn('Analytics logging is not configured.');
-        return;
-    }
-    
-    try {
-        await databases.createDocument(
-            dbId,
-            analyticsLogsCollectionId,
-            ID.unique(),
-            {
-                eventType: 'DOCUMENT_USED',
-                eventData: JSON.stringify({ sources }),
-                userId: userId,
-            },
-            [
-                Permission.read(Role.label('admin')),
-                Permission.write(Role.user(userId)), // Let user create their own log entries
-            ]
-        );
-    } catch (e) {
-        // Fail silently
-        console.error('Failed to log document usage:', e);
-    }
+export async function logDocumentUsage(
+  userId: string,
+  sources: { documentId: string; fileName: string }[],
+  workspaceId?: string
+) {
+  try {
+    await prisma.analyticsLog.create({
+      data: {
+        eventType: 'DOCUMENT_USED',
+        eventData: { sources } as object,
+        userId,
+        workspaceId: workspaceId ?? null,
+      },
+    });
+  } catch (e) {
+    console.error('Failed to log document usage:', e);
+  }
 }

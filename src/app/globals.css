@@ -4,66 +4,47 @@
 
 @layer base {
   :root {
-    --background: 220 13% 95%; /* Light Gray: #F0F2F5 */
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Cally-IO — ink on white & cream. Light-only, fully square. */
+    --background: 0 0% 100%; /* pure white page */
+    --foreground: 60 3% 7%; /* #121210 ink */
+    --card: 0 0% 100%; /* white cards */
+    --card-foreground: 60 3% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 197 76% 53%; /* Vibrant Blue: #29ABE2 */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 177 68% 42%; /* Teal: #20B2AA */
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 197 76% 53%;
-    --radius: 0.5rem;
-    
-    --sidebar-background: 222.2 84% 4.9%; /* Darker for contrast */
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 197 76% 53%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 215 20.2% 65.1%;
+    --popover-foreground: 60 3% 7%;
+    --primary: 60 3% 9%; /* ink primary action */
+    --primary-foreground: 40 20% 97%;
+    --secondary: 40 33% 96%; /* cream surface #F7F5F0 */
+    --secondary-foreground: 60 3% 15%;
+    --muted: 40 26% 95%; /* cream muted #F4F2EB */
+    --muted-foreground: 45 5% 42%; /* warm gray text */
+    --accent: 40 33% 94%; /* cream accent */
+    --accent-foreground: 60 3% 12%;
+    --destructive: 0 72% 46%; /* #D92626 */
+    --destructive-foreground: 0 0% 100%;
+    --success: 150 60% 32%; /* #1F7A4D — live/connected states */
+    --warning: 35 92% 42%; /* #C77414 */
+    --border: 45 15% 89%; /* warm hairline #E3E0D8 */
+    --input: 45 15% 85%;
+    --ring: 60 3% 15%; /* ink focus ring */
+    --radius: 0rem; /* fully square — no rounded UI */
+
+    --sidebar-background: 40 33% 98%; /* cream sidebar */
+    --sidebar-foreground: 45 5% 38%;
+    --sidebar-primary: 60 3% 9%;
+    --sidebar-primary-foreground: 40 20% 97%;
+    --sidebar-accent: 40 33% 94%;
+    --sidebar-accent-foreground: 60 3% 12%;
+    --sidebar-border: 45 15% 89%;
+    --sidebar-ring: 60 3% 15%;
+
+    --gradient-from: 0 0% 100%; /* white */
+    --gradient-to: 40 36% 95%; /* cream */
   }
 
-  .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 197 76% 53%; /* Vibrant Blue */
-    --primary-foreground: 210 40% 98%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 177 68% 42%; /* Teal */
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 197 76% 53%;
-    
-    --sidebar-background: 222.2 84% 4.9%;
-    --sidebar-foreground: 210 40% 98%;
-    --sidebar-primary: 210 40% 98%;
-    --sidebar-primary-foreground: 222.2 47.4% 11.2%;
-    --sidebar-accent: 197 76% 53%;
-    --sidebar-accent-foreground: 210 40% 98%;
-    --sidebar-border: 217.2 32.6% 17.5%;
-    --sidebar-ring: 212.7 26.8% 83.9%;
+  @media (prefers-color-scheme: dark) {
+    :root {
+      color-scheme: only light;
+    }
   }
 }
 
@@ -71,8 +52,44 @@
   * {
     @apply border-border;
   }
+  html {
+    color-scheme: light;
+  }
   body {
     @apply bg-background text-foreground;
-    font-feature-settings: "rlig" 1, "calt" 1;
+    font-feature-settings: 'rlig' 1, 'calt' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  /* Typography: 600 (not 700) for headlines, tight negative tracking, sentence case everywhere */
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-weight: 600;
+  }
+  h1 {
+    letter-spacing: -0.025em;
+  }
+  h2 {
+    letter-spacing: -0.02em;
+  }
+  h3,
+  h4 {
+    letter-spacing: -0.01em;
+  }
+}
+
+@layer utilities {
+  /* Numeric data — metrics, durations, money */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+  /* Signature white gradient surface (buttons, CTA tiles) */
+  .bg-gradient-cream {
+    background-image: linear-gradient(to bottom, hsl(var(--gradient-from)), hsl(var(--gradient-to)));
   }
 }
